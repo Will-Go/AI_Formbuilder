@@ -21,7 +21,12 @@ import Select from "@mui/material/Select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
-import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form";
+import {
+  Controller,
+  FormProvider,
+  useForm,
+  useFormContext,
+} from "react-hook-form";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import { useResponsesStore } from "@/modules/form-responses/store/responsesStore";
 import type { Answer } from "@/shared/types/responses";
@@ -63,7 +68,9 @@ function PreviewFormContent({ formId, form }: { formId: string; form: Form }) {
   const ordered = form.questions.slice().sort((a, b) => a.order - b.order);
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: 4, px: 2 }}>
+    <Box
+      sx={{ minHeight: "100vh", bgcolor: "background.default", py: 4, px: 2 }}
+    >
       <Box sx={{ maxWidth: 860, mx: "auto" }}>
         <FormHeaderPreview form={form} />
         <Box sx={{ height: 16 }} />
@@ -72,7 +79,10 @@ function PreviewFormContent({ formId, form }: { formId: string; form: Form }) {
             <Alert severity="success" sx={{ mb: 2 }}>
               Response recorded.
             </Alert>
-            <Button variant="contained" onClick={() => router.push(`/forms/${formId}/responses`)}>
+            <Button
+              variant="contained"
+              onClick={() => router.push(`/forms/${formId}/responses`)}
+            >
               View responses
             </Button>
             <Button sx={{ ml: 1 }} onClick={() => setSubmitted(false)}>
@@ -93,11 +103,11 @@ function PreviewFormContent({ formId, form }: { formId: string; form: Form }) {
                 {ordered.map((q) => (
                   <QuestionPreview key={q.id} question={q} />
                 ))}
-                <Paper variant="outlined" sx={{ p: 2 }}>
+                <Box sx={{ p: 2 }}>
                   <Button type="submit" variant="contained">
                     Submit
                   </Button>
-                </Paper>
+                </Box>
               </Stack>
             </form>
           </FormProvider>
@@ -109,7 +119,10 @@ function PreviewFormContent({ formId, form }: { formId: string; form: Form }) {
 
 function FormHeaderPreview({ form }: { form: Form }) {
   return (
-    <Paper variant="outlined" sx={{ p: 3, borderTop: 6, borderTopColor: "primary.main" }}>
+    <Paper
+      variant="outlined"
+      sx={{ p: 3, borderTop: 6, borderTopColor: "primary.main" }}
+    >
       <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
         {form.title || "Untitled form"}
       </Typography>
@@ -123,8 +136,11 @@ function FormHeaderPreview({ form }: { form: Form }) {
 }
 
 function QuestionPreview({ question }: { question: Question }) {
-  const { control, register, formState } = useFormContext<Record<string, unknown>>();
-  const error = (formState.errors as Record<string, { message?: string }>)[question.id]?.message;
+  const { control, register, formState } =
+    useFormContext<Record<string, unknown>>();
+  const error = (formState.errors as Record<string, { message?: string }>)[
+    question.id
+  ]?.message;
 
   if (question.type === "section_divider") {
     return (
@@ -166,10 +182,18 @@ function QuestionPreview({ question }: { question: Question }) {
           question.type === "phone") && (
           <TextField
             {...register(question.id)}
-            placeholder={"placeholder" in question ? question.placeholder : undefined}
+            placeholder={
+              "placeholder" in question ? question.placeholder : undefined
+            }
             multiline={question.type === "long_text"}
             minRows={question.type === "long_text" ? 3 : undefined}
-            type={question.type === "email" ? "email" : question.type === "phone" ? "tel" : "text"}
+            type={
+              question.type === "email"
+                ? "email"
+                : question.type === "phone"
+                  ? "tel"
+                  : "text"
+            }
             error={Boolean(error)}
             helperText={error}
             fullWidth
@@ -180,7 +204,9 @@ function QuestionPreview({ question }: { question: Question }) {
           <TextField
             {...register(question.id, { valueAsNumber: true })}
             type="number"
-            placeholder={"placeholder" in question ? question.placeholder : undefined}
+            placeholder={
+              "placeholder" in question ? question.placeholder : undefined
+            }
             error={Boolean(error)}
             helperText={error}
             fullWidth
@@ -198,7 +224,8 @@ function QuestionPreview({ question }: { question: Question }) {
           />
         )}
 
-        {(question.type === "multiple_choice" || question.type === "yes_no") && (
+        {(question.type === "multiple_choice" ||
+          question.type === "yes_no") && (
           <Controller
             name={question.id}
             control={control}
@@ -207,11 +234,26 @@ function QuestionPreview({ question }: { question: Question }) {
                 <RadioGroup {...field}>
                   {question.type === "multiple_choice"
                     ? question.options.map((o) => (
-                        <FormControlLabel key={o.id} value={o.label} control={<Radio />} label={o.label} />
+                        <FormControlLabel
+                          key={o.id}
+                          value={o.label}
+                          control={<Radio />}
+                          label={o.label}
+                        />
                       ))
                     : [
-                        <FormControlLabel key="yes" value="yes" control={<Radio />} label={question.yesLabel ?? "Yes"} />,
-                        <FormControlLabel key="no" value="no" control={<Radio />} label={question.noLabel ?? "No"} />,
+                        <FormControlLabel
+                          key="yes"
+                          value="yes"
+                          control={<Radio />}
+                          label={question.yesLabel ?? "Yes"}
+                        />,
+                        <FormControlLabel
+                          key="no"
+                          value="no"
+                          control={<Radio />}
+                          label={question.noLabel ?? "No"}
+                        />,
                       ]}
                 </RadioGroup>
                 {error ? (
@@ -229,7 +271,9 @@ function QuestionPreview({ question }: { question: Question }) {
             name={question.id}
             control={control}
             render={({ field }) => {
-              const current = Array.isArray(field.value) ? (field.value as string[]) : [];
+              const current = Array.isArray(field.value)
+                ? (field.value as string[])
+                : [];
               return (
                 <FormControl error={Boolean(error)}>
                   <FormLabel sx={{ display: "none" }}>Options</FormLabel>
@@ -321,11 +365,17 @@ function QuestionPreview({ question }: { question: Question }) {
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(Number(e.target.value))}
                 >
-                  {Array.from({ length: question.max - question.min + 1 }, (_, i) => question.min + i).map(
-                    (v) => (
-                      <FormControlLabel key={v} value={String(v)} control={<Radio />} label={String(v)} />
-                    )
-                  )}
+                  {Array.from(
+                    { length: question.max - question.min + 1 },
+                    (_, i) => question.min + i,
+                  ).map((v) => (
+                    <FormControlLabel
+                      key={v}
+                      value={String(v)}
+                      control={<Radio />}
+                      label={String(v)}
+                    />
+                  ))}
                 </RadioGroup>
                 <Divider sx={{ my: 1 }} />
                 <Box sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -350,7 +400,10 @@ function QuestionPreview({ question }: { question: Question }) {
   );
 }
 
-function toAnswers(questions: Question[], values: Record<string, unknown>): Answer[] {
+function toAnswers(
+  questions: Question[],
+  values: Record<string, unknown>,
+): Answer[] {
   const answers: Answer[] = [];
 
   for (const q of questions) {
@@ -363,11 +416,21 @@ function toAnswers(questions: Question[], values: Record<string, unknown>): Answ
       continue;
     }
     if (q.type === "checkbox") {
-      answers.push({ questionId: q.id, value: Array.isArray(v) ? (v as string[]) : [] });
+      answers.push({
+        questionId: q.id,
+        value: Array.isArray(v) ? (v as string[]) : [],
+      });
       continue;
     }
-    if (q.type === "number" || q.type === "rating" || q.type === "linear_scale") {
-      answers.push({ questionId: q.id, value: typeof v === "number" ? v : null });
+    if (
+      q.type === "number" ||
+      q.type === "rating" ||
+      q.type === "linear_scale"
+    ) {
+      answers.push({
+        questionId: q.id,
+        value: typeof v === "number" ? v : null,
+      });
       continue;
     }
     answers.push({ questionId: q.id, value: typeof v === "string" ? v : "" });

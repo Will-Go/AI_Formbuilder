@@ -4,8 +4,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import AddIcon from "@mui/icons-material/Add";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useSortable } from "@dnd-kit/react/sortable";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import FormControl from "@mui/material/FormControl";
@@ -37,34 +36,54 @@ function preserveCommonFields(prev: Question, next: Question): Question {
   };
 }
 
-export default function QuestionCard({
-  formId,
-  question,
-  selected,
-  onSelect,
-}: {
+interface QuestionCardProps {
   formId: string;
   question: Question;
   selected: boolean;
   onSelect: () => void;
-}) {
-  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
+  index: number;
+}
+export default function QuestionCard({
+  index,
+  formId,
+  question,
+  selected,
+  onSelect,
+}: QuestionCardProps) {
+  const {
+    ref: setRef,
+    handleRef,
+    isDragging,
+  } = useSortable({
     id: question.id,
+    index,
+    data: {
+      source: "canvas-question",
+      questionId: question.id,
+      index,
+    },
   });
   const updateQuestion = useFormsStore((s) => s.updateQuestion);
   const deleteQuestion = useFormsStore((s) => s.deleteQuestion);
   const duplicateQuestion = useFormsStore((s) => s.duplicateQuestion);
 
   const optionLabel =
-    "options" in question && Array.isArray(question.options) ? question.options : null;
+    "options" in question && Array.isArray(question.options)
+      ? question.options
+      : null;
 
-  const typeLabel = QUESTION_TYPE_META.find((m) => m.type === question.type)?.label ?? question.type;
+  const typeLabel =
+    QUESTION_TYPE_META.find((m) => m.type === question.type)?.label ??
+    question.type;
 
   const addOption = () => {
     if (!("options" in question)) return;
     updateQuestion(formId, question.id, (prev) => {
       if (!("options" in prev)) return prev;
-      const nextOpt: Option = { id: createId("opt"), label: `Option ${prev.options.length + 1}` };
+      const nextOpt: Option = {
+        id: createId("opt"),
+        label: `Option ${prev.options.length + 1}`,
+      };
       return { ...prev, options: [...prev.options, nextOpt] };
     });
   };
@@ -75,7 +94,9 @@ export default function QuestionCard({
       if (!("options" in prev)) return prev;
       return {
         ...prev,
-        options: prev.options.map((o) => (o.id === optId ? { ...o, label } : o)),
+        options: prev.options.map((o) =>
+          o.id === optId ? { ...o, label } : o,
+        ),
       };
     });
   };
@@ -93,7 +114,7 @@ export default function QuestionCard({
 
   return (
     <Paper
-      ref={setNodeRef}
+      ref={setRef}
       variant="outlined"
       onClick={onSelect}
       sx={{
@@ -102,18 +123,13 @@ export default function QuestionCard({
         borderLeft: selected ? 5 : 1,
         borderLeftColor: selected ? "primary.main" : "divider",
       }}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.6 : 1,
-      }}
+      data-shadow={isDragging || undefined}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <IconButton
+          ref={handleRef}
           aria-label="Drag"
           size="small"
-          {...attributes}
-          {...listeners}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -122,7 +138,11 @@ export default function QuestionCard({
         >
           <DragIndicatorIcon sx={{ color: "text.disabled" }} fontSize="small" />
         </IconButton>
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontWeight: 700 }}
+        >
           {typeLabel}
         </Typography>
         <Box sx={{ flex: 1 }} />
@@ -132,7 +152,9 @@ export default function QuestionCard({
             onChange={(e) => {
               const nextType = e.target.value as QuestionType;
               const next = createQuestionByType(nextType, question.order);
-              updateQuestion(formId, question.id, (prev) => preserveCommonFields(prev, next));
+              updateQuestion(formId, question.id, (prev) =>
+                preserveCommonFields(prev, next),
+              );
             }}
             sx={{ minWidth: 180 }}
           >
@@ -150,7 +172,10 @@ export default function QuestionCard({
           variant="standard"
           value={question.label}
           onChange={(e) =>
-            updateQuestion(formId, question.id, (prev) => ({ ...prev, label: e.target.value }))
+            updateQuestion(formId, question.id, (prev) => ({
+              ...prev,
+              label: e.target.value,
+            }))
           }
           placeholder="Question"
           InputProps={{ sx: { fontSize: 18, fontWeight: 650 } }}
@@ -159,7 +184,10 @@ export default function QuestionCard({
           variant="standard"
           value={question.description ?? ""}
           onChange={(e) =>
-            updateQuestion(formId, question.id, (prev) => ({ ...prev, description: e.target.value }))
+            updateQuestion(formId, question.id, (prev) => ({
+              ...prev,
+              description: e.target.value,
+            }))
           }
           placeholder="Description (optional)"
           multiline
@@ -185,8 +213,15 @@ export default function QuestionCard({
           <Box sx={{ mt: 1 }}>
             <Stack spacing={1}>
               {optionLabel.map((o, idx) => (
-                <Box key={o.id} sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ width: 24 }}>
+                <Box
+                  key={o.id}
+                  sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ width: 24 }}
+                  >
                     {idx + 1}.
                   </Typography>
                   <TextField
@@ -196,7 +231,10 @@ export default function QuestionCard({
                     onChange={(e) => updateOption(o.id, e.target.value)}
                     fullWidth
                   />
-                  <IconButton aria-label="Delete option" onClick={() => deleteOption(o.id)}>
+                  <IconButton
+                    aria-label="Delete option"
+                    onClick={() => deleteOption(o.id)}
+                  >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Box>
@@ -205,7 +243,12 @@ export default function QuestionCard({
                 <IconButton aria-label="Add option" onClick={addOption}>
                   <AddIcon fontSize="small" />
                 </IconButton>
-                <Typography component="span" variant="body2" color="primary.main" sx={{ ml: 0.5 }}>
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="primary.main"
+                  sx={{ ml: 0.5 }}
+                >
                   Add option
                 </Typography>
               </Box>
@@ -241,7 +284,12 @@ export default function QuestionCard({
               const max = Number(e.target.value);
               updateQuestion(formId, question.id, (prev) => {
                 if (prev.type !== "rating") return prev;
-                return { ...prev, max: Number.isFinite(max) ? Math.max(2, Math.min(10, max)) : prev.max };
+                return {
+                  ...prev,
+                  max: Number.isFinite(max)
+                    ? Math.max(2, Math.min(10, max))
+                    : prev.max,
+                };
               });
             }}
             label="Max rating"
@@ -278,7 +326,10 @@ export default function QuestionCard({
                 updateQuestion(formId, question.id, (prev) => {
                   if (prev.type !== "linear_scale") return prev;
                   if (!Number.isFinite(max)) return prev;
-                  return { ...prev, max: Math.max(prev.min + 1, Math.min(10, max)) };
+                  return {
+                    ...prev,
+                    max: Math.max(prev.min + 1, Math.min(10, max)),
+                  };
                 });
               }}
               label="Max"
@@ -320,11 +371,24 @@ export default function QuestionCard({
       </Stack>
 
       <Divider sx={{ my: 2 }} />
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
-        <IconButton aria-label="Duplicate" onClick={() => duplicateQuestion(formId, question.id)}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 1,
+        }}
+      >
+        <IconButton
+          aria-label="Duplicate"
+          onClick={() => duplicateQuestion(formId, question.id)}
+        >
           <ContentCopyIcon fontSize="small" />
         </IconButton>
-        <IconButton aria-label="Delete" onClick={() => deleteQuestion(formId, question.id)}>
+        <IconButton
+          aria-label="Delete"
+          onClick={() => deleteQuestion(formId, question.id)}
+        >
           <DeleteIcon fontSize="small" />
         </IconButton>
         <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />

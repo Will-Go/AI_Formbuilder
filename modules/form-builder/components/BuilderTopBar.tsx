@@ -11,13 +11,13 @@ import IconButton from "@mui/material/IconButton";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import type { Form } from "@/shared/types/forms";
 import InputBase from "@mui/material/InputBase";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import React from "react";
+import Link from "next/link";
 
 export default function BuilderTopBar({ form }: { form: Form }) {
   const router = useRouter();
@@ -55,6 +55,8 @@ export default function BuilderTopBar({ form }: { form: Form }) {
         borderBottom: "1px solid",
         borderColor: "divider",
         backdropFilter: "blur(10px)",
+        height: 112,
+        maxHeight: 112,
       }}
     >
       <Toolbar sx={{ gap: 1 }}>
@@ -96,12 +98,11 @@ export default function BuilderTopBar({ form }: { form: Form }) {
           />
         </Box>
         <Box sx={{ flex: 1 }} />
-        <IconButton
-          aria-label="Preview"
-          onClick={() => router.push(`/forms/${formId}/preview`)}
-        >
-          <PreviewIcon />
-        </IconButton>
+        <Link href={`/forms/${formId}/preview`} target="_blank">
+          <IconButton aria-label="Preview">
+            <PreviewIcon />
+          </IconButton>
+        </Link>
         <Button
           variant="outlined"
           startIcon={<ShareIcon />}

@@ -1,12 +1,7 @@
 "use client";
 
-import { useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { KeyboardSensor, PointerSensor } from "@dnd-kit/react";
 
 export function useDndSensors() {
-  return useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    })
-  );
+  return [PointerSensor.configure({}), KeyboardSensor.configure({})];
 }
-

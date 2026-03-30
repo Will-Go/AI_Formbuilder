@@ -11,6 +11,7 @@ type FormsState = {
   forms: Form[];
   selectedQuestionIdByForm: Record<string, string | null>;
   viewMode: "grid" | "list";
+  isPaletteOpen: boolean;
   createForm: (
     initial?: Partial<Pick<Form, "title" | "description">>,
   ) => string;
@@ -20,7 +21,11 @@ type FormsState = {
     formId: string,
     patch: Partial<Pick<Form, "title" | "description" | "published" | "theme">>,
   ) => void;
-  addQuestion: (formId: string, type: QuestionType) => string | null;
+  addQuestion: (
+    formId: string,
+    type: QuestionType,
+    index?: number,
+  ) => string | null;
   updateQuestion: (
     formId: string,
     questionId: string,
@@ -28,17 +33,19 @@ type FormsState = {
   ) => void;
   deleteQuestion: (formId: string, questionId: string) => void;
   duplicateQuestion: (formId: string, questionId: string) => string | null;
-  reorderQuestions: (formId: string, activeId: string, overId: string) => void;
+  reorderQuestions: (formId: string, questionIds: string[]) => void;
   selectQuestion: (formId: string, questionId: string | null) => void;
   getFormById: (formId: string) => Form | undefined;
   setViewMode: (mode: "grid" | "list") => void;
+  togglePalette: () => void;
 };
 
 function normalizeOrders(questions: Question[]): Question[] {
-  return questions
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .map((q, idx) => ({ ...q, order: idx }));
+  return reindexOrders(questions.slice().sort((a, b) => a.order - b.order));
+}
+
+function reindexOrders(questions: Question[]): Question[] {
+  return questions.map((q, idx) => ({ ...q, order: idx }));
 }
 
 function cloneQuestion(q: Question, order: number): Question {
@@ -58,6 +65,7 @@ export const useFormsStore = create<FormsState>()(
       forms: [],
       selectedQuestionIdByForm: {},
       viewMode: "grid", // Default view mode
+      isPaletteOpen: true,
       createForm: (initial) => {
         const form = createBlankForm();
         const next: Form = {
@@ -121,21 +129,30 @@ export const useFormsStore = create<FormsState>()(
           ),
         }));
       },
-      addQuestion: (formId, type) => {
+      addQuestion: (formId, type, index) => {
         const form = get().forms.find((f) => f.id === formId);
         if (!form) return null;
         const nextOrder = form.questions.length;
         const q = createQuestionByType(type, nextOrder);
         set((s) => ({
-          forms: s.forms.map((f) =>
-            f.id === formId
-              ? {
-                  ...f,
-                  updatedAt: nowIso(),
-                  questions: normalizeOrders([...f.questions, q]),
-                }
-              : f,
-          ),
+          forms: s.forms.map((f) => {
+            if (f.id !== formId) return f;
+            let nextQuestions = [...f.questions, q];
+            if (typeof index === "number") {
+              const ordered = f.questions
+                .slice()
+                .sort((a, b) => a.order - b.order);
+              ordered.splice(index, 0, q);
+              nextQuestions = reindexOrders(ordered);
+            } else {
+              nextQuestions = normalizeOrders(nextQuestions);
+            }
+            return {
+              ...f,
+              updatedAt: nowIso(),
+              questions: nextQuestions,
+            };
+          }),
           selectedQuestionIdByForm: {
             ...s.selectedQuestionIdByForm,
             [formId]: q.id,
@@ -201,21 +218,22 @@ export const useFormsStore = create<FormsState>()(
         }));
         return cloned.id;
       },
-      reorderQuestions: (formId, activeId, overId) => {
-        if (activeId === overId) return;
+      reorderQuestions: (formId, questionIds) => {
         set((s) => ({
           forms: s.forms.map((f) => {
             if (f.id !== formId) return f;
-            const from = f.questions.findIndex((q) => q.id === activeId);
-            const to = f.questions.findIndex((q) => q.id === overId);
-            if (from < 0 || to < 0) return f;
-            const next = f.questions.slice();
-            const [moved] = next.splice(from, 1);
-            next.splice(to, 0, moved);
+            const map = Object.fromEntries(questionIds.map((id, i) => [id, i]));
+            const next = f.questions.map((q) => {
+              const newOrder = map[q.id];
+              if (newOrder !== undefined && newOrder !== q.order) {
+                return { ...q, order: newOrder };
+              }
+              return q;
+            });
             return {
               ...f,
               updatedAt: nowIso(),
-              questions: normalizeOrders(next),
+              questions: next.sort((a, b) => a.order - b.order),
             };
           }),
         }));
@@ -230,11 +248,16 @@ export const useFormsStore = create<FormsState>()(
       },
       getFormById: (formId) => get().forms.find((f) => f.id === formId),
       setViewMode: (mode) => set({ viewMode: mode }),
+      togglePalette: () => set((s) => ({ isPaletteOpen: !s.isPaletteOpen })),
     }),
     {
       name: "ai_form:forms_store:v1",
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ forms: s.forms, viewMode: s.viewMode }),
+      partialize: (s) => ({
+        forms: s.forms,
+        viewMode: s.viewMode,
+        isPaletteOpen: s.isPaletteOpen,
+      }),
       version: 1,
     },
   ),

@@ -25,7 +25,7 @@ export const muiTheme = createTheme({
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: { textTransform: "none", borderRadius: 9999 },
+        root: { textTransform: "none" },
       },
     },
     MuiTab: {
