@@ -19,24 +19,26 @@ import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import React from "react";
 import Link from "next/link";
 
+import { stripHtml } from "@/shared/utils/html";
+
 export default function BuilderTopBar({ form }: { form: Form }) {
   const router = useRouter();
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
   const updateFormMeta = useFormsStore((s) => s.updateFormMeta);
 
-  const [title, setTitle] = React.useState(form.title);
+  const [title, setTitle] = React.useState(() => stripHtml(form.title));
 
   React.useEffect(() => {
-    setTitle(form.title);
+    setTitle(stripHtml(form.title));
   }, [form.title]);
 
   const handleTitleBlur = () => {
     const trimmed = title.trim();
-    if (trimmed && trimmed !== form.title) {
+    if (trimmed && trimmed !== stripHtml(form.title)) {
       updateFormMeta(formId, { title: trimmed });
     } else {
-      setTitle(form.title);
+      setTitle(stripHtml(form.title));
     }
   };
 

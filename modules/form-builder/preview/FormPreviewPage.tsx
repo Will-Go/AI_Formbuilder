@@ -32,6 +32,8 @@ import { useResponsesStore } from "@/modules/form-responses/store/responsesStore
 import type { Answer } from "@/shared/types/responses";
 import type { Form, Question } from "@/shared/types/forms";
 import { buildResponseSchema } from "./buildResponseSchema";
+import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
+import "@/shared/styles/tiptap.css";
 
 export default function FormPreviewPage() {
   const router = useRouter();
@@ -123,13 +125,16 @@ function FormHeaderPreview({ form }: { form: Form }) {
       variant="outlined"
       sx={{ p: 3, borderTop: 6, borderTopColor: "primary.main" }}
     >
-      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-        {form.title || "Untitled form"}
-      </Typography>
+      <Box sx={{ mb: 1 }}>
+        <TextHTMLDisplayer
+          html={form.title || "Untitled form"}
+          textClassName="text-3xl "
+        />
+      </Box>
       {form.description ? (
-        <Typography variant="body1" color="text.secondary">
-          {form.description}
-        </Typography>
+        <Box sx={{ color: "text.secondary" }}>
+          <TextHTMLDisplayer html={form.description} />
+        </Box>
       ) : null}
     </Paper>
   );
@@ -145,9 +150,10 @@ function QuestionPreview({ question }: { question: Question }) {
   if (question.type === "section_divider") {
     return (
       <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          {question.label}
-        </Typography>
+        <TextHTMLDisplayer
+          html={question.label}
+          textClassName="text-xl font-extrabold"
+        />
       </Paper>
     );
   }
@@ -155,9 +161,9 @@ function QuestionPreview({ question }: { question: Question }) {
   if (question.type === "paragraph") {
     return (
       <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="body1" color="text.secondary">
-          {question.text || question.label}
-        </Typography>
+        <Box sx={{ color: "text.secondary" }}>
+          <TextHTMLDisplayer html={question.text || question.label} />
+        </Box>
       </Paper>
     );
   }
@@ -166,13 +172,24 @@ function QuestionPreview({ question }: { question: Question }) {
     <Paper variant="outlined" sx={{ p: 3 }}>
       <Stack spacing={1.5}>
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 750 }}>
-            {question.label} {question.required ? "*" : ""}
-          </Typography>
+          <Box sx={{ display: "flex", gap: 0.5, alignItems: "flex-start" }}>
+            <TextHTMLDisplayer
+              html={question.label}
+              textClassName="text-[1.1rem] font-bold"
+            />
+            {question.required && (
+              <Typography color="error" sx={{ mt: 0.5 }}>
+                *
+              </Typography>
+            )}
+          </Box>
           {question.description ? (
-            <Typography variant="body2" color="text.secondary">
-              {question.description}
-            </Typography>
+            <Box sx={{ mt: 0.5, color: "text.secondary" }}>
+              <TextHTMLDisplayer
+                html={question.description}
+                textClassName="text-sm"
+              />
+            </Box>
           ) : null}
         </Box>
 

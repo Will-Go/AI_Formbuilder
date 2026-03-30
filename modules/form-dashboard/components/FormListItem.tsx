@@ -10,6 +10,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import type { Form } from "@/shared/types/forms";
+import { stripHtml } from "@/shared/utils/html";
 
 dayjs.extend(isToday);
 
@@ -53,7 +54,7 @@ export default function FormListItem({
           sx={{ fontWeight: 500, mr: 1, fontSize: "0.8125rem" }}
           noWrap
         >
-          {form.title || "Untitled form"}
+          {stripHtml(form.title) || "Untitled form"}
         </Typography>
       </Box>
       <Box sx={{ flex: 1, textAlign: "left" }}>

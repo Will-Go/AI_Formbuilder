@@ -14,6 +14,7 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 import type { Form } from "@/shared/types/forms";
 import { formatShortDate } from "@/shared/utils/dateFormatter";
+import { stripHtml } from "@/shared/utils/html";
 
 export default function FormCard({
   form,
@@ -57,7 +58,7 @@ export default function FormCard({
           >
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
-                {form.title || "Untitled form"}
+                {stripHtml(form.title) || "Untitled form"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Updated {formatShortDate(form.updatedAt)} • {responseCount}{" "}

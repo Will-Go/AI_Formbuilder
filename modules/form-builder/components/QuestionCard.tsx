@@ -23,6 +23,7 @@ import { createQuestionByType } from "@/constants/defaults";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { Option, Question, QuestionType } from "@/shared/types/forms";
 import { createId } from "@/shared/utils/id";
+import RichTextEditor from "@/shared/components/RichTextEditor";
 
 function preserveCommonFields(prev: Question, next: Question): Question {
   return {
@@ -178,31 +179,64 @@ export default function QuestionCard({
       </Box>
 
       <Stack spacing={1.5}>
-        <TextField
-          variant="standard"
-          value={question.label}
-          onChange={(e) =>
-            updateQuestion(formId, question.id, (prev) => ({
-              ...prev,
-              label: e.target.value,
-            }))
-          }
-          placeholder="Question"
-          InputProps={{ sx: { fontSize: 18, fontWeight: 650 } }}
-        />
-        <TextField
-          variant="standard"
-          value={question.description ?? ""}
-          onChange={(e) =>
-            updateQuestion(formId, question.id, (prev) => ({
-              ...prev,
-              description: e.target.value,
-            }))
-          }
-          placeholder="Description (optional)"
-          multiline
-          InputProps={{ sx: { fontSize: 13 } }}
-        />
+        {question.type === "section_divider" ||
+        question.type === "paragraph" ? (
+          <RichTextEditor
+            value={question.label}
+            onChange={(value) =>
+              updateQuestion(formId, question.id, (prev) => ({
+                ...prev,
+                label: value,
+              }))
+            }
+            placeholder="Question"
+            allowLists={false}
+            fontSize={18}
+            fontWeight={650}
+          />
+        ) : (
+          <TextField
+            variant="standard"
+            value={question.label}
+            onChange={(e) =>
+              updateQuestion(formId, question.id, (prev) => ({
+                ...prev,
+                label: e.target.value,
+              }))
+            }
+            placeholder="Question"
+            InputProps={{ sx: { fontSize: 18, fontWeight: 650 } }}
+          />
+        )}
+        {question.type === "section_divider" ||
+        question.type === "paragraph" ? (
+          <RichTextEditor
+            value={question.description ?? ""}
+            onChange={(value) =>
+              updateQuestion(formId, question.id, (prev) => ({
+                ...prev,
+                description: value,
+              }))
+            }
+            placeholder="Description (optional)"
+            allowLists={true}
+            fontSize={13}
+          />
+        ) : (
+          <TextField
+            variant="standard"
+            value={question.description ?? ""}
+            onChange={(e) =>
+              updateQuestion(formId, question.id, (prev) => ({
+                ...prev,
+                description: e.target.value,
+              }))
+            }
+            placeholder="Description (optional)"
+            multiline
+            InputProps={{ sx: { fontSize: 13 } }}
+          />
+        )}
 
         {"placeholder" in question ? (
           <TextField
@@ -267,19 +301,17 @@ export default function QuestionCard({
         ) : null}
 
         {question.type === "paragraph" ? (
-          <TextField
-            size="small"
-            variant="outlined"
-            multiline
-            minRows={3}
+          <RichTextEditor
             value={question.text ?? ""}
-            onChange={(e) =>
+            onChange={(value) =>
               updateQuestion(formId, question.id, (prev) => {
                 if (prev.type !== "paragraph") return prev;
-                return { ...prev, text: e.target.value };
+                return { ...prev, text: value };
               })
             }
             placeholder="Text"
+            allowLists={true}
+            fontSize={14}
           />
         ) : null}
 

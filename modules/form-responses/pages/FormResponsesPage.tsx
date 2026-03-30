@@ -17,6 +17,7 @@ import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import { useResponsesStore } from "../store/responsesStore";
 import ResponsesTable from "../components/ResponsesTable";
 import { downloadJson } from "@/shared/utils/downloadJson";
+import { stripHtml } from "@/shared/utils/html";
 
 export default function FormResponsesPage() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function FormResponsesPage() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="subtitle1" sx={{ fontWeight: 800 }} noWrap>
-            {form.title || "Untitled form"}
+            {stripHtml(form.title) || "Untitled form"}
           </Typography>
           <Box sx={{ flex: 1 }} />
           <Button
