@@ -17,7 +17,7 @@ export function resolveCanvasDropIndex(
 ): number | null {
   if (!overId) return null;
   if (overId === `canvas-drop:${formId}`) return orderedQuestionIds.length;
-  if (overId.startsWith("canvas-slot:")) {
+  if (overId.startsWith("canvas-slot:") || overId.startsWith("preview-slot:")) {
     const maybeIndex = Number(overId.split(":")[1]);
     return Number.isInteger(maybeIndex) ? maybeIndex : null;
   }

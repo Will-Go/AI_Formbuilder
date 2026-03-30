@@ -42,6 +42,7 @@ interface QuestionCardProps {
   selected: boolean;
   onSelect: () => void;
   index: number;
+  isPreview?: boolean;
 }
 export default function QuestionCard({
   index,
@@ -49,6 +50,7 @@ export default function QuestionCard({
   question,
   selected,
   onSelect,
+  isPreview,
 }: QuestionCardProps) {
   const {
     ref: setRef,
@@ -57,6 +59,7 @@ export default function QuestionCard({
   } = useSortable({
     id: question.id,
     index,
+    disabled: isPreview,
     data: {
       source: "canvas-question",
       questionId: question.id,
@@ -114,20 +117,27 @@ export default function QuestionCard({
 
   return (
     <Paper
-      ref={setRef}
+      ref={isPreview ? undefined : setRef}
       variant="outlined"
-      onClick={onSelect}
+      onClick={isPreview ? undefined : onSelect}
       sx={{
         p: 2.5,
         position: "relative",
         borderLeft: selected ? 5 : 1,
         borderLeftColor: selected ? "primary.main" : "divider",
+        ...(isPreview && {
+          borderStyle: "dashed",
+          borderWidth: 2,
+          borderColor: "primary.main",
+          opacity: 0.6,
+          pointerEvents: "none",
+        }),
       }}
       data-shadow={isDragging || undefined}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <IconButton
-          ref={handleRef}
+          ref={isPreview ? undefined : handleRef}
           aria-label="Drag"
           size="small"
           onClick={(e) => {

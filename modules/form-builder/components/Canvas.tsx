@@ -11,6 +11,7 @@ import { closestCenter } from "@dnd-kit/collision";
 import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
 
+import { createQuestionByType } from "@/constants/defaults";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { QuestionType } from "@/shared/types/forms";
 import FormHeaderCard from "./FormHeaderCard";
@@ -51,6 +52,25 @@ function CanvasDropSlot({
   );
 }
 
+function CanvasPreviewSlot({
+  index,
+  children,
+}: {
+  index: number;
+  children: React.ReactNode;
+}) {
+  const { ref } = useDroppable({
+    id: `preview-slot:${index}`,
+    collisionDetector: closestCenter,
+    data: {
+      dropType: "preview-slot",
+      index,
+    },
+  });
+
+  return <Box ref={ref}>{children}</Box>;
+}
+
 export default function Canvas({
   formId,
   selectedQuestionId,
@@ -76,6 +96,13 @@ export default function Canvas({
       dropType: "canvas-container",
     },
   });
+
+  const previewQuestion = React.useMemo(() => {
+    if (paletteDragType && dropIndex !== null && !isInvalidDrop) {
+      return createQuestionByType(paletteDragType, dropIndex);
+    }
+    return null;
+  }, [paletteDragType, dropIndex, isInvalidDrop]);
 
   if (!form) return null;
 
@@ -107,10 +134,39 @@ export default function Canvas({
           <CanvasDropSlot
             index={0}
             active={paletteDragType !== null}
-            highlighted={dropIndex === 0}
+            highlighted={dropIndex === 0 && !previewQuestion}
           />
           <Stack spacing={2}>
             <AnimatePresence initial={false} mode="popLayout">
+              {dropIndex === 0 && previewQuestion ? (
+                <motion.div
+                  key="preview-0"
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.95,
+                    height: 0,
+                    marginTop: 0,
+                    marginBottom: 0,
+                    overflow: "hidden",
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <CanvasPreviewSlot index={0}>
+                    <QuestionCard
+                      index={0}
+                      formId={formId}
+                      question={previewQuestion}
+                      selected={false}
+                      onSelect={() => {}}
+                      isPreview
+                    />
+                  </CanvasPreviewSlot>
+                </motion.div>
+              ) : null}
+
               {ordered.map((q, idx) => (
                 <React.Fragment key={q.id}>
                   <motion.div
@@ -138,8 +194,36 @@ export default function Canvas({
                   <CanvasDropSlot
                     index={idx + 1}
                     active={paletteDragType !== null}
-                    highlighted={dropIndex === idx + 1}
+                    highlighted={dropIndex === idx + 1 && !previewQuestion}
                   />
+                  {dropIndex === idx + 1 && previewQuestion ? (
+                    <motion.div
+                      key={`preview-${idx + 1}`}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.95,
+                        height: 0,
+                        marginTop: 0,
+                        marginBottom: 0,
+                        overflow: "hidden",
+                      }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <CanvasPreviewSlot index={idx + 1}>
+                        <QuestionCard
+                          index={idx + 1}
+                          formId={formId}
+                          question={previewQuestion}
+                          selected={false}
+                          onSelect={() => {}}
+                          isPreview
+                        />
+                      </CanvasPreviewSlot>
+                    </motion.div>
+                  ) : null}
                 </React.Fragment>
               ))}
             </AnimatePresence>
