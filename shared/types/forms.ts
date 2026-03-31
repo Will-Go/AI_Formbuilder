@@ -30,6 +30,13 @@ export type ThemeConfig = {
   primaryColor?: string;
 };
 
+export enum FormStatus {
+  DRAFT = "draft",
+  PUBLISHED = "published",
+  PRIVATE = "private",
+  CLOSED = "closed",
+}
+
 export type Option = {
   id: string;
   label: string;
@@ -166,10 +173,11 @@ export type Question =
 export type Form = {
   id: string;
   title: string;
+  authorId: string;
   description?: string;
   createdAt: IsoDateString;
   updatedAt: IsoDateString;
-  published: boolean;
+  status: FormStatus;
   theme?: ThemeConfig;
   questions: Question[];
   responseCount?: number;

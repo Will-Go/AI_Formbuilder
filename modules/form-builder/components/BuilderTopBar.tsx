@@ -16,8 +16,17 @@ import { useParams, useRouter } from "next/navigation";
 import type { Form } from "@/shared/types/forms";
 import InputBase from "@mui/material/InputBase";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { FormStatus } from "@/shared/types/forms";
+import { PublishDecisionDialog } from "./PublishDecisionDialog";
+import { ShareDialog } from "./ShareDialog";
+import { PublishedOptionsDialog } from "./PublishedOptionsDialog";
+import { CopyFormLink } from "@/shared/components/CopyFormLink";
+import SendIcon from "@mui/icons-material/Send";
+import TuneIcon from "@mui/icons-material/Tune";
+
+import Chip from "@mui/material/Chip";
 
 import { stripHtml } from "@/shared/utils/html";
 
@@ -28,6 +37,11 @@ export default function BuilderTopBar({ form }: { form: Form }) {
   const updateFormMeta = useFormsStore((s) => s.updateFormMeta);
 
   const [title, setTitle] = React.useState(() => stripHtml(form.title));
+
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [publishedOptionsDialogOpen, setPublishedOptionsDialogOpen] =
+    useState(false);
 
   React.useEffect(() => {
     setTitle(stripHtml(form.title));
@@ -98,6 +112,33 @@ export default function BuilderTopBar({ form }: { form: Form }) {
               },
             }}
           />
+          {form.status === FormStatus.PUBLISHED && (
+            <Chip
+              label="Public"
+              size="small"
+              color="success"
+              variant="outlined"
+              sx={{ ml: 1 }}
+            />
+          )}
+          {form.status === FormStatus.PRIVATE && (
+            <Chip
+              label="Private"
+              size="small"
+              color="secondary"
+              variant="outlined"
+              sx={{ ml: 1 }}
+            />
+          )}
+          {form.status === FormStatus.CLOSED && (
+            <Chip
+              label="Closed"
+              size="small"
+              color="error"
+              variant="outlined"
+              sx={{ ml: 1 }}
+            />
+          )}
         </Box>
         <Box sx={{ flex: 1 }} />
         <Link href={`/forms/${formId}/preview`} target="_blank">
@@ -105,27 +146,39 @@ export default function BuilderTopBar({ form }: { form: Form }) {
             <PreviewIcon />
           </IconButton>
         </Link>
-        <Button
-          variant="outlined"
+        <CopyFormLink
+          formId={formId}
+          formStatus={form.status}
+          formTitle={title}
+          isPublished={form.status === FormStatus.PUBLISHED}
           startIcon={<ShareIcon />}
-          onClick={() => {
-            const url = `${window.location.origin}/forms/${formId}/preview`;
-            void navigator.clipboard.writeText(url);
-          }}
-          sx={{ display: { xs: "none", sm: "inline-flex" } }}
-        >
-          Share
-        </Button>
+          buttonText="Share"
+          variant="text"
+        />
+
         <Button
-          variant="contained"
-          onClick={() => router.push(`/forms/${formId}/preview`)}
-          sx={{ bgcolor: "primary.main" }}
+          startIcon={
+            form.status === FormStatus.PUBLISHED ? <TuneIcon /> : <SendIcon />
+          }
+          variant={
+            form.status === FormStatus.PUBLISHED ? "outlined" : "contained"
+          }
+          onClick={() => {
+            if (
+              form.status === FormStatus.PUBLISHED ||
+              form.status === FormStatus.PRIVATE
+            ) {
+              setPublishedOptionsDialogOpen(true);
+            } else {
+              setPublishDialogOpen(true);
+            }
+          }}
         >
-          Publish
+          {form.status === FormStatus.PUBLISHED ||
+          form.status === FormStatus.PRIVATE
+            ? "Published"
+            : "Publish"}
         </Button>
-        <IconButton aria-label="More">
-          <MoreVertIcon />
-        </IconButton>
       </Toolbar>
       <Box sx={{ px: { xs: 1.5, sm: 3 } }}>
         <Tabs value={0} aria-label="Builder tabs">
@@ -137,6 +190,53 @@ export default function BuilderTopBar({ form }: { form: Form }) {
           <Tab label="Settings" />
         </Tabs>
       </Box>
+
+      {/* Dialogs */}
+      <PublishDecisionDialog
+        open={publishDialogOpen}
+        onClose={() => setPublishDialogOpen(false)}
+        formId={formId}
+        formStatus={form.status}
+        onStatusChange={(status) => updateFormMeta(formId, { status })}
+        onOpenManage={() => {
+          setPublishDialogOpen(false);
+          setShareDialogOpen(true);
+        }}
+        onPublish={() => {
+          updateFormMeta(formId, { status: FormStatus.PUBLISHED });
+          setPublishDialogOpen(false);
+        }}
+      />
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        formId={formId}
+        formTitle={title}
+        formStatus={form.status}
+        onStatusChange={(status) => {
+          updateFormMeta(formId, { status });
+          if (
+            status === FormStatus.PUBLISHED ||
+            status === FormStatus.PRIVATE
+          ) {
+            // Already active/published
+          }
+        }}
+      />
+
+      <PublishedOptionsDialog
+        open={publishedOptionsDialogOpen}
+        onClose={() => setPublishedOptionsDialogOpen(false)}
+        formId={formId}
+        formTitle={title}
+        formStatus={form.status}
+        onStatusChange={(status) => updateFormMeta(formId, { status })}
+        onOpenManage={() => {
+          setPublishedOptionsDialogOpen(false);
+          setShareDialogOpen(true);
+        }}
+      />
     </AppBar>
   );
 }

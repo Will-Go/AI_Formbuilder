@@ -16,6 +16,7 @@ import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import React from "react";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
@@ -79,6 +80,9 @@ export default function QuestionCard({
   const typeLabel =
     QUESTION_TYPE_META.find((m) => m.type === question.type)?.label ??
     question.type;
+  const isSectionDivider = question.type === "section_divider";
+  const isRichTextEditable =
+    question.type === "section_divider" || question.type === "paragraph";
 
   const addOption = () => {
     if (!("options" in question)) return;
@@ -122,10 +126,22 @@ export default function QuestionCard({
       variant="outlined"
       onClick={isPreview ? undefined : onSelect}
       sx={{
-        p: 2.5,
+        p: isSectionDivider ? 3 : 2.5,
         position: "relative",
-        borderLeft: selected ? 5 : 1,
-        borderLeftColor: selected ? "primary.main" : "divider",
+        borderLeft: isSectionDivider ? 6 : selected ? 5 : 1,
+        borderLeftColor: isSectionDivider
+          ? selected
+            ? "primary.dark"
+            : "primary.main"
+          : selected
+            ? "primary.main"
+            : "divider",
+        borderColor: isSectionDivider ? "primary.light" : "divider",
+        bgcolor: isSectionDivider ? "primary.50" : "background.paper",
+        borderRadius: isSectionDivider ? 2.5 : 2,
+        boxShadow: isSectionDivider
+          ? "inset 0 0 0 1px rgba(25, 118, 210, 0.08)"
+          : "none",
         ...(isPreview && {
           borderStyle: "dashed",
           borderWidth: 2,
@@ -136,23 +152,45 @@ export default function QuestionCard({
       }}
       data-shadow={isDragging || undefined}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-        <IconButton
-          ref={isPreview ? undefined : handleRef}
-          aria-label="Drag"
-          size="small"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          sx={{ cursor: "grab" }}
-        >
-          <DragIndicatorIcon sx={{ color: "text.disabled" }} fontSize="small" />
-        </IconButton>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          mb: isSectionDivider ? 2.5 : 2,
+        }}
+      >
+        <Tooltip title="Drag to reorder" placement="top">
+          <IconButton
+            ref={isPreview ? undefined : handleRef}
+            aria-label="Drag"
+            size="small"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            sx={{ cursor: "grab" }}
+          >
+            <DragIndicatorIcon
+              sx={{ color: "text.disabled" }}
+              fontSize="small"
+            />
+          </IconButton>
+        </Tooltip>
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ fontWeight: 700 }}
+          color={isSectionDivider ? "primary.main" : "text.secondary"}
+          sx={{
+            fontWeight: isSectionDivider ? 800 : 700,
+            textTransform: isSectionDivider ? "uppercase" : "none",
+            letterSpacing: isSectionDivider ? 0.8 : 0,
+            px: isSectionDivider ? 1 : 0,
+            py: isSectionDivider ? 0.35 : 0,
+            borderRadius: isSectionDivider ? 1 : 0,
+            bgcolor: isSectionDivider
+              ? "rgba(25, 118, 210, 0.08)"
+              : "transparent",
+          }}
         >
           {typeLabel}
         </Typography>
@@ -178,9 +216,8 @@ export default function QuestionCard({
         </FormControl>
       </Box>
 
-      <Stack spacing={1.5}>
-        {question.type === "section_divider" ||
-        question.type === "paragraph" ? (
+      <Stack spacing={isSectionDivider ? 2 : 1.5}>
+        {isRichTextEditable ? (
           <RichTextEditor
             value={question.label}
             onChange={(value) =>
@@ -189,10 +226,10 @@ export default function QuestionCard({
                 label: value,
               }))
             }
-            placeholder="Question"
+            placeholder={isSectionDivider ? "Section title" : "Question"}
             allowLists={false}
-            fontSize={18}
-            fontWeight={650}
+            fontSize={isSectionDivider ? 22 : 18}
+            fontWeight={isSectionDivider ? 700 : 650}
           />
         ) : (
           <TextField
@@ -208,8 +245,7 @@ export default function QuestionCard({
             InputProps={{ sx: { fontSize: 18, fontWeight: 650 } }}
           />
         )}
-        {question.type === "section_divider" ||
-        question.type === "paragraph" ? (
+        {isRichTextEditable ? (
           <RichTextEditor
             value={question.description ?? ""}
             onChange={(value) =>
@@ -218,7 +254,11 @@ export default function QuestionCard({
                 description: value,
               }))
             }
-            placeholder="Description (optional)"
+            placeholder={
+              isSectionDivider
+                ? "Section description (optional)"
+                : "Description (optional)"
+            }
             allowLists={true}
             fontSize={13}
           />
@@ -275,18 +315,22 @@ export default function QuestionCard({
                     onChange={(e) => updateOption(o.id, e.target.value)}
                     fullWidth
                   />
-                  <IconButton
-                    aria-label="Delete option"
-                    onClick={() => deleteOption(o.id)}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+                  <Tooltip title="Delete option" placement="top">
+                    <IconButton
+                      aria-label="Delete option"
+                      onClick={() => deleteOption(o.id)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               ))}
               <Box>
-                <IconButton aria-label="Add option" onClick={addOption}>
-                  <AddIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Add option" placement="top">
+                  <IconButton aria-label="Add option" onClick={addOption}>
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
                 <Typography
                   component="span"
                   variant="body2"
@@ -412,27 +456,42 @@ export default function QuestionCard({
         ) : null}
       </Stack>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider
+        sx={{
+          my: 2,
+          borderColor: isSectionDivider ? "primary.light" : "divider",
+        }}
+      />
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-end",
           gap: 1,
+          bgcolor: isSectionDivider
+            ? "rgba(25, 118, 210, 0.04)"
+            : "transparent",
+          borderRadius: 1.5,
+          px: isSectionDivider ? 1 : 0,
+          py: isSectionDivider ? 0.5 : 0,
         }}
       >
-        <IconButton
-          aria-label="Duplicate"
-          onClick={() => duplicateQuestion(formId, question.id)}
-        >
-          <ContentCopyIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          aria-label="Delete"
-          onClick={() => deleteQuestion(formId, question.id)}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
+        <Tooltip title="Duplicate question" placement="top">
+          <IconButton
+            aria-label="Duplicate"
+            onClick={() => duplicateQuestion(formId, question.id)}
+          >
+            <ContentCopyIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Delete question" placement="top">
+          <IconButton
+            aria-label="Delete"
+            onClick={() => deleteQuestion(formId, question.id)}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
         <FormControlLabel
           control={

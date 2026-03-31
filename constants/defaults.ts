@@ -11,6 +11,7 @@ import type {
   ShortTextQuestion,
   YesNoQuestion,
 } from "@/shared/types/forms";
+import { FormStatus } from "@/shared/types/forms";
 import { createId } from "@/shared/utils/id";
 import { nowIso } from "@/shared/utils/dateFormatter";
 
@@ -19,11 +20,13 @@ export function createBlankForm(): Form {
   const formId = createId("form");
   return {
     id: formId,
+    // TODO: Add authorId when auth is implemented
+    authorId: "",
     title: "Untitled form",
     description: "",
     createdAt: now,
     updatedAt: now,
-    published: false,
+    status: FormStatus.DRAFT,
     questions: [createDefaultQuestion(0)],
   };
 }
@@ -47,7 +50,7 @@ export function createQuestionByType(
 ): Question {
   const base = {
     id: createId("q"),
-    label: "Untitled question",
+    label: "",
     description: "",
     required: false,
     order,

@@ -2,7 +2,12 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Form, Question, QuestionType } from "@/shared/types/forms";
+import {
+  FormStatus,
+  type Form,
+  type Question,
+  type QuestionType,
+} from "@/shared/types/forms";
 import { createBlankForm, createQuestionByType } from "@/constants/defaults";
 import { nowIso } from "@/shared/utils/dateFormatter";
 import { createId } from "@/shared/utils/id";
@@ -19,7 +24,7 @@ type FormsState = {
   deleteForm: (formId: string) => void;
   updateFormMeta: (
     formId: string,
-    patch: Partial<Pick<Form, "title" | "description" | "published" | "theme">>,
+    patch: Partial<Pick<Form, "title" | "description" | "status" | "theme">>,
   ) => void;
   addQuestion: (
     formId: string,
@@ -106,7 +111,7 @@ export const useFormsStore = create<FormsState>()(
           title: newTitle,
           createdAt: now,
           updatedAt: now,
-          published: false,
+          status: FormStatus.DRAFT,
           questions: normalizeOrders(
             src.questions.map((q, idx) => cloneQuestion(q, idx)),
           ),
@@ -258,7 +263,26 @@ export const useFormsStore = create<FormsState>()(
         viewMode: s.viewMode,
         isPaletteOpen: s.isPaletteOpen,
       }),
-      version: 1,
+      version: 2,
+      migrate: (persistedState, version) => {
+        if (version >= 2) return persistedState as FormsState;
+        const state = persistedState as {
+          forms?: Array<Form & { published?: boolean }>;
+          viewMode?: "grid" | "list";
+          isPaletteOpen?: boolean;
+        };
+        return {
+          forms: (state.forms ?? []).map((form) => {
+            const { published, ...rest } = form;
+            return {
+              ...rest,
+              status: published ? FormStatus.PUBLISHED : FormStatus.DRAFT,
+            };
+          }),
+          viewMode: state.viewMode ?? "grid",
+          isPaletteOpen: state.isPaletteOpen ?? true,
+        };
+      },
     },
   ),
 );

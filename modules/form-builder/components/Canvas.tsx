@@ -154,43 +154,71 @@ export default function Canvas({
                   }}
                   transition={{ duration: 0.2 }}
                 >
-                  <CanvasPreviewSlot index={0}>
-                    <QuestionCard
-                      index={0}
-                      formId={formId}
-                      question={previewQuestion}
-                      selected={false}
-                      onSelect={() => {}}
-                      isPreview
-                    />
-                  </CanvasPreviewSlot>
+                  <Box
+                    sx={{
+                      py: previewQuestion.type === "section_divider" ? 1.5 : 0,
+                      px: previewQuestion.type === "section_divider" ? 0.5 : 0,
+                      borderTop:
+                        previewQuestion.type === "section_divider"
+                          ? "1px dashed"
+                          : "none",
+                      borderBottom:
+                        previewQuestion.type === "section_divider"
+                          ? "1px dashed"
+                          : "none",
+                      borderColor: "primary.light",
+                    }}
+                  >
+                    <CanvasPreviewSlot index={0}>
+                      <QuestionCard
+                        index={0}
+                        formId={formId}
+                        question={previewQuestion}
+                        selected={false}
+                        onSelect={() => {}}
+                        isPreview
+                      />
+                    </CanvasPreviewSlot>
+                  </Box>
                 </motion.div>
               ) : null}
 
               {ordered.map((q, idx) => (
                 <React.Fragment key={q.id}>
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{
-                      opacity: 0,
-                      scale: 0.95,
-                      height: 0,
-                      marginTop: 0,
-                      marginBottom: 0,
-                      overflow: "hidden",
+                  <Box
+                    sx={{
+                      py: q.type === "section_divider" ? 1.5 : 0,
+                      px: q.type === "section_divider" ? 0.5 : 0,
+                      borderTop:
+                        q.type === "section_divider" ? "1px solid" : "none",
+                      borderBottom:
+                        q.type === "section_divider" ? "1px solid" : "none",
+                      borderColor: q.type === "section_divider" ? "divider" : "transparent",
                     }}
-                    transition={{ duration: 0.2 }}
                   >
-                    <QuestionCard
-                      index={idx}
-                      formId={formId}
-                      question={q}
-                      selected={q.id === selectedQuestionId}
-                      onSelect={() => selectQuestion(formId, q.id)}
-                    />
-                  </motion.div>
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.95,
+                        height: 0,
+                        marginTop: 0,
+                        marginBottom: 0,
+                        overflow: "hidden",
+                      }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <QuestionCard
+                        index={idx}
+                        formId={formId}
+                        question={q}
+                        selected={q.id === selectedQuestionId}
+                        onSelect={() => selectQuestion(formId, q.id)}
+                      />
+                    </motion.div>
+                  </Box>
                   <CanvasDropSlot
                     index={idx + 1}
                     active={paletteDragType !== null}
@@ -212,16 +240,32 @@ export default function Canvas({
                       }}
                       transition={{ duration: 0.2 }}
                     >
-                      <CanvasPreviewSlot index={idx + 1}>
-                        <QuestionCard
-                          index={idx + 1}
-                          formId={formId}
-                          question={previewQuestion}
-                          selected={false}
-                          onSelect={() => {}}
-                          isPreview
-                        />
-                      </CanvasPreviewSlot>
+                      <Box
+                        sx={{
+                          py: previewQuestion.type === "section_divider" ? 1.5 : 0,
+                          px: previewQuestion.type === "section_divider" ? 0.5 : 0,
+                          borderTop:
+                            previewQuestion.type === "section_divider"
+                              ? "1px dashed"
+                              : "none",
+                          borderBottom:
+                            previewQuestion.type === "section_divider"
+                              ? "1px dashed"
+                              : "none",
+                          borderColor: "primary.light",
+                        }}
+                      >
+                        <CanvasPreviewSlot index={idx + 1}>
+                          <QuestionCard
+                            index={idx + 1}
+                            formId={formId}
+                            question={previewQuestion}
+                            selected={false}
+                            onSelect={() => {}}
+                            isPreview
+                          />
+                        </CanvasPreviewSlot>
+                      </Box>
                     </motion.div>
                   ) : null}
                 </React.Fragment>

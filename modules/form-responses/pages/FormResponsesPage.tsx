@@ -41,7 +41,7 @@ export default function FormResponsesPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh" }} className="bg-accent-50">
+    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
       <AppBar
         position="sticky"
         elevation={0}

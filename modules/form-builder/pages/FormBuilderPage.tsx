@@ -169,7 +169,7 @@ export default function FormBuilderPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh" }} className="bg-accent-50">
+    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
       <BuilderTopBar form={form} />
       <DragDropProvider
         sensors={sensors}

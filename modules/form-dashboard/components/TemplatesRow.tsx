@@ -3,7 +3,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
-import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
 type Template = {

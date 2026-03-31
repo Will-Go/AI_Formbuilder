@@ -43,5 +43,14 @@ export const muiTheme = createTheme({
         root: { padding: "4px 0" },
       },
     },
+    MuiSnackbarContent: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "#ffffff",
+          color: "#000000",
+          borderRadius: 12,
+        },
+      },
+    },
   },
 });
