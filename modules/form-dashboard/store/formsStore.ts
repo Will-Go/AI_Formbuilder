@@ -227,18 +227,21 @@ export const useFormsStore = create<FormsState>()(
         set((s) => ({
           forms: s.forms.map((f) => {
             if (f.id !== formId) return f;
-            const map = Object.fromEntries(questionIds.map((id, i) => [id, i]));
-            const next = f.questions.map((q) => {
-              const newOrder = map[q.id];
-              if (newOrder !== undefined && newOrder !== q.order) {
-                return { ...q, order: newOrder };
-              }
-              return q;
-            });
+            const questionsById = new Map(f.questions.map((q) => [q.id, q]));
+            const next = questionIds
+              .map((questionId) => questionsById.get(questionId))
+              .filter(
+                (question): question is Question => question !== undefined,
+              );
+
+            if (next.length !== f.questions.length) {
+              return f;
+            }
+
             return {
               ...f,
               updatedAt: nowIso(),
-              questions: next.sort((a, b) => a.order - b.order),
+              questions: reindexOrders(next),
             };
           }),
         }));

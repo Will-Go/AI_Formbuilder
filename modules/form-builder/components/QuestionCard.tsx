@@ -4,7 +4,6 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import AddIcon from "@mui/icons-material/Add";
-import { useSortable } from "@dnd-kit/react/sortable";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import FormControl from "@mui/material/FormControl";
@@ -43,31 +42,19 @@ interface QuestionCardProps {
   question: Question;
   selected: boolean;
   onSelect: () => void;
-  index: number;
   isPreview?: boolean;
+  isDragging?: boolean;
+  dragHandleRef?: React.Ref<HTMLButtonElement>;
 }
 export default function QuestionCard({
-  index,
   formId,
   question,
   selected,
   onSelect,
   isPreview,
+  isDragging,
+  dragHandleRef,
 }: QuestionCardProps) {
-  const {
-    ref: setRef,
-    handleRef,
-    isDragging,
-  } = useSortable({
-    id: question.id,
-    index,
-    disabled: isPreview,
-    data: {
-      source: "canvas-question",
-      questionId: question.id,
-      index,
-    },
-  });
   const updateQuestion = useFormsStore((s) => s.updateQuestion);
   const deleteQuestion = useFormsStore((s) => s.deleteQuestion);
   const duplicateQuestion = useFormsStore((s) => s.duplicateQuestion);
@@ -122,7 +109,6 @@ export default function QuestionCard({
 
   return (
     <Paper
-      ref={isPreview ? undefined : setRef}
       variant="outlined"
       onClick={isPreview ? undefined : onSelect}
       sx={{
@@ -149,6 +135,9 @@ export default function QuestionCard({
           opacity: 0.6,
           pointerEvents: "none",
         }),
+        ...(isDragging && {
+          opacity: 0.3,
+        }),
       }}
       data-shadow={isDragging || undefined}
     >
@@ -162,14 +151,14 @@ export default function QuestionCard({
       >
         <Tooltip title="Drag to reorder" placement="top">
           <IconButton
-            ref={isPreview ? undefined : handleRef}
+            ref={dragHandleRef}
             aria-label="Drag"
             size="small"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
-            sx={{ cursor: "grab" }}
+            sx={{ cursor: dragHandleRef ? "grab" : "default" }}
           >
             <DragIndicatorIcon
               sx={{ color: "text.disabled" }}

@@ -73,12 +73,16 @@ export default function FormBuilderPage() {
   );
 
   const handleDragStart: DragStartEvent = React.useCallback((event) => {
-    const type = extractPaletteDragType(event.operation.source?.data);
-    if (type) {
-      setPaletteDragType(type);
-      setDropIndex(null);
-      setIsCanvasOver(false);
-      setIsInvalidDrop(false);
+    const sourceData = event.operation.source?.data;
+
+    if (sourceData?.source === "palette") {
+      const type = extractPaletteDragType(sourceData);
+      if (type) {
+        setPaletteDragType(type);
+        setDropIndex(null);
+        setIsCanvasOver(false);
+        setIsInvalidDrop(false);
+      }
     }
   }, []);
 
@@ -128,10 +132,16 @@ export default function FormBuilderPage() {
       }
 
       if (source === "canvas-question") {
-        const ids = orderedQuestions.map((q) => q.id);
-        const next = move(ids, event);
-        if (next) {
-          reorderQuestions(formId, next);
+        const nextQuestions = move(orderedQuestions, event);
+        const hasOrderChanged = nextQuestions.some(
+          (question, index) => question.id !== orderedQuestions[index]?.id,
+        );
+
+        if (hasOrderChanged) {
+          reorderQuestions(
+            formId,
+            nextQuestions.map((question) => question.id),
+          );
         }
       }
       resetPaletteDragState();
@@ -290,7 +300,12 @@ export default function FormBuilderPage() {
             />
           </Box>
         </Box>
-        <DragOverlay>
+        <DragOverlay
+          dropAnimation={{
+            duration: 250,
+            easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+          }}
+        >
           {draggedTypeMeta ? (
             <Paper
               variant="outlined"

@@ -7,15 +7,96 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import { useDroppable } from "@dnd-kit/react";
-import { closestCenter } from "@dnd-kit/collision";
+import { useSortable } from "@dnd-kit/react/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
 
 import { createQuestionByType } from "@/constants/defaults";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
-import type { QuestionType } from "@/shared/types/forms";
+import type { Question, QuestionType } from "@/shared/types/forms";
 import FormHeaderCard from "./FormHeaderCard";
 import QuestionCard from "./QuestionCard";
+
+function getQuestionContainerSx(question: Question) {
+  return {
+    py: question.type === "section_divider" ? 1.5 : 0,
+    px: question.type === "section_divider" ? 0.5 : 0,
+    borderTop: question.type === "section_divider" ? "1px solid" : "none",
+    borderBottom: question.type === "section_divider" ? "1px solid" : "none",
+    borderColor:
+      question.type === "section_divider" ? "divider" : "transparent",
+  };
+}
+
+function getPreviewContainerSx(question: Question) {
+  return {
+    py: question.type === "section_divider" ? 1.5 : 0,
+    px: question.type === "section_divider" ? 0.5 : 0,
+    borderTop: question.type === "section_divider" ? "1px dashed" : "none",
+    borderBottom: question.type === "section_divider" ? "1px dashed" : "none",
+    borderColor: "primary.light",
+  };
+}
+
+function SortableQuestionItem({
+  formId,
+  question,
+  index,
+  selected,
+  onSelect,
+}: {
+  formId: string;
+  question: Question;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const [element, setElement] = React.useState<Element | null>(null);
+  const handleRef = React.useRef<HTMLButtonElement | null>(null);
+  const { isDragging } = useSortable({
+    id: question.id,
+    index,
+    element,
+    handle: handleRef,
+    data: {
+      source: "canvas-question",
+      questionId: question.id,
+      index,
+    },
+  });
+
+  return (
+    <Box
+      ref={setElement}
+      sx={getQuestionContainerSx(question)}
+      data-shadow={isDragging || undefined}
+    >
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{
+          opacity: 0,
+          scale: 0.95,
+          height: 0,
+          marginTop: 0,
+          marginBottom: 0,
+          overflow: "hidden",
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        <QuestionCard
+          formId={formId}
+          question={question}
+          selected={selected}
+          onSelect={onSelect}
+          isDragging={isDragging}
+          dragHandleRef={handleRef}
+        />
+      </motion.div>
+    </Box>
+  );
+}
 
 function CanvasDropSlot({
   index,
@@ -28,7 +109,7 @@ function CanvasDropSlot({
 }) {
   const { ref, isDropTarget } = useDroppable({
     id: `canvas-slot:${index}`,
-    collisionDetector: closestCenter,
+
     data: {
       dropType: "canvas-slot",
       index,
@@ -61,7 +142,6 @@ function CanvasPreviewSlot({
 }) {
   const { ref } = useDroppable({
     id: `preview-slot:${index}`,
-    collisionDetector: closestCenter,
     data: {
       dropType: "preview-slot",
       index,
@@ -91,7 +171,6 @@ export default function Canvas({
   const selectQuestion = useFormsStore((s) => s.selectQuestion);
   const { ref: setCanvasDropRef } = useDroppable({
     id: `canvas-drop:${formId}`,
-    collisionDetector: closestCenter,
     data: {
       dropType: "canvas-container",
     },
@@ -154,24 +233,9 @@ export default function Canvas({
                   }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Box
-                    sx={{
-                      py: previewQuestion.type === "section_divider" ? 1.5 : 0,
-                      px: previewQuestion.type === "section_divider" ? 0.5 : 0,
-                      borderTop:
-                        previewQuestion.type === "section_divider"
-                          ? "1px dashed"
-                          : "none",
-                      borderBottom:
-                        previewQuestion.type === "section_divider"
-                          ? "1px dashed"
-                          : "none",
-                      borderColor: "primary.light",
-                    }}
-                  >
+                  <Box sx={getPreviewContainerSx(previewQuestion)}>
                     <CanvasPreviewSlot index={0}>
                       <QuestionCard
-                        index={0}
                         formId={formId}
                         question={previewQuestion}
                         selected={false}
@@ -185,40 +249,13 @@ export default function Canvas({
 
               {ordered.map((q, idx) => (
                 <React.Fragment key={q.id}>
-                  <Box
-                    sx={{
-                      py: q.type === "section_divider" ? 1.5 : 0,
-                      px: q.type === "section_divider" ? 0.5 : 0,
-                      borderTop:
-                        q.type === "section_divider" ? "1px solid" : "none",
-                      borderBottom:
-                        q.type === "section_divider" ? "1px solid" : "none",
-                      borderColor: q.type === "section_divider" ? "divider" : "transparent",
-                    }}
-                  >
-                    <motion.div
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{
-                        opacity: 0,
-                        scale: 0.95,
-                        height: 0,
-                        marginTop: 0,
-                        marginBottom: 0,
-                        overflow: "hidden",
-                      }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <QuestionCard
-                        index={idx}
-                        formId={formId}
-                        question={q}
-                        selected={q.id === selectedQuestionId}
-                        onSelect={() => selectQuestion(formId, q.id)}
-                      />
-                    </motion.div>
-                  </Box>
+                  <SortableQuestionItem
+                    formId={formId}
+                    question={q}
+                    index={idx}
+                    selected={q.id === selectedQuestionId}
+                    onSelect={() => selectQuestion(formId, q.id)}
+                  />
                   <CanvasDropSlot
                     index={idx + 1}
                     active={paletteDragType !== null}
@@ -240,24 +277,9 @@ export default function Canvas({
                       }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Box
-                        sx={{
-                          py: previewQuestion.type === "section_divider" ? 1.5 : 0,
-                          px: previewQuestion.type === "section_divider" ? 0.5 : 0,
-                          borderTop:
-                            previewQuestion.type === "section_divider"
-                              ? "1px dashed"
-                              : "none",
-                          borderBottom:
-                            previewQuestion.type === "section_divider"
-                              ? "1px dashed"
-                              : "none",
-                          borderColor: "primary.light",
-                        }}
-                      >
+                      <Box sx={getPreviewContainerSx(previewQuestion)}>
                         <CanvasPreviewSlot index={idx + 1}>
                           <QuestionCard
-                            index={idx + 1}
                             formId={formId}
                             question={previewQuestion}
                             selected={false}
