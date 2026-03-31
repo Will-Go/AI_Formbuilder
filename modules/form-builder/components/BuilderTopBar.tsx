@@ -3,7 +3,6 @@
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PreviewIcon from "@mui/icons-material/Visibility";
 import ShareIcon from "@mui/icons-material/Link";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -23,6 +22,8 @@ import { PublishDecisionDialog } from "./PublishDecisionDialog";
 import { ShareDialog } from "./ShareDialog";
 import { PublishedOptionsDialog } from "./PublishedOptionsDialog";
 import { CopyFormLink } from "@/shared/components/CopyFormLink";
+import { UserProfile } from "@/shared/components/UserProfile";
+
 import SendIcon from "@mui/icons-material/Send";
 import TuneIcon from "@mui/icons-material/Tune";
 
@@ -179,6 +180,8 @@ export default function BuilderTopBar({ form }: { form: Form }) {
             ? "Published"
             : "Publish"}
         </Button>
+
+        <UserProfile />
       </Toolbar>
       <Box sx={{ px: { xs: 1.5, sm: 3 } }}>
         <Tabs value={0} aria-label="Builder tabs">

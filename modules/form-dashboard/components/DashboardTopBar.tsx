@@ -1,7 +1,7 @@
 "use client";
 
 import SearchIcon from "@mui/icons-material/Search";
-import Avatar from "@mui/material/Avatar";
+import { UserProfile } from "@/shared/components/UserProfile";
 import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
 import Toolbar from "@mui/material/Toolbar";
@@ -69,7 +69,7 @@ export default function DashboardTopBar({
           />
         </Box>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-          <Avatar sx={{ width: 32, height: 32 }}>U</Avatar>
+          <UserProfile />
         </Box>
       </Toolbar>
     </AppBar>

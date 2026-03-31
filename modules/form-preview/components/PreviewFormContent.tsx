@@ -5,16 +5,11 @@ import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
 import Fab from "@mui/material/Fab";
 import Alert from "@mui/material/Alert";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import LinearProgress from "@mui/material/LinearProgress";
+import Tooltip from "@mui/material/Tooltip";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import React, { useMemo } from "react";
@@ -26,14 +21,14 @@ import { FormStatus } from "@/shared/types/forms";
 import { PublishDecisionDialog } from "@/modules/form-builder/components/PublishDecisionDialog";
 import { ShareDialog } from "@/modules/form-builder/components/ShareDialog";
 import { buildResponseSchema } from "../../form-builder/preview/buildResponseSchema";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import {
   QuestionRenderer,
   FormHeader,
 } from "@/shared/components/QuestionRenderer";
 import { toAnswers } from "./toAnswers";
+import { PreviewTopBar } from "./PreviewTopBar";
 import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
-import { CopyFormLink } from "@/shared/components/CopyFormLink";
+
 
 interface PreviewFormContentProps {
   formId: string;
@@ -166,117 +161,12 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
         backgroundColor: "background.default",
       }}
     >
-      <AppBar
-        position="sticky"
-        elevation={0}
-        color="transparent"
-        sx={{
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          backdropFilter: "blur(10px)",
-          height: 112,
-          maxHeight: 112,
-        }}
-      >
-        <Toolbar
-          sx={{
-            justifyContent: "space-between",
-            minHeight: { xs: 56, sm: 64 },
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Tooltip title="Back to builder">
-              <IconButton
-                onClick={() => router.push(`/forms/${formId}/edit`)}
-                edge="start"
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            </Tooltip>
-            <Typography
-              variant="h6"
-              color="text.primary"
-              sx={{ fontWeight: 500 }}
-            >
-              Preview Mode
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {form.status === FormStatus.PUBLISHED ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                <CheckCircleOutlineIcon fontSize="small" color="success" />
-                <Typography
-                  variant="body2"
-                  color="success"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
-                  Published
-                </Typography>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  color: "text.secondary",
-                }}
-              >
-                <VisibilityOffIcon fontSize="small" />
-                <Typography
-                  variant="body2"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
-                  This form does not accept responses.
-                </Typography>
-              </Box>
-            )}
-            <CopyFormLink
-              formId={formId}
-              formStatus={form.status}
-              formTitle={form.title}
-              isPublished={form.status === FormStatus.PUBLISHED}
-            />
-          </Box>
-        </Toolbar>
-        {form.status !== FormStatus.PUBLISHED && (
-          <Box
-            sx={{
-              bgcolor: "#fff3cd",
-              color: "#856404",
-              p: 1,
-              px: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <VisibilityOffIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                This form does not accept responses.
-              </Typography>
-            </Box>
-            <Button
-              size="small"
-              sx={{
-                color: "inherit",
-                textTransform: "none",
-                display: { xs: "none", sm: "block" },
-              }}
-              onClick={() => setPublishDecisionDialogOpen(true)}
-            >
-              Manage publish settings
-            </Button>
-          </Box>
-        )}
-      </AppBar>
+      <PreviewTopBar
+        formId={formId}
+        formStatus={form.status}
+        formTitle={form.title}
+        onManagePublish={() => setPublishDecisionDialogOpen(true)}
+      />
       <PublishDecisionDialog
         open={publishDecisionDialogOpen}
         onClose={() => setPublishDecisionDialogOpen(false)}
