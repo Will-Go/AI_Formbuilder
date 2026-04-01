@@ -291,13 +291,13 @@ export function FormRenderer({ form }: { form: Form }) {
           }}
         >
           <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-            This content is neither created nor endorsed by AI Form.
+            This content is neither created nor endorsed by FormIA.
           </Typography>
           <Typography
             variant="h6"
             sx={{ fontWeight: "bold", color: "text.secondary", opacity: 0.8 }}
           >
-            AI Form
+            FormIA
           </Typography>
         </Box>
       </Box>
