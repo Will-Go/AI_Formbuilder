@@ -40,6 +40,8 @@ export enum FormStatus {
 export type Option = {
   id: string;
   label: string;
+  value: string;
+  order: number;
 };
 
 export type TextValidationRules = {
