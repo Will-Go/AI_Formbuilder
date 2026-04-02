@@ -134,6 +134,59 @@ npx vitest modules/form-builder/dnd/paletteDragLogic.test.ts
    ```
 4. **Use `useCallback`** for store actions when passing to child components
 
+### Form Handling (React Hook Form + Zod)
+
+1. **Define Zod schemas first** for form validation:
+   ```typescript
+   import { z } from "zod";
+
+   const formSchema = z.object({
+     title: z.string().min(1, "Title is required"),
+     description: z.string().optional(),
+     fields: z.array(fieldSchema).min(1, "At least one field is required"),
+   });
+   ```
+
+2. **Use `useForm`** with Zod resolver:
+   ```typescript
+   import { useForm } from "react-hook-form";
+   import { zodResolver } from "@hookform/resolvers/zod";
+   import type { z } from "zod";
+
+   const form = useForm<z.infer<typeof formSchema>>({
+     resolver: zodResolver(formSchema),
+     defaultValues: { title: "", description: "", fields: [] },
+   });
+   ```
+
+3. **Register fields** with `register` or Controller for complex components:
+   ```typescript
+   // Simple fields
+   <input {...register("title")} />
+   
+   // Complex MUI components with Controller
+   import { Controller } from "react-hook-form";
+   <Controller
+     name="fieldType"
+     control={form.control}
+     render={({ field }) => <Select {...field} />}
+   />
+   ```
+
+4. **Handle form submission**:
+   ```typescript
+   const onSubmit = form.handleSubmit(async (data) => {
+     // Submit logic here
+   });
+   ```
+
+5. **Display validation errors** using `form.formState.errors`:
+   ```typescript
+   <FormHelperText error>
+     {form.formState.errors.title?.message}
+   </FormHelperText>
+   ```
+
 ### Error Handling
 
 1. **Use toast notifications** for user-facing errors:

@@ -1,0 +1,13 @@
+{
+  "server": {
+    "error": {
+      "unexpected_error": "An unexpected error occurred.",
+      "security_wait_seconds": "For security purposes, please wait {seconds} seconds before trying again."
+    }
+  },
+  "auth": {
+    "login": {
+      "fromCompleteProfile": "Your password was set successfully. Please enter your credentials again to continue."
+    }
+  }
+}

@@ -29,14 +29,9 @@ export default function DashboardTopBar({
     >
       <Toolbar sx={{ gap: 1.5 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Image
-            src="/form_ai_icon.svg"
-            alt="Forms AI"
-            width={32}
-            height={32}
-          />
+          <Image src="/form_ai_icon.svg" alt="FormIA" width={32} height={32} />
           <Typography variant="h6" sx={{ fontWeight: 700, minWidth: 100 }}>
-            Forms AI
+            FormIA
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />

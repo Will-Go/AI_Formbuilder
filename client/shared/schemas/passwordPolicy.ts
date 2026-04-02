@@ -3,19 +3,21 @@ import { z } from "zod";
 export const PasswordPolicySchema = z.object({
   password: z
     .string()
-    .min(8, "La contraseña debe tener al menos 8 caracteres") // Regla 1: Al menos 8 caracteres
-    .nonempty("La contraseña es obligatoria") // General: Campo requerido
+    .min(8, "Password must be at least 8 characters long") // Regla 1: Al menos 8 caracteres
+    .nonempty("Password is required") // General: Campo requerido
     .refine((val) => /[A-Z]/.test(val), {
-      message: "La contraseña debe contener al menos una letra mayúscula", // Regla 2
+      message: "Password must contain at least one uppercase letter", // Regla 2
     })
     .refine((val) => /[a-z]/.test(val), {
-      message: "La contraseña debe contener al menos una letra minúscula", // Regla 3
+      message: "Password must contain at least one lowercase letter", // Regla 3
     })
     .refine((val) => /\d/.test(val), {
-      message: "La contraseña debe contener al menos un número", // Regla 4
+      message: "Password must contain at least one number", // Regla 4
     })
     .refine((val) => /[!@#$%^&*()\-_=\+\[\]{}|\\;:'",<.>\/?]/.test(val), {
       message:
-        "La contraseña debe contener al menos un carácter especial (!@#$%^&*()-_=+[]{}|\\;:'\",<.>/?).", // Regla 5
+        "Password must contain at least one special character (!@#$%^&*()-_=+[]{}|\\;:'\",<.>/?).", // Regla 5
     }),
 });
+
+export type passwordPolicy = z.infer<typeof PasswordPolicySchema>;

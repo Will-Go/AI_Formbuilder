@@ -10,6 +10,6 @@ export default async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|api|trpc|_next|_vercel|_next/image|favicon.ico|fonts|$|login|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|api|trpc|_next|_vercel|_next/image|favicon.ico|fonts|$|login|register|auth/callback|error|forgot-password|unauthorized|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

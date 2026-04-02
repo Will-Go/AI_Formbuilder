@@ -7,6 +7,7 @@ import { CheckCircle, Cancel } from "@mui/icons-material";
 interface PasswordValidationChecklistProps {
   password: string;
   className?: string;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 interface ValidationRule {
@@ -45,12 +46,21 @@ const validationRules: ValidationRule[] = [
 ];
 
 export default function PasswordValidationChecklist({
-  password,
+  password = "",
   className = "",
+  onValidationChange,
 }: PasswordValidationChecklistProps) {
+  const allValid = validationRules.every((rule) => rule.isValid(password));
+
+  React.useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange(allValid);
+    }
+  }, [allValid, onValidationChange]);
+
   return (
     <div
-      className={`mt-2 border border-neutral-200 bg-neutral-50 p-3 ${className}`}
+      className={`mt-2 border rounded-md border-neutral-200 bg-neutral-50 p-3 ${className}`}
     >
       <Typography variant="body2" className="mb-2 font-medium text-gray-700">
         Requisitos de Contraseña

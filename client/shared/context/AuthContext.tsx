@@ -13,11 +13,11 @@ import type { Session, User, RequiredClaims } from "@supabase/supabase-js";
 export type ClaimsType = RequiredClaims & {
   phone?: string;
   email?: string;
+  is_profile_complete?: boolean;
   app_metadata?: {
     roles?: ("admin" | "owner" | "tenant")[];
     first_name?: string;
     last_name?: string;
-    is_profile_complete?: boolean;
   };
 };
 
@@ -32,6 +32,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   claims: ClaimsType | null;
   isAdmin: boolean;
+  needsProfileCompletion: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,7 +88,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async ({
-    redirectTo = "/auth/callback?next=/welcome",
+    redirectTo = "/auth/callback?next=/forms",
   }: { redirectTo?: string } = {}) => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
@@ -115,6 +116,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isAdmin = claims?.app_metadata?.roles?.includes("admin") || false;
+  const needsProfileCompletion = claims?.is_profile_complete === false || false;
 
   return (
     <AuthContext.Provider
@@ -129,6 +131,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         claims,
         isAdmin,
+        needsProfileCompletion,
       }}
     >
       {children}
