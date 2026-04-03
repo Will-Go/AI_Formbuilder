@@ -181,6 +181,7 @@ export type Form = {
   updatedAt: IsoDateString;
   status: FormStatus;
   theme?: ThemeConfig;
+  settings?: Record<string, unknown>;
   questions: Question[];
   responseCount?: number;
 };

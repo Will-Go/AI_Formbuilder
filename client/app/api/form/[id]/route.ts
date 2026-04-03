@@ -3,12 +3,19 @@ import { createClient } from "@/shared/services/supabase/server";
 import { FormDetailsSchema } from "@/shared/schemas/formDetails";
 import { z } from "zod";
 
+type FormMutationResponse = {
+  ok: boolean;
+  formId?: string;
+};
+
+const formIdSchema = z.string().uuid();
+
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
 
     if (!id) {
       return NextResponse.json(
@@ -63,5 +70,54 @@ export async function GET(
       { error: "An unexpected error occurred" },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = params;
+    const parsedFormId = formIdSchema.safeParse(id);
+
+    if (!parsedFormId.success) {
+      return NextResponse.json({ error: "Invalid form id" }, { status: 400 });
+    }
+
+    const { data: deletedRows, error: deleteError } = await supabase
+      .from("forms")
+      .delete()
+      .eq("id", parsedFormId.data)
+      .eq("owner_id", user.id)
+      .select("id");
+
+    if (deleteError) {
+      return NextResponse.json(
+        { error: "Failed to delete form", details: deleteError.message },
+        { status: 500 },
+      );
+    }
+
+    if (!deletedRows || deletedRows.length === 0) {
+      return NextResponse.json({ error: "Form not found" }, { status: 404 });
+    }
+
+    const response: FormMutationResponse = { ok: true };
+    return NextResponse.json(response);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unexpected server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

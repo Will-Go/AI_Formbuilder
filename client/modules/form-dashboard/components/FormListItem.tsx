@@ -21,12 +21,14 @@ interface FormListItemProps {
     event: React.MouseEvent<HTMLButtonElement>,
     formId: string,
   ) => void;
+  responseCount?: number;
 }
 
 export default function FormListItem({
   form,
   onOpen,
   onMenuOpen,
+  responseCount = 0,
 }: FormListItemProps) {
   const updatedAt = dayjs(form.updatedAt);
   const dateStr = updatedAt.isToday()
@@ -63,7 +65,16 @@ export default function FormListItem({
           color="text.secondary"
           sx={{ fontSize: "0.8125rem" }}
         >
-          me
+          {form.authorId}
+        </Typography>
+      </Box>
+      <Box sx={{ flex: 1, textAlign: "left" }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ fontSize: "0.8125rem" }}
+        >
+          {form.responseCount ?? 0} responses
         </Typography>
       </Box>
       <Box sx={{ flex: 1, textAlign: "left" }}>

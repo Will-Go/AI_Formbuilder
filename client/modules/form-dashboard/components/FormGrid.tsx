@@ -41,7 +41,7 @@ export default function FormGrid({
           <FormCard
             key={f.id}
             form={f}
-            responseCount={f.responseCount ?? 0}
+            responseCount={f.responseCount}
             onOpen={() => onOpen(f.id)}
             onDuplicate={() => onDuplicate(f.id)}
             onDelete={() => onDelete(f.id)}

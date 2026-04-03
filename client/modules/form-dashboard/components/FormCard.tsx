@@ -16,19 +16,21 @@ import type { Form } from "@/shared/types/forms";
 import { formatShortDate } from "@/shared/utils/dateFormatter";
 import { stripHtml } from "@/shared/utils/html";
 
-export default function FormCard({
-  form,
-  responseCount,
-  onOpen,
-  onDuplicate,
-  onDelete,
-}: {
+interface FormCardProp {
   form: Form;
-  responseCount: number;
+  responseCount?: number;
   onOpen: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
-}) {
+}
+
+export default function FormCard({
+  form,
+  responseCount = 0,
+  onOpen,
+  onDuplicate,
+  onDelete,
+}: FormCardProp) {
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
 
@@ -62,7 +64,7 @@ export default function FormCard({
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Updated {formatShortDate(form.updatedAt)} • {responseCount}{" "}
-                responses
+                {form.responseCount ?? 0} responses
               </Typography>
             </Box>
             <IconButton

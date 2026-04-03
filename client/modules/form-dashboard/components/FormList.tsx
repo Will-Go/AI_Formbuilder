@@ -14,14 +14,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import FormListItem from "./FormListItem";
 
 dayjs.extend(isToday);
-
 interface FormListProps {
   forms: Form[];
   onOpen: (formId: string) => void;
   onDuplicate: (formId: string) => void;
   onDelete: (formId: string) => void;
 }
-
 export default function FormList({
   forms,
   onOpen,
@@ -68,6 +66,7 @@ export default function FormList({
           </Typography>
           {todayForms.map((f) => (
             <FormListItem
+              responseCount={f?.responseCount}
               key={f.id}
               form={f}
               onOpen={onOpen}
@@ -84,6 +83,7 @@ export default function FormList({
           </Typography>
           {previousForms.map((f) => (
             <FormListItem
+              responseCount={f.responseCount}
               key={f.id}
               form={f}
               onOpen={onOpen}

@@ -59,6 +59,79 @@ npx vitest run --filter "test-name"
 
 Database schema and migrations are in `database/` directory. Supabase hooks are in `database/supabase/hooks/`.
 
+## Custom React Query Hooks: `useAppQuery` & `useAppMutation`
+
+This section explains the custom hooks `useAppQuery` and `useAppMutation` that wrap TanStack Query's core hooks with built-in toast notifications and additional utilities.
+
+### apiRequest Pattern
+
+The `apiRequest` utility (`@/shared/utils/apiRequest`) is the standard way to make HTTP requests. It wraps axios with automatic error handling and is designed to work with `useAppQuery` and `useAppMutation`.
+
+```typescript
+import { apiRequest } from "@/shared/utils/apiRequest";
+
+const result = await apiRequest<MyResponse>({
+  method: "get",
+  url: "/users",
+  data: { name: "John" },
+  params: { page: 1 },
+});
+```
+
+### Common Options
+
+Both hooks accept notification options:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `successMsg` | `string \| (data) => string` | Success toast message |
+| `errorMsg` | `string \| (error) => string` | Custom error toast message |
+| `translateKey` | `string` | i18n namespace for error translations |
+| `showTranslatedErrorToast` | `boolean` | Show translated error toast (default: `true`) |
+| `showErrorToast` | `boolean` | Show custom error toast (default: `true`) |
+
+### useAppQuery
+
+Wrapper around TanStack Query's `useQuery` with automatic toasts and an `invalidate` helper.
+
+```typescript
+import { useAppQuery } from "@/shared/hooks/useAppQuery";
+import { apiRequest } from "@/shared/utils/apiRequest";
+
+const query = useAppQuery({
+  queryKey: ["users"],
+  queryFn: () => apiRequest({ method: "get", url: "/users" }),
+  successMsg: "Users loaded",
+});
+
+// Returns query.data, query.isLoading, query.isError + invalidate()
+query.invalidate(); // Refetch the query
+```
+
+### useAppMutation
+
+Wrapper around TanStack Query's `useMutation` with automatic toasts.
+
+```typescript
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
+
+const mutation = useAppMutation({
+  mutationFn: (data) => apiRequest({ method: "post", url: "/users", data }),
+  successMsg: "User created!",
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
+});
+
+mutation.mutate(newUser);
+```
+
+### Best Practices
+
+1. Use `apiRequest` for all HTTP requests
+2. Use `successMsg` for user feedback
+3. Use `translateKey` for i18n error messages
+4. Use `invalidate()` to refetch after mutations
+
 ## Important Notes
 
 - This is NOT the Next.js you know - check breaking changes in `node_modules/next/dist/docs/`

@@ -69,8 +69,8 @@ export function createQuestionByType(
       ...base,
       type,
       options: [
-        { id: createId("opt"), label: "Option 1" },
-        { id: createId("opt"), label: "Option 2" },
+        { id: createId("opt"), label: "Option 1", value: "Option 1", order: 0 },
+        { id: createId("opt"), label: "Option 2", value: "Option 2", order: 1 },
       ],
     };
     return q;
@@ -80,8 +80,8 @@ export function createQuestionByType(
       ...base,
       type,
       options: [
-        { id: createId("opt"), label: "Option 1" },
-        { id: createId("opt"), label: "Option 2" },
+        { id: createId("opt"), label: "Option 1", value: "Option 1", order: 0 },
+        { id: createId("opt"), label: "Option 2", value: "Option 2", order: 1 },
       ],
     };
     return q;
@@ -91,8 +91,8 @@ export function createQuestionByType(
       ...base,
       type,
       options: [
-        { id: createId("opt"), label: "Option 1" },
-        { id: createId("opt"), label: "Option 2" },
+        { id: createId("opt"), label: "Option 1", value: "Option 1", order: 0 },
+        { id: createId("opt"), label: "Option 2", value: "Option 2", order: 1 },
       ],
     };
     return q;
