@@ -7,7 +7,9 @@ import type {
   RpcFormRow,
   RpcGetFormsResponse,
   RpcOwner,
+  CreateFormInput,
 } from "@/shared/types/forms";
+import { FormStatus } from "@/shared/types/forms";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -111,5 +113,49 @@ export async function getForms(
       hasNext: pagination.has_next,
       hasPrevious: pagination.has_previous,
     },
+  };
+}
+
+export async function createForm(input: CreateFormInput): Promise<Form> {
+  if (!input.ownerId) {
+    throw new Error("ownerId is required");
+  }
+  if (!input.title) {
+    throw new Error("title is required");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_form", {
+    p_owner_id: input.ownerId,
+    p_title: input.title,
+    p_description: input.description ?? "",
+    p_status: input.status ?? FormStatus.DRAFT,
+    p_theme: input.theme ?? {},
+    p_settings: input.settings ?? {},
+  });
+
+  if (error) {
+    throw new Error(`Failed to create form: ${error.message}`);
+  }
+
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    throw new Error("Failed to create form: No data returned from database");
+  }
+
+  const row = data[0];
+
+  return {
+    id: row.id,
+    title: row.title,
+    author_id: row.owner_id,
+    author_name: "", // Current user is the owner, name can be fetched separately if needed
+    description: row.description ?? "",
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    status: row.status,
+    theme: row.theme ?? {},
+    settings: row.settings ?? {},
+    questions: [],
+    response_count: 0,
   };
 }

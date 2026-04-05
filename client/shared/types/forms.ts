@@ -247,6 +247,15 @@ export type RpcGetFormsResponse = {
   pagination: RpcPagination;
 };
 
+export type CreateFormInput = {
+  ownerId: string;
+  title: string;
+  description?: string;
+  status?: FormStatus;
+  theme?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+};
+
 export type CreateFormResponse = {
   ok: boolean;
   formId?: string;

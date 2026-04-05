@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getForms } from "@/daos/formsDao";
+import { getForms, createForm } from "@/daos/formsDao";
 import { createClient } from "@/shared/services/supabase/server";
 import {
   FormStatus,
@@ -9,29 +9,6 @@ import {
 } from "@/shared/types/forms";
 import { toPositiveInteger } from "@/shared/utils/number";
 import { withAuth } from "@/shared/utils/with-is-auth";
-
-function buildCopyTitle(sourceTitle: string, existingTitles: string[]): string {
-  const copyRegex = /^(.*) \(copy(?: (\d+))?\)$/;
-  const baseTitle = sourceTitle.replace(copyRegex, "$1");
-  let maxCopy = 0;
-
-  for (const title of existingTitles) {
-    const match = title.match(copyRegex);
-    if (match && match[1] === baseTitle) {
-      const value = match[2] ? parseInt(match[2], 10) : 1;
-      if (value > maxCopy) {
-        maxCopy = value;
-      }
-    }
-  }
-
-  const nextCopy = maxCopy + 1;
-  if (nextCopy === 1) {
-    return `${baseTitle} (copy)`;
-  }
-
-  return `${baseTitle} (copy ${nextCopy})`;
-}
 
 export const GET = withAuth(async (request: Request) => {
   try {
@@ -87,7 +64,7 @@ export const GET = withAuth(async (request: Request) => {
   }
 });
 
-export const POST = withAuth(async () => {
+export const POST = withAuth(async (request: Request) => {
   try {
     const supabase = await createClient();
     const {
@@ -102,47 +79,39 @@ export const POST = withAuth(async () => {
       );
     }
 
-    const baseTitle = "Untitled form";
-    const { data: ownerTitles, error: ownerTitlesError } = await supabase
-      .from("forms")
-      .select("title")
-      .eq("owner_id", user.id)
-      .or(`title.eq.${baseTitle},title.like.${baseTitle} (copy%)`);
+    let baseTitle = "Untitled form";
 
-    if (ownerTitlesError) {
-      return NextResponse.json(
-        { error: "Failed to generate form title" } satisfies FormErrorResponse,
-        { status: 500 },
-      );
+    // Check if there is a sourceFormId or title in the body
+    try {
+      const body = await request.json();
+      if (body?.title) {
+        baseTitle = body.title;
+      } else if (body?.sourceFormId) {
+        // Feature parity: previously it just ignored it and used "Untitled form"
+        // But we'll query the title if it exists to be helpful, or just use Untitled form.
+        // I will query the title of the source form to make duplicateFormMutation work nicely.
+        const { data: sourceForm } = await supabase
+          .from("forms")
+          .select("title")
+          .eq("id", body.sourceFormId)
+          .single();
+
+        if (sourceForm?.title) {
+          baseTitle = sourceForm.title;
+        }
+      }
+    } catch (e) {
+      // Ignore JSON parse errors, just use default "Untitled form"
     }
 
-    const existingTitles = (ownerTitles ?? []).map((item) => item.title);
-    const title = existingTitles.includes(baseTitle)
-      ? buildCopyTitle(baseTitle, existingTitles)
-      : baseTitle;
-
-    const { data: createdForm, error: createError } = await supabase
-      .from("forms")
-      .insert({
-        owner_id: user.id,
-        title,
-        description: "",
-        status: FormStatus.DRAFT,
-        theme: {},
-        settings: {},
-      })
-      .select("id")
-      .single();
-
-    if (createError || !createdForm) {
-      return NextResponse.json(
-        {
-          error: "Failed to create form",
-          details: createError?.message,
-        } satisfies FormErrorResponse,
-        { status: 500 },
-      );
-    }
+    const createdForm = await createForm({
+      ownerId: user.id,
+      title: baseTitle,
+      description: "",
+      status: FormStatus.DRAFT,
+      theme: {},
+      settings: {},
+    });
 
     const response: CreateFormResponse = {
       ok: true,
@@ -153,6 +122,8 @@ export const POST = withAuth(async () => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unexpected server error";
+
+    console.error("Error", message);
     return NextResponse.json({ error: message } satisfies FormErrorResponse, {
       status: 500,
     });
