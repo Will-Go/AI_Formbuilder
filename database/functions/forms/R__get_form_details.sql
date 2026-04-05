@@ -21,9 +21,9 @@ BEGIN
     'title', f.title,
     'description', f.description,
     'status', f.status,
-    'authorId', f.owner_id,
-    'createdAt', f.created_at,
-    'updatedAt', f.updated_at,
+    'author_id', f.owner_id,
+    'created_at', f.created_at,
+    'updated_at', f.updated_at,
     'theme', f.theme,
     'settings', f.settings,
     'questions', (

@@ -175,13 +175,89 @@ export type Question =
 export type Form = {
   id: string;
   title: string;
-  authorId: string;
+  author_id: string;
+  author_name: string;
   description?: string;
-  createdAt: IsoDateString;
-  updatedAt: IsoDateString;
+  created_at: IsoDateString;
+  updated_at: IsoDateString;
   status: FormStatus;
   theme?: ThemeConfig;
   settings?: Record<string, unknown>;
   questions: Question[];
-  responseCount?: number;
+  response_count?: number;
+};
+
+export type PaginationInput = {
+  limit?: number | null;
+  pageNumber?: number | null;
+};
+
+export type FormQueryFilters = {
+  ownerId?: string | null;
+  search?: string | null;
+};
+
+export type GetFormsOptions = PaginationInput & FormQueryFilters;
+
+export type FormsPagination = {
+  limit: number;
+  pageNumber: number;
+  totalCount: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+};
+
+export type FormsDaoResult = {
+  forms: Form[];
+  pagination: FormsPagination;
+};
+
+export type RpcOwner = {
+  id: string | null;
+  email: string | null;
+  name: string | null;
+} | null;
+
+export type RpcFormRow = {
+  id: string;
+  owner_id: string;
+  title: string;
+  description: string | null;
+  status: FormStatus;
+  theme: Record<string, unknown> | null;
+  settings: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  response_count: number | null;
+  owner: RpcOwner;
+};
+
+export type RpcPagination = {
+  limit: number;
+  page_number: number;
+  total_count: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+};
+
+export type RpcGetFormsResponse = {
+  forms: RpcFormRow[];
+  pagination: RpcPagination;
+};
+
+export type CreateFormResponse = {
+  ok: boolean;
+  formId?: string;
+};
+
+export type FormErrorResponse = {
+  error: string;
+  details?: string;
+};
+
+export type FormsListResponse = {
+  forms: Form[];
+  pagination: FormsPagination;
 };

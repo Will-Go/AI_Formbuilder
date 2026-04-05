@@ -14,7 +14,12 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { FormStatus, type Form } from "@/shared/types/forms";
+import {
+  FormStatus,
+  type CreateFormResponse,
+  type Form,
+  type FormsListResponse,
+} from "@/shared/types/forms";
 import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import FormGrid from "../components/FormGrid";
@@ -22,15 +27,6 @@ import FormList from "../components/FormList";
 import DashboardTopBar from "../components/DashboardTopBar";
 import TemplatesRow from "../components/TemplatesRow";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-
-type FormsListResponse = {
-  forms: Form[];
-};
-
-type FormMutationResponse = {
-  ok: boolean;
-  formId?: string;
-};
 
 export const FORMS_QUERY_KEY = ["dashboard", "forms"];
 const VIEW_MODE_STORAGE_KEY = "ai_form:dashboard_view_mode";
@@ -83,13 +79,13 @@ export default function FormDashboardPage() {
   const forms = React.useMemo(() => resForms ?? [], [resForms]);
 
   const duplicateFormMutation = useMutation<
-    FormMutationResponse,
+    CreateFormResponse,
     unknown,
     string,
     { previousForms: Form[] }
   >({
     mutationFn: async (formId) =>
-      apiRequest<FormMutationResponse>({
+      apiRequest<CreateFormResponse>({
         method: "post",
         url: "/form",
         data: {
@@ -109,10 +105,10 @@ export default function FormDashboardPage() {
           ...source,
           id: `temp-copy-${Date.now()}`,
           title: `${source.title} (copy)`,
-          createdAt: now,
-          updatedAt: now,
+          created_at: now,
+          updated_at: now,
           status: FormStatus.DRAFT,
-          responseCount: 0,
+          response_count: 0,
         };
         queryClient.setQueryData<Form[]>(FORMS_QUERY_KEY, [
           optimisticCopy,
@@ -141,44 +137,39 @@ export default function FormDashboardPage() {
     },
   });
 
-  const deleteFormMutation = useMutation<
-    FormMutationResponse,
-    unknown,
-    string,
-    { previousForms: Form[] }
-  >({
-    mutationFn: async (formId) =>
-      apiRequest<FormMutationResponse>({
-        method: "delete",
-        url: "/form",
-        params: {
-          id: formId,
+  const { mutateAsync: deleteFormMutation, isPending: isFormDeleting } =
+    useMutation<CreateFormResponse, unknown, string, { previousForms: Form[] }>(
+      {
+        mutationFn: async (formId) =>
+          apiRequest<CreateFormResponse>({
+            method: "delete",
+            url: `/form/${formId}`,
+          }),
+        onMutate: async (formId) => {
+          setActionError(null);
+          await queryClient.cancelQueries({ queryKey: FORMS_QUERY_KEY });
+          const previousForms =
+            queryClient.getQueryData<Form[]>(FORMS_QUERY_KEY) ?? [];
+          queryClient.setQueryData<Form[]>(
+            FORMS_QUERY_KEY,
+            previousForms.filter((item) => item.id !== formId),
+          );
+          return { previousForms };
         },
-      }),
-    onMutate: async (formId) => {
-      setActionError(null);
-      await queryClient.cancelQueries({ queryKey: FORMS_QUERY_KEY });
-      const previousForms =
-        queryClient.getQueryData<Form[]>(FORMS_QUERY_KEY) ?? [];
-      queryClient.setQueryData<Form[]>(
-        FORMS_QUERY_KEY,
-        previousForms.filter((item) => item.id !== formId),
-      );
-      return { previousForms };
-    },
-    onError: (error, _variables, context) => {
-      if (context?.previousForms) {
-        queryClient.setQueryData<Form[]>(
-          FORMS_QUERY_KEY,
-          context.previousForms,
-        );
-      }
-      setActionError(getErrorMessage(error));
-    },
-    onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: FORMS_QUERY_KEY });
-    },
-  });
+        onError: (error, _variables, context) => {
+          if (context?.previousForms) {
+            queryClient.setQueryData<Form[]>(
+              FORMS_QUERY_KEY,
+              context.previousForms,
+            );
+          }
+          setActionError(getErrorMessage(error));
+        },
+        onSettled: async () => {
+          await queryClient.invalidateQueries({ queryKey: FORMS_QUERY_KEY });
+        },
+      },
+    );
 
   const filtered = React.useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -203,8 +194,8 @@ export default function FormDashboardPage() {
     onDuplicate: (formId: string) => {
       duplicateFormMutation.mutate(formId);
     },
-    onDelete: (formId: string) => {
-      deleteFormMutation.mutate(formId);
+    onDelete: async (formId: string) => {
+      await deleteFormMutation(formId);
     },
   };
 

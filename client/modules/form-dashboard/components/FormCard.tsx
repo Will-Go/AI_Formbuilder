@@ -63,8 +63,8 @@ export default function FormCard({
                 {stripHtml(form.title) || "Untitled form"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Updated {formatShortDate(form.updatedAt)} • {responseCount}{" "}
-                {form.responseCount ?? 0} responses
+                Updated {formatShortDate(form.updated_at)} • {responseCount}{" "} responses
+                responses
               </Typography>
             </Box>
             <IconButton

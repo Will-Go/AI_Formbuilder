@@ -19,14 +19,6 @@ cd client
 npm run dev          # Start development server
 npm run build        # Production build
 npm run lint         # Run ESLint
-npm run test         # Run all tests (Vitest)
-```
-
-### Running a Single Test
-
-```bash
-npx vitest run path/to/test.test.ts
-npx vitest run --filter "test-name"
 ```
 
 ## Tech Stack
@@ -35,7 +27,6 @@ npx vitest run --filter "test-name"
 - **Styling**: MUI (Material-UI) + Tailwind CSS 4
 - **State**: Zustand
 - **Forms**: React Hook Form + Zod
-- **Testing**: Vitest
 - **Database**: Supabase (PostgreSQL)
 
 ## Code Style (from client/AGENTS.md)
@@ -82,13 +73,13 @@ const result = await apiRequest<MyResponse>({
 
 Both hooks accept notification options:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `successMsg` | `string \| (data) => string` | Success toast message |
-| `errorMsg` | `string \| (error) => string` | Custom error toast message |
-| `translateKey` | `string` | i18n namespace for error translations |
-| `showTranslatedErrorToast` | `boolean` | Show translated error toast (default: `true`) |
-| `showErrorToast` | `boolean` | Show custom error toast (default: `true`) |
+| Property                   | Type                          | Description                                   |
+| -------------------------- | ----------------------------- | --------------------------------------------- |
+| `successMsg`               | `string \| (data) => string`  | Success toast message                         |
+| `errorMsg`                 | `string \| (error) => string` | Custom error toast message                    |
+| `translateKey`             | `string`                      | i18n namespace for error translations         |
+| `showTranslatedErrorToast` | `boolean`                     | Show translated error toast (default: `true`) |
+| `showErrorToast`           | `boolean`                     | Show custom error toast (default: `true`)     |
 
 ### useAppQuery
 

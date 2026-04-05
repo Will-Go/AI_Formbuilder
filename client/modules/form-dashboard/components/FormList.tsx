@@ -54,8 +54,8 @@ export default function FormList({
     );
   }
 
-  const todayForms = forms.filter((f) => dayjs(f.updatedAt).isToday());
-  const previousForms = forms.filter((f) => !dayjs(f.updatedAt).isToday());
+  const todayForms = forms.filter((f) => dayjs(f.updated_at).isToday());
+  const previousForms = forms.filter((f) => !dayjs(f.updated_at).isToday());
 
   return (
     <Box sx={{ px: { xs: 0, sm: 0 }, pb: 6 }}>
@@ -66,7 +66,6 @@ export default function FormList({
           </Typography>
           {todayForms.map((f) => (
             <FormListItem
-              responseCount={f?.responseCount}
               key={f.id}
               form={f}
               onOpen={onOpen}
@@ -83,7 +82,6 @@ export default function FormList({
           </Typography>
           {previousForms.map((f) => (
             <FormListItem
-              responseCount={f.responseCount}
               key={f.id}
               form={f}
               onOpen={onOpen}

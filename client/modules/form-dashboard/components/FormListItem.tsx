@@ -6,11 +6,11 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DescriptionIcon from "@mui/icons-material/Description";
-// import PeopleIcon from "@mui/icons-material/People";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import type { Form } from "@/shared/types/forms";
 import { stripHtml } from "@/shared/utils/html";
+import { useAuth } from "@/shared/context/AuthContext";
 
 dayjs.extend(isToday);
 
@@ -21,16 +21,18 @@ interface FormListItemProps {
     event: React.MouseEvent<HTMLButtonElement>,
     formId: string,
   ) => void;
-  responseCount?: number;
 }
 
 export default function FormListItem({
   form,
   onOpen,
   onMenuOpen,
-  responseCount = 0,
 }: FormListItemProps) {
-  const updatedAt = dayjs(form.updatedAt);
+  const { user } = useAuth();
+
+  const isOwner = form.author_id === user?.id;
+
+  const updatedAt = dayjs(form.updated_at);
   const dateStr = updatedAt.isToday()
     ? updatedAt.format("HH:mm")
     : updatedAt.format("D MMM YYYY");
@@ -65,7 +67,7 @@ export default function FormListItem({
           color="text.secondary"
           sx={{ fontSize: "0.8125rem" }}
         >
-          {form.authorId}
+          {isOwner ? "You" : form.author_name}
         </Typography>
       </Box>
       <Box sx={{ flex: 1, textAlign: "left" }}>
@@ -74,7 +76,7 @@ export default function FormListItem({
           color="text.secondary"
           sx={{ fontSize: "0.8125rem" }}
         >
-          {form.responseCount ?? 0} responses
+          {form.response_count ?? 0} responses
         </Typography>
       </Box>
       <Box sx={{ flex: 1, textAlign: "left" }}>
