@@ -109,8 +109,8 @@ export const useFormsStore = create<FormsState>()(
           ...src,
           id: createId("form"),
           title: newTitle,
-          createdAt: now,
-          updatedAt: now,
+          created_at: now,
+          updated_at: now,
           status: FormStatus.DRAFT,
           questions: normalizeOrders(
             src.questions.map((q, idx) => cloneQuestion(q, idx)),
