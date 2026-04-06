@@ -16,6 +16,7 @@ import {
 import { move } from "@dnd-kit/helpers";
 import { useParams } from "next/navigation";
 import React from "react";
+import debounce from "lodash/debounce";
 import { motion } from "framer-motion";
 import { Tooltip } from "@mui/material";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
@@ -24,7 +25,6 @@ import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { Form } from "@/shared/types/forms";
-import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useDndSensors } from "../dnd/sortable";
 import {
   canDropPaletteItem,
@@ -146,22 +146,45 @@ export default function FormBuilderPage() {
   });
   const mutateFormMeta = updateFormMetaMutation.mutate;
 
-  const [pendingFormUpdates, setPendingFormUpdates] =
-    React.useState<Partial<Form> | null>(null);
-  const debouncedFormUpdates = useDebouncedValue(pendingFormUpdates, 400);
+  // Buffer to hold form metadata updates before sending them to the server
+  const pendingUpdatesRef = React.useRef<Partial<Form>>({});
 
-  const queueFormMetaUpdate = React.useCallback((updates: Partial<Form>) => {
-    setPendingFormUpdates((prev) => ({
-      ...(prev ?? {}),
-      ...updates,
-    }));
-  }, []);
+  // Use a ref to hold the debounced flush function to avoid recreation or linter issues
+  const flushUpdatesRef = React.useRef<ReturnType<typeof debounce> | null>(
+    null,
+  );
 
   React.useEffect(() => {
-    if (!debouncedFormUpdates) return;
-    setPendingFormUpdates(null);
-    mutateFormMeta(debouncedFormUpdates);
-  }, [debouncedFormUpdates, mutateFormMeta]);
+    // Create the debounced function inside the effect to satisfy the React linter
+    flushUpdatesRef.current = debounce(() => {
+      const updates = pendingUpdatesRef.current;
+
+      // If there's nothing to update, do nothing
+      if (Object.keys(updates).length === 0) return;
+
+      // Clear the buffer and send the mutation
+      pendingUpdatesRef.current = {};
+      mutateFormMeta(updates);
+    }, 500);
+
+    return () => {
+      // Clean up on unmount
+      flushUpdatesRef.current?.flush();
+      flushUpdatesRef.current?.cancel();
+    };
+  }, [mutateFormMeta]);
+
+  // The function components will call to update form metadata
+  const queueFormMetaUpdate = React.useCallback((updates: Partial<Form>) => {
+    // Merge the new updates into the buffer
+    pendingUpdatesRef.current = {
+      ...pendingUpdatesRef.current,
+      ...updates,
+    };
+
+    // Trigger the debounced flush
+    flushUpdatesRef.current?.();
+  }, []);
 
   const handleAddQuestion = (type: QuestionType, index?: number) => {
     addQuestionMutation.mutate({ type, index });
