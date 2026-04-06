@@ -1,11 +1,9 @@
 "use client";
 
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import CircularProgress from "@mui/material/CircularProgress";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import {
@@ -22,11 +20,11 @@ import { motion } from "framer-motion";
 import { Tooltip } from "@mui/material";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { Form } from "@/shared/types/forms";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useDndSensors } from "../dnd/sortable";
 import {
   canDropPaletteItem,
@@ -146,6 +144,24 @@ export default function FormBuilderPage() {
       });
     },
   });
+  const mutateFormMeta = updateFormMetaMutation.mutate;
+
+  const [pendingFormUpdates, setPendingFormUpdates] =
+    React.useState<Partial<Form> | null>(null);
+  const debouncedFormUpdates = useDebouncedValue(pendingFormUpdates, 400);
+
+  const queueFormMetaUpdate = React.useCallback((updates: Partial<Form>) => {
+    setPendingFormUpdates((prev) => ({
+      ...(prev ?? {}),
+      ...updates,
+    }));
+  }, []);
+
+  React.useEffect(() => {
+    if (!debouncedFormUpdates) return;
+    setPendingFormUpdates(null);
+    mutateFormMeta(debouncedFormUpdates);
+  }, [debouncedFormUpdates, mutateFormMeta]);
 
   const handleAddQuestion = (type: QuestionType, index?: number) => {
     addQuestionMutation.mutate({ type, index });
@@ -405,9 +421,7 @@ export default function FormBuilderPage() {
               onDuplicateQuestion={(questionId) =>
                 duplicateQuestionMutation.mutate(questionId)
               }
-              onUpdateFormMeta={(updates) =>
-                updateFormMetaMutation.mutate(updates)
-              }
+              onUpdateFormMeta={queueFormMetaUpdate}
             />
           </Box>
           <Box

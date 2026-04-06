@@ -13,6 +13,7 @@ import { apiRequest } from "@/shared/utils/apiRequest";
 import type { Form } from "@/shared/types/forms";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 
 export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
 
@@ -66,6 +67,23 @@ export default function Page() {
       },
     });
 
+  const [pendingFormUpdates, setPendingFormUpdates] =
+    React.useState<Partial<Form> | null>(null);
+  const debouncedFormUpdates = useDebouncedValue(pendingFormUpdates, 400);
+
+  const queueFormMetaUpdate = React.useCallback((updates: Partial<Form>) => {
+    setPendingFormUpdates((prev) => ({
+      ...(prev ?? {}),
+      ...updates,
+    }));
+  }, []);
+
+  React.useEffect(() => {
+    if (!debouncedFormUpdates) return;
+    setPendingFormUpdates(null);
+    updateFormMeta(debouncedFormUpdates);
+  }, [debouncedFormUpdates, updateFormMeta]);
+
   const currentView = useMemo(() => {
     const views = {
       builder: <FormBuilderPage key="builder" />,
@@ -112,7 +130,7 @@ export default function Page() {
       <BuilderTopBar
         form={form}
         isSaving={isSaving}
-        onUpdateFormMeta={(updates) => updateFormMeta(updates)}
+        onUpdateFormMeta={queueFormMetaUpdate}
       />
       {currentView}
     </Box>

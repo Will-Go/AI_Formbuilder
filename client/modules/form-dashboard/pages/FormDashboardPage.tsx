@@ -187,7 +187,7 @@ export default function FormDashboardPage() {
 
   const commonProps = {
     forms: filtered,
-    onOpen: (formId: string) => router.push(`/forms/${formId}/edit`),
+    onOpen: (formId: string) => router.push(`/forms/${formId}?tab=builder`),
     onDuplicate: (formId: string) => {
       duplicateFormMutation.mutate(formId);
     },
