@@ -96,7 +96,7 @@ BEGIN
       config
     ) VALUES (
       v_new_form_id,
-      v_question.type,
+      v_question.type::public.question_type,
       v_question.label,
       v_question.description,
       v_question.required,

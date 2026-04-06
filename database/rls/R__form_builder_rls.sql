@@ -9,7 +9,13 @@ CREATE POLICY forms_select
 ON public.forms
 FOR SELECT
 USING (
-  owner_id = auth.uid() OR status = 'published'
+  owner_id = auth.uid() 
+  OR status = 'published'
+  OR (status = 'private' AND EXISTS (
+      SELECT 1 FROM public.form_shared_list fsl 
+      WHERE fsl.form_id = public.forms.id 
+      AND fsl.email = (auth.jwt() ->> 'email')::text
+  ))
 );
 
 DROP POLICY IF EXISTS forms_insert ON public.forms;
@@ -42,7 +48,15 @@ USING (
     SELECT 1
     FROM public.forms f
     WHERE f.id = questions.form_id
-      AND (f.owner_id = auth.uid() OR f.status = 'published')
+      AND (
+        f.owner_id = auth.uid() 
+        OR f.status = 'published'
+        OR (f.status = 'private' AND EXISTS (
+            SELECT 1 FROM public.form_shared_list fsl 
+            WHERE fsl.form_id = f.id 
+            AND fsl.email = (auth.jwt() ->> 'email')::text
+        ))
+      )
   )
 );
 
@@ -103,7 +117,15 @@ USING (
     FROM public.questions q
     JOIN public.forms f ON f.id = q.form_id
     WHERE q.id = options.question_id
-      AND (f.owner_id = auth.uid() OR f.status = 'published')
+      AND (
+        f.owner_id = auth.uid() 
+        OR f.status = 'published'
+        OR (f.status = 'private' AND EXISTS (
+            SELECT 1 FROM public.form_shared_list fsl 
+            WHERE fsl.form_id = f.id 
+            AND fsl.email = (auth.jwt() ->> 'email')::text
+        ))
+      )
   )
 );
 
@@ -180,7 +202,14 @@ WITH CHECK (
     SELECT 1
     FROM public.forms f
     WHERE f.id = responses.form_id
-      AND f.status = 'published'
+      AND (
+        f.status = 'published'
+        OR (f.status = 'private' AND EXISTS (
+            SELECT 1 FROM public.form_shared_list fsl 
+            WHERE fsl.form_id = f.id 
+            AND fsl.email = (auth.jwt() ->> 'email')::text
+        ))
+      )
   )
 );
 
@@ -243,7 +272,14 @@ WITH CHECK (
     JOIN public.forms f ON f.id = r.form_id
     JOIN public.questions q ON q.id = answers.question_id AND q.form_id = f.id
     WHERE r.id = answers.response_id
-      AND f.status = 'published'
+      AND (
+        f.status = 'published'
+        OR (f.status = 'private' AND EXISTS (
+            SELECT 1 FROM public.form_shared_list fsl 
+            WHERE fsl.form_id = f.id 
+            AND fsl.email = (auth.jwt() ->> 'email')::text
+        ))
+      )
   )
 );
 
@@ -283,3 +319,56 @@ USING (
       AND f.owner_id = auth.uid()
   )
 );
+
+-- Row level security for form_shared_list
+ALTER TABLE public.form_shared_list ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS form_shared_list_select ON public.form_shared_list;
+CREATE POLICY form_shared_list_select
+ON public.form_shared_list
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM public.forms f
+    WHERE f.id = form_shared_list.form_id
+    AND f.owner_id = auth.uid()
+  )
+  OR email = (auth.jwt() ->> 'email')::text
+);
+
+DROP POLICY IF EXISTS form_shared_list_insert ON public.form_shared_list;
+CREATE POLICY form_shared_list_insert
+ON public.form_shared_list
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.forms f
+    WHERE f.id = form_shared_list.form_id
+    AND f.owner_id = auth.uid()
+  )
+);
+
+DROP POLICY IF EXISTS form_shared_list_update ON public.form_shared_list;
+CREATE POLICY form_shared_list_update
+ON public.form_shared_list
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM public.forms f
+    WHERE f.id = form_shared_list.form_id
+    AND f.owner_id = auth.uid()
+  )
+);
+
+DROP POLICY IF EXISTS form_shared_list_delete ON public.form_shared_list;
+CREATE POLICY form_shared_list_delete
+ON public.form_shared_list
+FOR DELETE
+USING (
+  EXISTS (
+    SELECT 1 FROM public.forms f
+    WHERE f.id = form_shared_list.form_id
+    AND f.owner_id = auth.uid()
+  )
+);
+

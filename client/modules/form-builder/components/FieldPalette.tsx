@@ -44,9 +44,11 @@ const QUESTION_TYPE_ICONS: Record<QuestionType, ElementType> = {
 export default function FieldPalette({
   formId,
   activeDragType,
+  onAddQuestion,
 }: {
   formId: string;
   activeDragType: QuestionType | null;
+  onAddQuestion: (type: QuestionType) => void;
 }) {
   const groups = QUESTION_TYPE_META.reduce<
     Record<string, typeof QUESTION_TYPE_META>
@@ -114,6 +116,7 @@ export default function FieldPalette({
                   label={m.label}
                   icon={QUESTION_TYPE_ICONS[m.type]}
                   activeDragType={activeDragType}
+                  onAddQuestion={onAddQuestion}
                 />
               ))}
             </List>

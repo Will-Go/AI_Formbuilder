@@ -6,19 +6,22 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
+import type { Form } from "@/shared/types/forms";
 
 export default function QuestionConfigPanel({
-  formId,
+  form,
   selectedQuestionId,
+  onUpdateQuestion,
 }: {
-  formId: string;
+  form: Form;
   selectedQuestionId: string | null;
+  onUpdateQuestion: (
+    questionId: string,
+    updates: Record<string, unknown>,
+  ) => void;
 }) {
-  const form = useFormsStore((s) => s.getFormById(formId));
-  const updateQuestion = useFormsStore((s) => s.updateQuestion);
-
-  const question = form?.questions.find((q) => q.id === selectedQuestionId) ?? null;
+  const question =
+    form?.questions.find((q) => q.id === selectedQuestionId) ?? null;
 
   return (
     <Paper variant="outlined" sx={{ p: 2, position: "sticky", top: 96 }}>
@@ -37,7 +40,7 @@ export default function QuestionConfigPanel({
             label="Label"
             value={question.label}
             onChange={(e) =>
-              updateQuestion(formId, question.id, (prev) => ({ ...prev, label: e.target.value }))
+              onUpdateQuestion(question.id, { label: e.target.value })
             }
           />
           <TextField
@@ -45,10 +48,7 @@ export default function QuestionConfigPanel({
             label="Description"
             value={question.description ?? ""}
             onChange={(e) =>
-              updateQuestion(formId, question.id, (prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
+              onUpdateQuestion(question.id, { description: e.target.value })
             }
             multiline
           />
@@ -58,10 +58,7 @@ export default function QuestionConfigPanel({
               label="Placeholder"
               value={question.placeholder ?? ""}
               onChange={(e) =>
-                updateQuestion(formId, question.id, (prev) => {
-                  if (!("placeholder" in prev)) return prev;
-                  return { ...prev, placeholder: e.target.value };
-                })
+                onUpdateQuestion(question.id, { placeholder: e.target.value })
               }
             />
           ) : null}
@@ -75,4 +72,3 @@ export default function QuestionConfigPanel({
     </Paper>
   );
 }
-

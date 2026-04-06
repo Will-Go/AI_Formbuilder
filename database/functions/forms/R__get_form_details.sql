@@ -5,7 +5,8 @@ DROP FUNCTION IF EXISTS public.get_form_details;
 CREATE OR REPLACE FUNCTION public.get_form_details(p_form_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
-STABLE
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_result jsonb;
@@ -22,6 +23,7 @@ BEGIN
     'description', f.description,
     'status', f.status,
     'author_id', f.owner_id,
+    'author_name', u.raw_user_meta_data ->> 'name',
     'created_at', f.created_at,
     'updated_at', f.updated_at,
     'theme', f.theme,
@@ -63,6 +65,7 @@ BEGIN
   )
   INTO v_result
   FROM public.forms f
+  LEFT JOIN auth.users u ON f.owner_id = u.id
   WHERE f.id = p_form_id;
 
   -- Error Handling: If no form was found, raise an exception

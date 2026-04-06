@@ -6,7 +6,6 @@ import ListItemText from "@mui/material/ListItemText";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { useDraggable } from "@dnd-kit/react";
 import type { ElementType } from "react";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { QuestionType } from "@/shared/types/forms";
 
 interface PaletteItemProps {
@@ -15,6 +14,7 @@ interface PaletteItemProps {
   label: string;
   icon: ElementType;
   activeDragType: QuestionType | null;
+  onAddQuestion: (type: QuestionType) => void;
 }
 
 export function PaletteItem({
@@ -23,10 +23,10 @@ export function PaletteItem({
   label,
   icon,
   activeDragType,
+  onAddQuestion,
 }: PaletteItemProps) {
-  const addQuestion = useFormsStore((s) => s.addQuestion);
   const TypeIcon = icon;
-  const { ref, isDragging,} = useDraggable({
+  const { ref, isDragging } = useDraggable({
     id: `palette-item:${type}`,
     data: {
       source: "palette",
@@ -38,7 +38,7 @@ export function PaletteItem({
   return (
     <ListItemButton
       ref={ref}
-      onClick={() => addQuestion(formId, type)}
+      onClick={() => onAddQuestion(type)}
       aria-label={`Drag ${label} to canvas or press Enter to add`}
       sx={{
         borderRadius: 1,

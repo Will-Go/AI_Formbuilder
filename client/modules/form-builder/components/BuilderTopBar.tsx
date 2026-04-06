@@ -10,11 +10,11 @@ import IconButton from "@mui/material/IconButton";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import type { Form } from "@/shared/types/forms";
 import InputBase from "@mui/material/InputBase";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import React, { useState } from "react";
 import Link from "next/link";
 import { FormStatus } from "@/shared/types/forms";
@@ -29,13 +29,31 @@ import TuneIcon from "@mui/icons-material/Tune";
 
 import Chip from "@mui/material/Chip";
 
+import CloudDoneIcon from "@mui/icons-material/CloudDone";
+import SyncIcon from "@mui/icons-material/Sync";
 import { stripHtml } from "@/shared/utils/html";
+import useQueryParams from "@/shared/hooks/useQueryParams";
 
-export default function BuilderTopBar({ form }: { form: Form }) {
+export default function BuilderTopBar({
+  form,
+  isSaving = false,
+  onUpdateFormMeta,
+}: {
+  form: Form;
+  isSaving?: boolean;
+  onUpdateFormMeta: (updates: Partial<Form>) => void;
+}) {
+  const { queryParams } = useQueryParams(["tab"]);
+  const tab = queryParams?.tab || "builder";
+
   const router = useRouter();
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
-  const updateFormMeta = useFormsStore((s) => s.updateFormMeta);
+
+  //TODO: update this and set a template for the moment:
+  const updateFormMeta = (meta: Partial<Form>) => {
+    onUpdateFormMeta(meta);
+  };
 
   const [title, setTitle] = React.useState(() => stripHtml(form.title));
 
@@ -51,7 +69,7 @@ export default function BuilderTopBar({ form }: { form: Form }) {
   const handleTitleBlur = () => {
     const trimmed = title.trim();
     if (trimmed && trimmed !== stripHtml(form.title)) {
-      updateFormMeta(formId, { title: trimmed });
+      updateFormMeta({ title: trimmed });
     } else {
       setTitle(stripHtml(form.title));
     }
@@ -140,6 +158,32 @@ export default function BuilderTopBar({ form }: { form: Form }) {
               sx={{ ml: 1 }}
             />
           )}
+          {/* Saving Status Indicator */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              ml: 2,
+              color: "text.secondary",
+            }}
+          >
+            {isSaving ? (
+              <>
+                <SyncIcon className="animate-spin!" sx={{ fontSize: 16 }} />
+                <Typography variant="caption" sx={{ whiteSpace: "nowrap" }}>
+                  Saving...
+                </Typography>
+              </>
+            ) : (
+              <>
+                <CloudDoneIcon sx={{ fontSize: 16 }} />
+                <Typography variant="caption" sx={{ whiteSpace: "nowrap" }}>
+                  Saved to cloud
+                </Typography>
+              </>
+            )}
+          </Box>
         </Box>
         <Box sx={{ flex: 1 }} />
         <Link href={`/forms/${formId}/preview`} target="_blank">
@@ -184,13 +228,22 @@ export default function BuilderTopBar({ form }: { form: Form }) {
         <UserProfile />
       </Toolbar>
       <Box sx={{ px: { xs: 1.5, sm: 3 } }}>
-        <Tabs value={0} aria-label="Builder tabs">
-          <Tab label="Questions" />
+        <Tabs value={tab} aria-label="Builder tabs">
           <Tab
-            label="Responses"
-            onClick={() => router.push(`/forms/${formId}/responses`)}
+            value="builder"
+            label="Questions"
+            onClick={() => router.push(`/forms/${formId}?tab=builder`)}
           />
-          <Tab label="Settings" />
+          <Tab
+            value="responses"
+            label="Responses"
+            onClick={() => router.push(`/forms/${formId}?tab=responses`)}
+          />
+          <Tab
+            value="settings"
+            label="Settings"
+            onClick={() => router.push(`/forms/${formId}?tab=settings`)}
+          />
         </Tabs>
       </Box>
 
@@ -200,13 +253,13 @@ export default function BuilderTopBar({ form }: { form: Form }) {
         onClose={() => setPublishDialogOpen(false)}
         formId={formId}
         formStatus={form.status}
-        onStatusChange={(status) => updateFormMeta(formId, { status })}
+        onStatusChange={(status) => updateFormMeta({ status })}
         onOpenManage={() => {
           setPublishDialogOpen(false);
           setShareDialogOpen(true);
         }}
         onPublish={() => {
-          updateFormMeta(formId, { status: FormStatus.PUBLISHED });
+          updateFormMeta({ status: FormStatus.PUBLISHED });
           setPublishDialogOpen(false);
         }}
       />
@@ -218,7 +271,7 @@ export default function BuilderTopBar({ form }: { form: Form }) {
         formTitle={title}
         formStatus={form.status}
         onStatusChange={(status) => {
-          updateFormMeta(formId, { status });
+          updateFormMeta({ status });
           if (
             status === FormStatus.PUBLISHED ||
             status === FormStatus.PRIVATE
@@ -234,7 +287,7 @@ export default function BuilderTopBar({ form }: { form: Form }) {
         formId={formId}
         formTitle={title}
         formStatus={form.status}
-        onStatusChange={(status) => updateFormMeta(formId, { status })}
+        onStatusChange={(status) => updateFormMeta({ status })}
         onOpenManage={() => {
           setPublishedOptionsDialogOpen(false);
           setShareDialogOpen(true);

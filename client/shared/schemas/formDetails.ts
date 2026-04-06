@@ -23,6 +23,7 @@ export const FormDetailsSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   author_id: z.string().uuid(),
+  author_name: z.string().optional(),
   description: z.string().nullable().optional(),
   status: z.enum(["draft", "published", "private", "closed"]),
   created_at: z.string(),

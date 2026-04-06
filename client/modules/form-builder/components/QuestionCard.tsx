@@ -20,7 +20,6 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
 import { createQuestionByType } from "@/constants/defaults";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { Option, Question, QuestionType } from "@/shared/types/forms";
 import { createId } from "@/shared/utils/id";
 import RichTextEditor from "@/shared/components/RichTextEditor";
@@ -38,27 +37,31 @@ function preserveCommonFields(prev: Question, next: Question): Question {
 }
 
 interface QuestionCardProps {
-  formId: string;
   question: Question;
   selected: boolean;
   onSelect: () => void;
+  onUpdateQuestion: (
+    questionId: string,
+    updates: Record<string, unknown>,
+  ) => void;
+  onDeleteQuestion: (questionId: string) => void;
+  onDuplicateQuestion: (questionId: string) => void;
   isPreview?: boolean;
   isDragging?: boolean;
   dragHandleRef?: React.Ref<HTMLButtonElement>;
 }
+
 export default function QuestionCard({
-  formId,
   question,
   selected,
   onSelect,
+  onUpdateQuestion,
+  onDeleteQuestion,
+  onDuplicateQuestion,
   isPreview,
   isDragging,
   dragHandleRef,
 }: QuestionCardProps) {
-  const updateQuestion = useFormsStore((s) => s.updateQuestion);
-  const deleteQuestion = useFormsStore((s) => s.deleteQuestion);
-  const duplicateQuestion = useFormsStore((s) => s.duplicateQuestion);
-
   const optionLabel =
     "options" in question && Array.isArray(question.options)
       ? question.options
@@ -73,37 +76,30 @@ export default function QuestionCard({
 
   const addOption = () => {
     if (!("options" in question)) return;
-    updateQuestion(formId, question.id, (prev) => {
-      if (!("options" in prev)) return prev;
-      const nextOpt: Option = {
-        id: createId("opt"),
-        label: `Option ${prev.options.length + 1}`,
-      };
-      return { ...prev, options: [...prev.options, nextOpt] };
+    const nextOpt: Option = {
+      id: createId("opt"),
+      label: `Option ${question.options.length + 1}`,
+      value: `option_${question.options.length + 1}`,
+      order: question.options.length,
+    };
+    onUpdateQuestion(question.id, {
+      options: [...question.options, nextOpt],
     });
   };
 
   const updateOption = (optId: string, label: string) => {
     if (!("options" in question)) return;
-    updateQuestion(formId, question.id, (prev) => {
-      if (!("options" in prev)) return prev;
-      return {
-        ...prev,
-        options: prev.options.map((o) =>
-          o.id === optId ? { ...o, label } : o,
-        ),
-      };
+    onUpdateQuestion(question.id, {
+      options: question.options.map((o) =>
+        o.id === optId ? { ...o, label } : o,
+      ),
     });
   };
 
   const deleteOption = (optId: string) => {
     if (!("options" in question)) return;
-    updateQuestion(formId, question.id, (prev) => {
-      if (!("options" in prev)) return prev;
-      return {
-        ...prev,
-        options: prev.options.filter((o) => o.id !== optId),
-      };
+    onUpdateQuestion(question.id, {
+      options: question.options.filter((o) => o.id !== optId),
     });
   };
 
@@ -190,8 +186,9 @@ export default function QuestionCard({
             onChange={(e) => {
               const nextType = e.target.value as QuestionType;
               const next = createQuestionByType(nextType, question.order);
-              updateQuestion(formId, question.id, (prev) =>
-                preserveCommonFields(prev, next),
+              onUpdateQuestion(
+                question.id,
+                preserveCommonFields(question, next),
               );
             }}
             sx={{ minWidth: 180 }}
@@ -210,10 +207,7 @@ export default function QuestionCard({
           <RichTextEditor
             value={question.label}
             onChange={(value) =>
-              updateQuestion(formId, question.id, (prev) => ({
-                ...prev,
-                label: value,
-              }))
+              onUpdateQuestion(question.id, { label: value })
             }
             placeholder={isSectionDivider ? "Section title" : "Question"}
             allowLists={false}
@@ -225,10 +219,7 @@ export default function QuestionCard({
             variant="standard"
             value={question.label}
             onChange={(e) =>
-              updateQuestion(formId, question.id, (prev) => ({
-                ...prev,
-                label: e.target.value,
-              }))
+              onUpdateQuestion(question.id, { label: e.target.value })
             }
             placeholder="Question"
             InputProps={{ sx: { fontSize: 18, fontWeight: 650 } }}
@@ -238,10 +229,7 @@ export default function QuestionCard({
           <RichTextEditor
             value={question.description ?? ""}
             onChange={(value) =>
-              updateQuestion(formId, question.id, (prev) => ({
-                ...prev,
-                description: value,
-              }))
+              onUpdateQuestion(question.id, { description: value })
             }
             placeholder={
               isSectionDivider
@@ -256,10 +244,7 @@ export default function QuestionCard({
             variant="standard"
             value={question.description ?? ""}
             onChange={(e) =>
-              updateQuestion(formId, question.id, (prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
+              onUpdateQuestion(question.id, { description: e.target.value })
             }
             placeholder="Description (optional)"
             multiline
@@ -273,10 +258,7 @@ export default function QuestionCard({
             size="small"
             value={question.placeholder ?? ""}
             onChange={(e) =>
-              updateQuestion(formId, question.id, (prev) => {
-                if (!("placeholder" in prev)) return prev;
-                return { ...prev, placeholder: e.target.value };
-              })
+              onUpdateQuestion(question.id, { placeholder: e.target.value })
             }
             placeholder="Placeholder"
           />
@@ -336,12 +318,7 @@ export default function QuestionCard({
         {question.type === "paragraph" ? (
           <RichTextEditor
             value={question.text ?? ""}
-            onChange={(value) =>
-              updateQuestion(formId, question.id, (prev) => {
-                if (prev.type !== "paragraph") return prev;
-                return { ...prev, text: value };
-              })
-            }
+            onChange={(value) => onUpdateQuestion(question.id, { text: value })}
             placeholder="Text"
             allowLists={true}
             fontSize={14}
@@ -357,14 +334,10 @@ export default function QuestionCard({
             value={question.max}
             onChange={(e) => {
               const max = Number(e.target.value);
-              updateQuestion(formId, question.id, (prev) => {
-                if (prev.type !== "rating") return prev;
-                return {
-                  ...prev,
-                  max: Number.isFinite(max)
-                    ? Math.max(2, Math.min(10, max))
-                    : prev.max,
-                };
+              onUpdateQuestion(question.id, {
+                max: Number.isFinite(max)
+                  ? Math.max(2, Math.min(10, max))
+                  : question.max,
               });
             }}
             label="Max rating"
@@ -381,11 +354,11 @@ export default function QuestionCard({
               inputProps={{ min: 0, max: 9 }}
               onChange={(e) => {
                 const min = Number(e.target.value);
-                updateQuestion(formId, question.id, (prev) => {
-                  if (prev.type !== "linear_scale") return prev;
-                  if (!Number.isFinite(min)) return prev;
-                  return { ...prev, min: Math.max(0, Math.min(9, min)) };
-                });
+                if (Number.isFinite(min)) {
+                  onUpdateQuestion(question.id, {
+                    min: Math.max(0, Math.min(9, min)),
+                  });
+                }
               }}
               label="Min"
               fullWidth
@@ -398,14 +371,11 @@ export default function QuestionCard({
               inputProps={{ min: 1, max: 10 }}
               onChange={(e) => {
                 const max = Number(e.target.value);
-                updateQuestion(formId, question.id, (prev) => {
-                  if (prev.type !== "linear_scale") return prev;
-                  if (!Number.isFinite(max)) return prev;
-                  return {
-                    ...prev,
-                    max: Math.max(prev.min + 1, Math.min(10, max)),
-                  };
-                });
+                if (Number.isFinite(max)) {
+                  onUpdateQuestion(question.id, {
+                    max: Math.max(question.min + 1, Math.min(10, max)),
+                  });
+                }
               }}
               label="Max"
               fullWidth
@@ -420,10 +390,7 @@ export default function QuestionCard({
               variant="outlined"
               value={question.yesLabel ?? "Yes"}
               onChange={(e) =>
-                updateQuestion(formId, question.id, (prev) => {
-                  if (prev.type !== "yes_no") return prev;
-                  return { ...prev, yesLabel: e.target.value };
-                })
+                onUpdateQuestion(question.id, { yesLabel: e.target.value })
               }
               label="Yes label"
               fullWidth
@@ -433,10 +400,7 @@ export default function QuestionCard({
               variant="outlined"
               value={question.noLabel ?? "No"}
               onChange={(e) =>
-                updateQuestion(formId, question.id, (prev) => {
-                  if (prev.type !== "yes_no") return prev;
-                  return { ...prev, noLabel: e.target.value };
-                })
+                onUpdateQuestion(question.id, { noLabel: e.target.value })
               }
               label="No label"
               fullWidth
@@ -468,7 +432,7 @@ export default function QuestionCard({
         <Tooltip title="Duplicate question" placement="top">
           <IconButton
             aria-label="Duplicate"
-            onClick={() => duplicateQuestion(formId, question.id)}
+            onClick={() => onDuplicateQuestion(question.id)}
           >
             <ContentCopyIcon fontSize="small" />
           </IconButton>
@@ -476,7 +440,7 @@ export default function QuestionCard({
         <Tooltip title="Delete question" placement="top">
           <IconButton
             aria-label="Delete"
-            onClick={() => deleteQuestion(formId, question.id)}
+            onClick={() => onDeleteQuestion(question.id)}
           >
             <DeleteIcon fontSize="small" />
           </IconButton>
@@ -487,10 +451,7 @@ export default function QuestionCard({
             <Switch
               checked={question.required}
               onChange={(e) =>
-                updateQuestion(formId, question.id, (prev) => ({
-                  ...prev,
-                  required: e.target.checked,
-                }))
+                onUpdateQuestion(question.id, { required: e.target.checked })
               }
             />
           }

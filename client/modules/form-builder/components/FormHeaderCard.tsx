@@ -2,19 +2,25 @@
 
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import type { Form } from "@/shared/types/forms";
 import RichTextEditor from "@/shared/components/RichTextEditor";
 
-export default function FormHeaderCard({ form }: { form: Form }) {
-  const updateFormMeta = useFormsStore((s) => s.updateFormMeta);
-
+export default function FormHeaderCard({
+  form,
+  onUpdateFormMeta,
+}: {
+  form: Form;
+  onUpdateFormMeta: (updates: Partial<Form>) => void;
+}) {
   return (
-    <Paper variant="outlined" sx={{ p: 3, borderTop: 6, borderTopColor: "primary.main" }}>
+    <Paper
+      variant="outlined"
+      sx={{ p: 3, borderTop: 6, borderTopColor: "primary.main" }}
+    >
       <Stack spacing={2}>
         <RichTextEditor
           value={form.title}
-          onChange={(value) => updateFormMeta(form.id, { title: value })}
+          onChange={(value) => onUpdateFormMeta({ title: value })}
           placeholder="Form title"
           allowLists={false}
           fontSize={32}
@@ -22,7 +28,7 @@ export default function FormHeaderCard({ form }: { form: Form }) {
         />
         <RichTextEditor
           value={form.description ?? ""}
-          onChange={(value) => updateFormMeta(form.id, { description: value })}
+          onChange={(value) => onUpdateFormMeta({ description: value })}
           placeholder="Form description"
           allowLists={true}
           fontSize={14}

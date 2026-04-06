@@ -5,6 +5,7 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import {
@@ -15,38 +16,151 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import React from "react";
 import { motion } from "framer-motion";
 import { Tooltip } from "@mui/material";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAppQuery } from "@/shared/hooks/useAppQuery";
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
+import type { Form } from "@/shared/types/forms";
 import { useDndSensors } from "../dnd/sortable";
 import {
   canDropPaletteItem,
   extractPaletteDragType,
   resolveCanvasDropIndex,
 } from "../dnd/paletteDragLogic";
-import BuilderTopBar from "../components/BuilderTopBar";
 import FieldPalette from "../components/FieldPalette";
 import Canvas from "../components/Canvas";
 import QuestionConfigPanel from "../components/QuestionConfigPanel";
 import type { QuestionType } from "@/shared/types/forms";
 import { notifyWarning } from "@/shared/utils/toastNotify";
 
+export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
+
 export default function FormBuilderPage() {
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
-  const router = useRouter();
 
-  const form = useFormsStore((s) => s.getFormById(formId));
-  const addQuestion = useFormsStore((s) => s.addQuestion);
-  const reorderQuestions = useFormsStore((s) => s.reorderQuestions);
-  const selectedQuestionId = useFormsStore(
-    (s) => s.selectedQuestionIdByForm[formId] ?? null,
-  );
-  const isPaletteOpen = useFormsStore((s) => s.isPaletteOpen);
-  const togglePalette = useFormsStore((s) => s.togglePalette);
+  const form = useFormsStore((s) => s.form);
+
+  const queryClient = useQueryClient();
+
+  const setIsSaving = useFormsStore((s) => s.setIsSaving);
+
+  const addQuestionMutation = useAppMutation<
+    unknown,
+    Error,
+    { type: QuestionType; index?: number }
+  >({
+    mutationFn: async ({ type, index }) => {
+      return apiRequest({
+        method: "post",
+        url: `/form/${formId}/questions`,
+        data: { type, index },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+    },
+  });
+
+  const reorderQuestionsMutation = useAppMutation<unknown, Error, string[]>({
+    mutationFn: async (questionIds) => {
+      return apiRequest({
+        method: "put",
+        url: `/form/${formId}/questions/reorder`,
+        data: { questionIds },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+    },
+  });
+
+  const updateQuestionMutation = useAppMutation<
+    unknown,
+    Error,
+    { questionId: string; updates: Record<string, unknown> }
+  >({
+    mutationFn: async ({ questionId, updates }) => {
+      return apiRequest({
+        method: "put",
+        url: `/form/${formId}/questions/${questionId}`,
+        data: updates,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+    },
+  });
+
+  const deleteQuestionMutation = useAppMutation<unknown, Error, string>({
+    mutationFn: async (questionId) => {
+      return apiRequest({
+        method: "delete",
+        url: `/form/${formId}/questions/${questionId}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+    },
+  });
+
+  const duplicateQuestionMutation = useAppMutation<unknown, Error, string>({
+    mutationFn: async (questionId) => {
+      return apiRequest({
+        method: "post",
+        url: `/form/${formId}/questions/${questionId}/duplicate`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+    },
+  });
+
+  const updateFormMetaMutation = useAppMutation<unknown, Error, Partial<Form>>({
+    mutationFn: async (updates) => {
+      return apiRequest({
+        method: "patch",
+        url: `/form/${formId}`,
+        data: updates,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+    },
+  });
+
+  const handleAddQuestion = (type: QuestionType, index?: number) => {
+    addQuestionMutation.mutate({ type, index });
+  };
+
+  const handleSelectQuestion = (questionId: string) => {
+    setSelectedQuestionId((prev) => (prev === questionId ? null : questionId));
+  };
+
+  const [selectedQuestionId, setSelectedQuestionId] = React.useState<
+    string | null
+  >(null);
+
+  const [isPaletteOpen, setIsPaletteOpen] = React.useState(true);
+  const togglePalette = () => setIsPaletteOpen((prev) => !prev);
   const sensors = useDndSensors();
   const [paletteDragType, setPaletteDragType] =
     React.useState<QuestionType | null>(null);
@@ -56,7 +170,9 @@ export default function FormBuilderPage() {
 
   const orderedQuestions = React.useMemo(
     () =>
-      form ? form.questions.slice().sort((a, b) => a.order - b.order) : [],
+      form?.questions
+        ? [...form.questions].sort((a, b) => a.order - b.order)
+        : [],
     [form],
   );
 
@@ -119,14 +235,7 @@ export default function FormBuilderPage() {
           resetPaletteDragState();
           return;
         }
-        const createdQuestionId = addQuestion(
-          formId,
-          paletteDragType,
-          dropIndex,
-        );
-        if (!createdQuestionId) {
-          notifyWarning("Unable to add this field right now.");
-        }
+        handleAddQuestion(paletteDragType, dropIndex);
         resetPaletteDragState();
         return;
       }
@@ -138,8 +247,7 @@ export default function FormBuilderPage() {
         );
 
         if (hasOrderChanged) {
-          reorderQuestions(
-            formId,
+          reorderQuestionsMutation.mutate(
             nextQuestions.map((question) => question.id),
           );
         }
@@ -147,13 +255,12 @@ export default function FormBuilderPage() {
       resetPaletteDragState();
     },
     [
-      addQuestion,
+      handleAddQuestion,
       dropIndex,
       form,
-      formId,
       orderedQuestions,
       paletteDragType,
-      reorderQuestions,
+      reorderQuestionsMutation,
       resetPaletteDragState,
     ],
   );
@@ -163,24 +270,24 @@ export default function FormBuilderPage() {
     [paletteDragType],
   );
 
-  if (!form) {
-    return (
-      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-        <Box sx={{ textAlign: "center" }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-            Form not found
-          </Typography>
-          <Button variant="contained" onClick={() => router.push("/forms")}>
-            Back to dashboard
-          </Button>
-        </Box>
-      </Box>
-    );
-  }
+  const anyPending =
+    addQuestionMutation.isPending ||
+    reorderQuestionsMutation.isPending ||
+    updateQuestionMutation.isPending ||
+    deleteQuestionMutation.isPending ||
+    duplicateQuestionMutation.isPending ||
+    updateFormMetaMutation.isPending;
+
+  React.useEffect(() => {
+    setIsSaving(anyPending);
+    // Cleanup on unmount
+    return () => setIsSaving(false);
+  }, [anyPending, setIsSaving]);
+
+  if (!form) return null;
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-      <BuilderTopBar form={form} />
+    <div>
       <DragDropProvider
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -230,7 +337,11 @@ export default function FormBuilderPage() {
               }}
               aria-hidden={!isPaletteOpen}
             >
-              <FieldPalette formId={formId} activeDragType={paletteDragType} />
+              <FieldPalette
+                formId={formId}
+                activeDragType={paletteDragType}
+                onAddQuestion={handleAddQuestion}
+              />
             </Box>
             <Box
               sx={{
@@ -276,12 +387,27 @@ export default function FormBuilderPage() {
           </Box>
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Canvas
+              form={form}
               formId={formId}
               selectedQuestionId={selectedQuestionId}
               paletteDragType={paletteDragType}
               dropIndex={dropIndex}
               isCanvasOver={isCanvasOver}
               isInvalidDrop={isInvalidDrop}
+              onAddQuestion={handleAddQuestion}
+              onSelectQuestion={handleSelectQuestion}
+              onUpdateQuestion={(questionId, updates) =>
+                updateQuestionMutation.mutate({ questionId, updates })
+              }
+              onDeleteQuestion={(questionId) =>
+                deleteQuestionMutation.mutate(questionId)
+              }
+              onDuplicateQuestion={(questionId) =>
+                duplicateQuestionMutation.mutate(questionId)
+              }
+              onUpdateFormMeta={(updates) =>
+                updateFormMetaMutation.mutate(updates)
+              }
             />
           </Box>
           <Box
@@ -295,8 +421,11 @@ export default function FormBuilderPage() {
             }}
           >
             <QuestionConfigPanel
-              formId={formId}
+              form={form}
               selectedQuestionId={selectedQuestionId}
+              onUpdateQuestion={(questionId, updates) =>
+                updateQuestionMutation.mutate({ questionId, updates })
+              }
             />
           </Box>
         </Box>
@@ -325,6 +454,6 @@ export default function FormBuilderPage() {
           ) : null}
         </DragOverlay>
       </DragDropProvider>
-    </Box>
+    </div>
   );
 }

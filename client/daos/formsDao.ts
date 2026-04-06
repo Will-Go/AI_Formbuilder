@@ -160,6 +160,28 @@ export async function createForm(input: CreateFormInput): Promise<Form> {
   };
 }
 
+export async function getFormDetails(formId: string): Promise<Form> {
+  if (!formId) {
+    throw new Error("formId is required");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_form_details", {
+    p_form_id: formId,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch form details: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("Form not found");
+  }
+
+  // The RPC returns a single JSONB object that matches the Form structure
+  return data as Form;
+}
+
 export async function copyForm(ownerId: string, originalFormId: string): Promise<Form> {
   if (!ownerId) {
     throw new Error("ownerId is required");

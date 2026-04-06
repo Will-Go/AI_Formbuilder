@@ -81,6 +81,43 @@ BEGIN
       p_theme,
       p_settings
     ) RETURNING * INTO v_form;
+
+
+    -- Insert first question (multiple_choice type)
+    DECLARE
+      v_mc_question_id UUID;
+    BEGIN
+      INSERT INTO public.questions (
+        form_id,
+        type,
+        label,
+        description,
+        required,
+        "order",
+        config
+      ) VALUES (
+        v_form.id,
+        'multiple_choice'::public.question_type,
+        '', -- Empty label
+        NULL, -- NULL description
+        FALSE,
+        1,
+        '{}'::jsonb
+      ) RETURNING id INTO v_mc_question_id;
+
+      -- Insert default option for multiple_choice question
+      INSERT INTO public.options (
+        question_id,
+        value,
+        label,
+        "order"
+      ) VALUES (
+        v_mc_question_id,
+        'Option 1',
+        'Option 1',
+        0
+      );
+    END;
   EXCEPTION WHEN OTHERS THEN
     RAISE EXCEPTION 'Failed to create form: %', SQLERRM;
   END;

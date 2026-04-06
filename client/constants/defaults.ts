@@ -11,25 +11,7 @@ import type {
   ShortTextQuestion,
   YesNoQuestion,
 } from "@/shared/types/forms";
-import { FormStatus } from "@/shared/types/forms";
 import { createId } from "@/shared/utils/id";
-import { nowIso } from "@/shared/utils/dateFormatter";
-
-export function createBlankForm(): Form {
-  const now = nowIso();
-  const formId = createId("form");
-  return {
-    id: formId,
-    // TODO: Add authorId when auth is implemented
-    authorId: "",
-    title: "Untitled form",
-    description: "",
-    createdAt: now,
-    updatedAt: now,
-    status: FormStatus.DRAFT,
-    questions: [createDefaultQuestion(0)],
-  };
-}
 
 export function createDefaultQuestion(order: number): Question {
   const q: ShortTextQuestion = {
