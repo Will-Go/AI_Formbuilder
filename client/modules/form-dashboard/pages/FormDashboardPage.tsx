@@ -75,18 +75,15 @@ export default function FormDashboardPage() {
   const forms = useMemo(() => resForms ?? [], [resForms]);
 
   const duplicateFormMutation = useAppMutation<
-    CreateFormResponse,
+    Form,
     unknown,
     string,
     { previousForms: Form[] }
   >({
     mutationFn: async (formId) =>
-      apiRequest<CreateFormResponse>({
+      apiRequest<Form>({
         method: "post",
-        url: "/form",
-        data: {
-          sourceFormId: formId,
-        },
+        url: `/form/${formId}/copy`,
       }),
     onMutate: async (formId) => {
       setActionError(null);
@@ -124,13 +121,15 @@ export default function FormDashboardPage() {
       setActionError(getErrorMessage(error));
     },
     onSuccess: (response) => {
-      if (response.formId) {
-        router.push(`/forms/${response.formId}/edit`);
+      if (response.id) {
+        router.push(`/forms/${response.id}/edit`);
       }
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: FORMS_QUERY_KEY });
     },
+    successMsg: (data: unknown) =>
+      `Form "${(data as Form).title}" copied successfully`,
   });
 
   const { mutateAsync: deleteFormMutation } = useAppMutation<

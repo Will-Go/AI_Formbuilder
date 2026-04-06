@@ -11,11 +11,13 @@ import isToday from "dayjs/plugin/isToday";
 import type { Form } from "@/shared/types/forms";
 import { stripHtml } from "@/shared/utils/html";
 import { useAuth } from "@/shared/context/AuthContext";
+import CircularProgress from "@mui/material/CircularProgress";
 
 dayjs.extend(isToday);
 
 interface FormListItemProps {
   form: Form;
+  isCopying?: boolean;
   onOpen: (formId: string) => void;
   onMenuOpen: (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -25,6 +27,7 @@ interface FormListItemProps {
 
 export default function FormListItem({
   form,
+  isCopying = false,
   onOpen,
   onMenuOpen,
 }: FormListItemProps) {
@@ -88,16 +91,22 @@ export default function FormListItem({
           {dateStr}
         </Typography>
       </Box>
-      <IconButton
-        className="more-btn"
-        size="small"
-        onClick={(e) => {
-          e.stopPropagation();
-          onMenuOpen(e, form.id);
-        }}
-      >
-        <MoreVertIcon fontSize="small" />
-      </IconButton>
+      {isCopying ? (
+        <Box sx={{ px: 1, display: "flex", alignItems: "center" }}>
+          <CircularProgress size={20} />
+        </Box>
+      ) : (
+        <IconButton
+          className="more-btn"
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMenuOpen(e, form.id);
+          }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+      )}
     </Box>
   );
 }

@@ -68,6 +68,7 @@ export default function FormList({
             <FormListItem
               key={f.id}
               form={f}
+              isCopying={f.id.startsWith("temp-copy-")}
               onOpen={onOpen}
               onMenuOpen={handleClick}
             />
@@ -84,6 +85,7 @@ export default function FormList({
             <FormListItem
               key={f.id}
               form={f}
+              isCopying={f.id.startsWith("temp-copy-")}
               onOpen={onOpen}
               onMenuOpen={handleClick}
             />

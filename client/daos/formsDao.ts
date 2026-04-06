@@ -159,3 +159,51 @@ export async function createForm(input: CreateFormInput): Promise<Form> {
     response_count: 0,
   };
 }
+
+export async function copyForm(ownerId: string, originalFormId: string): Promise<Form> {
+  if (!ownerId) {
+    throw new Error("ownerId is required");
+  }
+  if (!originalFormId) {
+    throw new Error("originalFormId is required");
+  }
+
+  const supabase = await createClient();
+  const { data: newFormId, error } = await supabase.rpc("copy_form", {
+    p_original_form_id: originalFormId,
+    p_user_id: ownerId,
+  });
+
+  if (error) {
+    throw new Error(`Failed to copy form: ${error.message}`);
+  }
+
+  if (!newFormId) {
+    throw new Error("Failed to copy form: No ID returned from database");
+  }
+
+  const { data: formData, error: fetchError } = await supabase
+    .from("forms")
+    .select("*")
+    .eq("id", newFormId)
+    .single();
+
+  if (fetchError || !formData) {
+    throw new Error(`Failed to fetch copied form: ${fetchError?.message}`);
+  }
+
+  return {
+    id: formData.id,
+    title: formData.title,
+    author_id: formData.owner_id,
+    author_name: "", // Current user is the owner, name can be fetched separately if needed
+    description: formData.description ?? "",
+    created_at: formData.created_at,
+    updated_at: formData.updated_at,
+    status: formData.status,
+    theme: formData.theme ?? {},
+    settings: formData.settings ?? {},
+    questions: [],
+    response_count: 0,
+  };
+}

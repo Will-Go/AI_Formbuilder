@@ -39,7 +39,6 @@ npm run lint         # Run ESLint
 - **React**: Use `"use client"`, prefer `React.useMemo`/`useCallback`
 - **MUI**: Use `sx` prop, import specific components
 - **Zustand**: Use selectors, `useCallback` for store actions
-- **Testing**: Colocate tests, use Vitest with `describe`/`it`/`expect`
 
 ## Error Handling
 

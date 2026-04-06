@@ -16,9 +16,12 @@ import type { Form } from "@/shared/types/forms";
 import { formatShortDate } from "@/shared/utils/dateFormatter";
 import { stripHtml } from "@/shared/utils/html";
 
+import CircularProgress from "@mui/material/CircularProgress";
+
 interface FormCardProp {
   form: Form;
   responseCount?: number;
+  isCopying?: boolean;
   onOpen: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -27,6 +30,7 @@ interface FormCardProp {
 export default function FormCard({
   form,
   responseCount = 0,
+  isCopying = false,
   onOpen,
   onDuplicate,
   onDelete,
@@ -67,16 +71,22 @@ export default function FormCard({
                 responses
               </Typography>
             </Box>
-            <IconButton
-              aria-label="Form actions"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setAnchorEl(e.currentTarget);
-              }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
+            {isCopying ? (
+              <Box sx={{ p: 1 }}>
+                <CircularProgress size={20} />
+              </Box>
+            ) : (
+              <IconButton
+                aria-label="Form actions"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setAnchorEl(e.currentTarget);
+                }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         </CardContent>
       </Card>

@@ -42,6 +42,7 @@ export default function FormGrid({
             key={f.id}
             form={f}
             responseCount={f.response_count}
+            isCopying={f.id.startsWith("temp-copy-")}
             onOpen={() => onOpen(f.id)}
             onDuplicate={() => onDuplicate(f.id)}
             onDelete={() => onDelete(f.id)}
