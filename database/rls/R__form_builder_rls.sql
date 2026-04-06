@@ -4,6 +4,38 @@ ALTER TABLE public.options ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.answers ENABLE ROW LEVEL SECURITY;
 
+DROP FUNCTION IF EXISTS public.is_form_shared_with_current_user(uuid);
+CREATE OR REPLACE FUNCTION public.is_form_shared_with_current_user(p_form_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.form_shared_list fsl
+    WHERE fsl.form_id = p_form_id
+      AND fsl.email = (auth.jwt() ->> 'email')::text
+  );
+$$;
+
+DROP FUNCTION IF EXISTS public.is_current_user_form_owner(uuid);
+CREATE OR REPLACE FUNCTION public.is_current_user_form_owner(p_form_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.forms f
+    WHERE f.id = p_form_id
+      AND f.owner_id = auth.uid()
+  );
+$$;
+
 DROP POLICY IF EXISTS forms_select ON public.forms;
 CREATE POLICY forms_select
 ON public.forms
@@ -11,11 +43,7 @@ FOR SELECT
 USING (
   owner_id = auth.uid() 
   OR status = 'published'
-  OR (status = 'private' AND EXISTS (
-      SELECT 1 FROM public.form_shared_list fsl 
-      WHERE fsl.form_id = public.forms.id 
-      AND fsl.email = (auth.jwt() ->> 'email')::text
-  ))
+  OR (status = 'private' AND public.is_form_shared_with_current_user(id))
 );
 
 DROP POLICY IF EXISTS forms_insert ON public.forms;
@@ -51,11 +79,7 @@ USING (
       AND (
         f.owner_id = auth.uid() 
         OR f.status = 'published'
-        OR (f.status = 'private' AND EXISTS (
-            SELECT 1 FROM public.form_shared_list fsl 
-            WHERE fsl.form_id = f.id 
-            AND fsl.email = (auth.jwt() ->> 'email')::text
-        ))
+        OR (f.status = 'private' AND public.is_form_shared_with_current_user(f.id))
       )
   )
 );
@@ -120,11 +144,7 @@ USING (
       AND (
         f.owner_id = auth.uid() 
         OR f.status = 'published'
-        OR (f.status = 'private' AND EXISTS (
-            SELECT 1 FROM public.form_shared_list fsl 
-            WHERE fsl.form_id = f.id 
-            AND fsl.email = (auth.jwt() ->> 'email')::text
-        ))
+        OR (f.status = 'private' AND public.is_form_shared_with_current_user(f.id))
       )
   )
 );
@@ -204,11 +224,7 @@ WITH CHECK (
     WHERE f.id = responses.form_id
       AND (
         f.status = 'published'
-        OR (f.status = 'private' AND EXISTS (
-            SELECT 1 FROM public.form_shared_list fsl 
-            WHERE fsl.form_id = f.id 
-            AND fsl.email = (auth.jwt() ->> 'email')::text
-        ))
+        OR (f.status = 'private' AND public.is_form_shared_with_current_user(f.id))
       )
   )
 );
@@ -274,11 +290,7 @@ WITH CHECK (
     WHERE r.id = answers.response_id
       AND (
         f.status = 'published'
-        OR (f.status = 'private' AND EXISTS (
-            SELECT 1 FROM public.form_shared_list fsl 
-            WHERE fsl.form_id = f.id 
-            AND fsl.email = (auth.jwt() ->> 'email')::text
-        ))
+        OR (f.status = 'private' AND public.is_form_shared_with_current_user(f.id))
       )
   )
 );
@@ -328,12 +340,8 @@ CREATE POLICY form_shared_list_select
 ON public.form_shared_list
 FOR SELECT
 USING (
-  EXISTS (
-    SELECT 1 FROM public.forms f
-    WHERE f.id = form_shared_list.form_id
-    AND f.owner_id = auth.uid()
-  )
-  OR email = (auth.jwt() ->> 'email')::text
+  email = (auth.jwt() ->> 'email')::text
+  OR public.is_current_user_form_owner(form_shared_list.form_id)
 );
 
 DROP POLICY IF EXISTS form_shared_list_insert ON public.form_shared_list;
@@ -371,4 +379,3 @@ USING (
     AND f.owner_id = auth.uid()
   )
 );
-

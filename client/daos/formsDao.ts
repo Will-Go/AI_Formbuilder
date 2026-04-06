@@ -182,7 +182,10 @@ export async function getFormDetails(formId: string): Promise<Form> {
   return data as Form;
 }
 
-export async function copyForm(ownerId: string, originalFormId: string): Promise<Form> {
+export async function copyForm(
+  ownerId: string,
+  originalFormId: string,
+): Promise<Form> {
   if (!ownerId) {
     throw new Error("ownerId is required");
   }
@@ -228,4 +231,42 @@ export async function copyForm(ownerId: string, originalFormId: string): Promise
     questions: [],
     response_count: 0,
   };
+}
+
+export async function patchForm(
+  formId: string,
+  updates: Partial<
+    Pick<Form, "title" | "description" | "status" | "theme" | "settings">
+  >,
+): Promise<Form> {
+  if (!formId) {
+    throw new Error("formId is required");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("forms")
+    .update({
+      title: updates.title,
+      description: updates.description,
+      status: updates.status,
+      theme: updates.theme,
+      settings: updates.settings,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", formId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to patch form: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("Failed to patch form: No data returned");
+  }
+
+  // Return the full form details using the existing get_form_details RPC
+  // This ensures we get the fully nested structure with questions/options
+  return getFormDetails(formId);
 }

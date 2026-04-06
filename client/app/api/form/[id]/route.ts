@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/shared/services/supabase/server";
 import { FormDetailsSchema } from "@/shared/schemas/formDetails";
 import { withAuth } from "@/shared/utils/with-is-auth";
+import { patchForm } from "@/daos/formsDao";
 
 import { z } from "zod";
 interface RouteParams {
@@ -121,6 +122,43 @@ export const DELETE = withAuth(
       const response = { ok: true };
       return NextResponse.json(response);
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unexpected server error";
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  },
+);
+
+export const PATCH = withAuth(
+  async (request: Request, { params }: RouteParams) => {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const { id } = await params;
+
+      if (!id) {
+        return NextResponse.json(
+          { error: "Form ID is required" },
+          { status: 400 },
+        );
+      }
+
+      const body = await request.json();
+      const updates = body; // You could add Zod validation here if needed
+
+      const updatedForm = await patchForm(id, updates);
+
+      return NextResponse.json(updatedForm);
+    } catch (error) {
+      console.error("Error patching form:", error);
       const message =
         error instanceof Error ? error.message : "Unexpected server error";
       return NextResponse.json({ error: message }, { status: 500 });

@@ -50,20 +50,21 @@ export default function Page() {
     }
   }, [form, setForm]);
 
-  const updateFormMetaMutation = useAppMutation<unknown, Error, Partial<Form>>({
-    mutationFn: async (updates) => {
-      return apiRequest({
-        method: "patch",
-        url: `/form/${formId}`,
-        data: updates,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-    },
-  });
+  const { mutate: updateFormMeta, isPending: isFormMetaPending } =
+    useAppMutation<unknown, Error, Partial<Form>>({
+      mutationFn: async (updates) => {
+        return apiRequest({
+          method: "patch",
+          url: `/form/${formId}`,
+          data: updates,
+        });
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+        });
+      },
+    });
 
   const currentView = useMemo(() => {
     const views = {
@@ -76,7 +77,7 @@ export default function Page() {
   }, [tab]);
 
   const isSavingStore = useFormsStore((s) => s.isSaving);
-  const isSaving = isSavingStore || updateFormMetaMutation.isPending;
+  const isSaving = isSavingStore || isFormMetaPending;
 
   if (isPending) {
     return (
@@ -111,7 +112,7 @@ export default function Page() {
       <BuilderTopBar
         form={form}
         isSaving={isSaving}
-        onUpdateFormMeta={(updates) => updateFormMetaMutation.mutate(updates)}
+        onUpdateFormMeta={(updates) => updateFormMeta(updates)}
       />
       {currentView}
     </Box>
