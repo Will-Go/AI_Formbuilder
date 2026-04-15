@@ -4,6 +4,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
+import { CircularProgress } from "@mui/material";
 import { PreviewFormContent } from "@/modules/form-preview/components/PreviewFormContent";
 import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { apiRequest } from "@/shared/utils/apiRequest";
@@ -14,14 +15,18 @@ export default function FormPreviewPage() {
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
 
-  const { data: form, isLoading } = useAppQuery<Form>({
+  const { data: form, isPending } = useAppQuery<Form>({
     queryKey: ["form-builder", "form-details", formId],
     queryFn: () => apiRequest({ method: "get", url: `/form/${formId}` }),
     showTranslatedErrorToast: false,
   });
 
-  if (isLoading) {
-    return null; // Or a loading spinner
+  if (isPending) {
+    return (
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!form) {

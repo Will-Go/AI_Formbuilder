@@ -19,7 +19,6 @@ interface CopyFormLinkProps {
   formId: string;
   formStatus: FormStatus;
   formTitle: string;
-  isPublished?: boolean;
   buttonText?: string;
   snackbarMessage?: string;
   variant?: "text" | "outlined" | "contained";
@@ -31,13 +30,13 @@ export function CopyFormLink({
   formId,
   formStatus,
   formTitle,
-  isPublished = true,
   buttonText = "Copy respondent link",
   snackbarMessage = "Link copied to clipboard",
   variant = "outlined",
   startIcon = <LinkIcon />,
   sx,
 }: CopyFormLinkProps) {
+  const isPublished = formStatus === FormStatus.PUBLISHED;
   const queryClient = useQueryClient();
   const updateFormMetaMutation = useAppMutation<
     unknown,
@@ -65,10 +64,13 @@ export function CopyFormLink({
       ]);
 
       if (previousForm) {
-        queryClient.setQueryData<Form>(["form-builder", "form-details", formId], {
-          ...previousForm,
-          ...updates,
-        });
+        queryClient.setQueryData<Form>(
+          ["form-builder", "form-details", formId],
+          {
+            ...previousForm,
+            ...updates,
+          },
+        );
       }
 
       return { previousForm };
@@ -101,7 +103,7 @@ export function CopyFormLink({
   const open = Boolean(anchorEl);
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/forms/${formId}/viewForm`;
+    const url = `${window.location.origin}/forms/${formId}/view-form`;
     void navigator.clipboard.writeText(url);
     setSnackbarOpen(true);
     setAnchorEl(null);
@@ -109,7 +111,7 @@ export function CopyFormLink({
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (isPublished) {
-      handleCopyLink();
+      setShareDialogOpen(true);
     } else {
       setAnchorEl(event.currentTarget);
     }

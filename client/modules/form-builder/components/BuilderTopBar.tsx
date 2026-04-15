@@ -38,6 +38,7 @@ import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import { FORM_DETAILS_QUERY_KEY } from "../pages/FormBuilderPage";
 import { FORMS_QUERY_KEY } from "@/modules/form-dashboard/pages/FormDashboardPage";
+import { Tooltip } from "@mui/material";
 
 export default function BuilderTopBar({
   form,
@@ -111,7 +112,9 @@ export default function BuilderTopBar({
   };
 
   const [title, setTitle] = React.useState(() => stripHtml(form.title));
-  const [description, setDescription] = React.useState(() => stripHtml(form.description ?? ""));
+  const [description, setDescription] = React.useState(() =>
+    stripHtml(form.description ?? ""),
+  );
 
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -299,16 +302,17 @@ export default function BuilderTopBar({
           sx={{ display: "flex", alignItems: "center", gap: { xs: 0, sm: 1 } }}
         >
           <Link href={`/forms/${formId}/preview`} target="_blank">
-            <IconButton aria-label="Preview" size="small">
-              <PreviewIcon />
-            </IconButton>
+            <Tooltip title="Preview">
+              <IconButton aria-label="Preview" size="small">
+                <PreviewIcon />
+              </IconButton>
+            </Tooltip>
           </Link>
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
             <CopyFormLink
               formId={formId}
               formStatus={form.status}
               formTitle={title}
-              isPublished={form.status === FormStatus.PUBLISHED}
               startIcon={<ShareIcon />}
               buttonText="Share"
               variant="text"

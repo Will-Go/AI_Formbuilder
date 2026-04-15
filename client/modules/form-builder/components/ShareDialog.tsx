@@ -14,6 +14,7 @@ import PublicIcon from "@mui/icons-material/Public";
 import LockIcon from "@mui/icons-material/Lock";
 import Dialog from "@/shared/components/Dialog";
 import { FormStatus } from "@/shared/types/forms";
+import { useAuth } from "@/shared/context/AuthContext";
 
 interface BaseDialogProps {
   open: boolean;
@@ -34,6 +35,8 @@ export function ShareDialog({
   formStatus,
   onStatusChange,
 }: ShareDialogProps) {
+  const { user } = useAuth();
+
   const [tempStatus, setTempStatus] = useState<FormStatus>(
     formStatus === FormStatus.DRAFT || formStatus === FormStatus.CLOSED
       ? FormStatus.PUBLISHED
@@ -54,6 +57,9 @@ export function ShareDialog({
     onStatusChange(tempStatus);
     onClose();
   };
+  const emailUser = user?.email || "";
+  const nameUser = emailUser.split("@")[0] || "";
+  const initialUser = nameUser?.[0] || "";
 
   return (
     <Dialog
@@ -83,14 +89,14 @@ export function ShareDialog({
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar sx={{ bgcolor: "primary.main", width: 40, height: 40 }}>
-              U
+              {initialUser}
             </Avatar>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                User (you)
+                {nameUser} (you)
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                user@gmail.com
+                {emailUser}
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary">
