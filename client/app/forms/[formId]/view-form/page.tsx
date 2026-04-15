@@ -1,6 +1,6 @@
-import { apiRequestSS } from "@/shared/utils/apiRequestSS";
 import ViewFormPage from "@/modules/view-form/page/ViewFormPage";
 import { Form } from "@/shared/types/forms";
+import { supabaseAdmin } from "@/shared/services/supabase/admin";
 
 export default async function Page({
   params,
@@ -11,13 +11,17 @@ export default async function Page({
   let form: Form | null = null;
 
   try {
-    form = await apiRequestSS<Form>({
-      method: "get",
-      url: `/form/${formId}`,
+    const { data, error } = await supabaseAdmin.rpc("get_form_details", {
+      p_form_id: formId,
     });
+
+    if (!error && data) {
+      form = data as Form;
+    } else if (error) {
+      console.error("Error fetching form:", error);
+    }
   } catch (_error) {
     console.error("Error fetching form:", _error);
-    // If the API request fails (e.g. 404 or network error), pass null
     form = null;
   }
 
