@@ -39,7 +39,6 @@ import {
   optimisticReorderQuestions,
   optimisticUpdateQuestion,
 } from "../utils/formOptimisticUpdates";
-import BuilderTopBar from "../components/BuilderTopBar";
 
 export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
 
@@ -288,7 +287,6 @@ export default function FormBuilderPage() {
 
   return (
     <div>
-      <BuilderTopBar form={form} isSaving={anyPending} />
       <DragDropProvider
         sensors={sensors}
         onDragStart={handleDragStart}

@@ -91,7 +91,7 @@ export default function Page() {
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-      {tab !== "builder" && <BuilderTopBar form={form} isSaving={isSaving} />}
+      <BuilderTopBar form={form} isSaving={isSaving} />
       {currentView}
     </Box>
   );
