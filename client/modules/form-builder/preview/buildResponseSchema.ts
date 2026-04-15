@@ -3,7 +3,10 @@ import type { Form, Question } from "@/shared/types/forms";
 
 export type PreviewFormValues = Record<string, unknown>;
 
-function numberField(required: boolean, rules?: { min?: number; max?: number }) {
+function numberField(
+  required: boolean,
+  rules?: { min?: number; max?: number },
+) {
   let inner = z.number();
   if (rules?.min !== undefined) inner = inner.min(rules.min);
   if (rules?.max !== undefined) inner = inner.max(rules.max);
@@ -18,29 +21,32 @@ function numberField(required: boolean, rules?: { min?: number; max?: number }) 
   return required ? base : base.optional();
 }
 
-function stringField(required: boolean, rules?: { minLength?: number; maxLength?: number; pattern?: string }) {
+function stringField(
+  required: boolean,
+  rules?: { minLength?: number; maxLength?: number; pattern?: string },
+) {
   let schema = z.string();
   if (rules?.minLength !== undefined) schema = schema.min(rules.minLength);
   if (rules?.maxLength !== undefined) schema = schema.max(rules.maxLength);
   if (rules?.pattern) schema = schema.regex(new RegExp(rules.pattern));
-  if (required) schema = schema.min(1);
+  if (required) schema = schema.nonempty("Required");
   return required ? schema : schema.optional();
 }
 
 function emailField(required: boolean) {
   const email = z.string().email("Invalid email");
-  if (required) return email;
+  if (required) return email.nonempty("Required");
   return z.union([email, z.literal("")]).optional();
 }
 
 function checkboxField(required: boolean) {
   const base = z.array(z.string());
-  return required ? base.min(1) : base.optional();
+  return required ? base.nonempty("Required") : base.optional();
 }
 
 function choiceField(required: boolean) {
   const base = z.string();
-  return required ? base.min(1) : base.optional();
+  return required ? base.nonempty("Required") : base.optional();
 }
 
 function yesNoField(required: boolean) {
@@ -50,7 +56,7 @@ function yesNoField(required: boolean) {
 
 function dateField(required: boolean) {
   const base = z.string();
-  return required ? base.min(1) : base.optional();
+  return required ? base.nonempty("Required") : base.optional();
 }
 
 export function buildResponseSchema(form: Form) {
@@ -64,9 +70,11 @@ export function buildResponseSchema(form: Form) {
 
     defaults[q.id] =
       q.type === "checkbox"
-        ? (("defaultValue" in q && Array.isArray(q.defaultValue) ? q.defaultValue : []) as string[])
+        ? (("defaultValue" in q && Array.isArray(q.defaultValue)
+            ? q.defaultValue
+            : []) as string[])
         : "defaultValue" in q
-          ? q.defaultValue ?? ""
+          ? (q.defaultValue ?? "")
           : "";
 
     shape[q.id] = schemaForQuestion(q);
