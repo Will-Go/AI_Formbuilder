@@ -15,16 +15,16 @@ import {
 } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
 import { useParams } from "next/navigation";
-import React from "react";
-import debounce from "lodash/debounce";
+import { v4 as uuidv4 } from "uuid";
+import React, { useCallback } from "react";
 import { motion } from "framer-motion";
 import { Tooltip } from "@mui/material";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useIsMutating } from "@tanstack/react-query";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
-import type { Form } from "@/shared/types/forms";
+import type { Form, Question, QuestionType } from "@/shared/types/forms";
 import { useDndSensors } from "../dnd/sortable";
 import {
   canDropPaletteItem,
@@ -33,9 +33,13 @@ import {
 } from "../dnd/paletteDragLogic";
 import FieldPalette from "../components/FieldPalette";
 import Canvas from "../components/Canvas";
-import QuestionConfigPanel from "../components/QuestionConfigPanel";
-import type { QuestionType } from "@/shared/types/forms";
 import { notifyWarning } from "@/shared/utils/toastNotify";
+import {
+  optimisticAddQuestion,
+  optimisticReorderQuestions,
+  optimisticUpdateQuestion,
+} from "../utils/formOptimisticUpdates";
+import BuilderTopBar from "../components/BuilderTopBar";
 
 export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
 
@@ -44,151 +48,110 @@ export default function FormBuilderPage() {
   const formId = params.formId;
 
   const form = useFormsStore((s) => s.form);
+  const setForm = useFormsStore((s) => s.setForm);
 
   const queryClient = useQueryClient();
 
   const setIsSaving = useFormsStore((s) => s.setIsSaving);
 
-  const addQuestionMutation = useAppMutation<
+  const { mutate: addQuestionMutate, isPending: isAddingQuestionPending } =
+    useAppMutation<
+      { ok: boolean; question: Question },
+      Error,
+      { type: QuestionType; index?: number; id: string },
+      { previousForm?: Form }
+    >({
+      mutationFn: async ({ type, index, id }) => {
+        return apiRequest({
+          method: "post",
+          url: `/form/${formId}/questions`,
+          data: { type, index, id },
+        });
+      },
+      onMutate: async (variables) => {
+        const currentForm = useFormsStore.getState().form;
+        if (!currentForm) {
+          return { previousForm: undefined };
+        }
+        const nextForm = optimisticAddQuestion(
+          currentForm,
+          variables.type,
+          variables.id,
+          variables.index,
+        );
+        setForm(nextForm);
+        queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
+        return { previousForm: currentForm };
+      },
+      onError: (_error, _variables, context) => {
+        if (context?.previousForm) {
+          setForm(context.previousForm);
+          queryClient.setQueryData(
+            [...FORM_DETAILS_QUERY_KEY, formId],
+            context.previousForm,
+          );
+        }
+      },
+      onSuccess: (res, variables) => {
+        if (res.ok && res.question) {
+          queryClient.setQueryData<Form>(
+            [...FORM_DETAILS_QUERY_KEY, formId],
+            (old) => {
+              if (!old) return old;
+              return optimisticUpdateQuestion(old, variables.id, res.question);
+            },
+          );
+        }
+      },
+      errorMsg: "Failed to add question",
+    });
+
+  const reorderQuestionsMutation = useAppMutation<
     unknown,
     Error,
-    { type: QuestionType; index?: number }
+    string[],
+    { previousForm?: Form }
   >({
-    mutationFn: async ({ type, index }) => {
-      return apiRequest({
-        method: "post",
-        url: `/form/${formId}/questions`,
-        data: { type, index },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-    },
-  });
-
-  const reorderQuestionsMutation = useAppMutation<unknown, Error, string[]>({
     mutationFn: async (questionIds) => {
       return apiRequest({
         method: "put",
-        url: `/form/${formId}/questions/reorder`,
+        url: `/form/${formId}/questions`,
         data: { questionIds },
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
+    onMutate: async (questionIds) => {
+      const currentForm = useFormsStore.getState().form;
+      if (!currentForm) {
+        return { previousForm: undefined };
+      }
+      const nextForm = optimisticReorderQuestions(currentForm, questionIds);
+      setForm(nextForm);
+      queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
+      return { previousForm: currentForm };
     },
-  });
-
-  const updateQuestionMutation = useAppMutation<
-    unknown,
-    Error,
-    { questionId: string; updates: Record<string, unknown> }
-  >({
-    mutationFn: async ({ questionId, updates }) => {
-      return apiRequest({
-        method: "put",
-        url: `/form/${formId}/questions/${questionId}`,
-        data: updates,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-    },
-  });
-
-  const deleteQuestionMutation = useAppMutation<unknown, Error, string>({
-    mutationFn: async (questionId) => {
-      return apiRequest({
-        method: "delete",
-        url: `/form/${formId}/questions/${questionId}`,
-      });
+    onError: (_error, _variables, context) => {
+      if (context?.previousForm) {
+        setForm(context.previousForm);
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          context.previousForm,
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
       });
     },
+    errorMsg: "Failed to reorder questions",
   });
 
-  const duplicateQuestionMutation = useAppMutation<unknown, Error, string>({
-    mutationFn: async (questionId) => {
-      return apiRequest({
-        method: "post",
-        url: `/form/${formId}/questions/${questionId}/duplicate`,
-      });
+  const handleAddQuestion = useCallback(
+    (type: QuestionType, index?: number) => {
+      addQuestionMutate({ type, index, id: uuidv4() });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-    },
-  });
-
-  const updateFormMetaMutation = useAppMutation<unknown, Error, Partial<Form>>({
-    mutationFn: async (updates) => {
-      return apiRequest({
-        method: "patch",
-        url: `/form/${formId}`,
-        data: updates,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-    },
-  });
-  const mutateFormMeta = updateFormMetaMutation.mutate;
-
-  // Buffer to hold form metadata updates before sending them to the server
-  const pendingUpdatesRef = React.useRef<Partial<Form>>({});
-
-  // Use a ref to hold the debounced flush function to avoid recreation or linter issues
-  const flushUpdatesRef = React.useRef<ReturnType<typeof debounce> | null>(
-    null,
+    [addQuestionMutate],
   );
-
-  React.useEffect(() => {
-    // Create the debounced function inside the effect to satisfy the React linter
-    flushUpdatesRef.current = debounce(() => {
-      const updates = pendingUpdatesRef.current;
-
-      // If there's nothing to update, do nothing
-      if (Object.keys(updates).length === 0) return;
-
-      // Clear the buffer and send the mutation
-      pendingUpdatesRef.current = {};
-      mutateFormMeta(updates);
-    }, 500);
-
-    return () => {
-      // Clean up on unmount
-      flushUpdatesRef.current?.flush();
-      flushUpdatesRef.current?.cancel();
-    };
-  }, [mutateFormMeta]);
-
-  // The function components will call to update form metadata
-  const queueFormMetaUpdate = React.useCallback((updates: Partial<Form>) => {
-    // Merge the new updates into the buffer
-    pendingUpdatesRef.current = {
-      ...pendingUpdatesRef.current,
-      ...updates,
-    };
-
-    // Trigger the debounced flush
-    flushUpdatesRef.current?.();
-  }, []);
-
-  const handleAddQuestion = (type: QuestionType, index?: number) => {
-    addQuestionMutation.mutate({ type, index });
-  };
 
   const handleSelectQuestion = (questionId: string) => {
     setSelectedQuestionId((prev) => (prev === questionId ? null : questionId));
@@ -309,13 +272,11 @@ export default function FormBuilderPage() {
     [paletteDragType],
   );
 
+  const anyMutating = useIsMutating({ mutationKey: ["form-builder"] }) > 0;
   const anyPending =
-    addQuestionMutation.isPending ||
+    isAddingQuestionPending ||
     reorderQuestionsMutation.isPending ||
-    updateQuestionMutation.isPending ||
-    deleteQuestionMutation.isPending ||
-    duplicateQuestionMutation.isPending ||
-    updateFormMetaMutation.isPending;
+    anyMutating;
 
   React.useEffect(() => {
     setIsSaving(anyPending);
@@ -327,6 +288,7 @@ export default function FormBuilderPage() {
 
   return (
     <div>
+      <BuilderTopBar form={form} isSaving={anyPending} />
       <DragDropProvider
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -377,7 +339,6 @@ export default function FormBuilderPage() {
               aria-hidden={!isPaletteOpen}
             >
               <FieldPalette
-                formId={formId}
                 activeDragType={paletteDragType}
                 onAddQuestion={handleAddQuestion}
               />
@@ -424,7 +385,12 @@ export default function FormBuilderPage() {
               </Tooltip>
             </Box>
           </Box>
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              width: { xs: "100%", md: "calc(100% - 260px)" },
+            }}
+          >
             <Canvas
               form={form}
               formId={formId}
@@ -435,34 +401,6 @@ export default function FormBuilderPage() {
               isInvalidDrop={isInvalidDrop}
               onAddQuestion={handleAddQuestion}
               onSelectQuestion={handleSelectQuestion}
-              onUpdateQuestion={(questionId, updates) =>
-                updateQuestionMutation.mutate({ questionId, updates })
-              }
-              onDeleteQuestion={(questionId) =>
-                deleteQuestionMutation.mutate(questionId)
-              }
-              onDuplicateQuestion={(questionId) =>
-                duplicateQuestionMutation.mutate(questionId)
-              }
-              onUpdateFormMeta={queueFormMetaUpdate}
-            />
-          </Box>
-          <Box
-            sx={{
-              display: { xs: "none", md: "block" },
-              position: "sticky",
-              top: 120,
-              alignSelf: "start",
-              width: 340,
-              flexShrink: 0,
-            }}
-          >
-            <QuestionConfigPanel
-              form={form}
-              selectedQuestionId={selectedQuestionId}
-              onUpdateQuestion={(questionId, updates) =>
-                updateQuestionMutation.mutate({ questionId, updates })
-              }
             />
           </Box>
         </Box>

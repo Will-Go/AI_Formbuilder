@@ -32,6 +32,7 @@ export function UserProfile() {
     fullName || user?.email?.split("@")[0] || user?.phone || "User";
   const email = user?.email || "user@gmail.com";
   const avatarLetter = displayName.charAt(0).toUpperCase();
+  const avatarUrl = claims?.user_metadata?.avatar_url;
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -65,7 +66,7 @@ export function UserProfile() {
           onClick={handleClick}
           sx={{ width: 32, height: 32, cursor: "pointer" }}
           className="bg-accent!"
-          src={user?.user_metadata?.avatar_url || undefined}
+          src={avatarUrl || undefined}
         />
       </Badge>
       <Menu

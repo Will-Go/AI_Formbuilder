@@ -19,6 +19,9 @@ export type ClaimsType = RequiredClaims & {
     first_name?: string;
     last_name?: string;
   };
+  user_metadata?: {
+    avatar_url?: string;
+  };
 };
 
 interface AuthContextType {

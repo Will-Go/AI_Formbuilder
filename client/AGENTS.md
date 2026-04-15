@@ -136,7 +136,17 @@ npx vitest modules/form-builder/dnd/paletteDragLogic.test.ts
 
 ### Form Handling (React Hook Form + Zod)
 
-1. **Define Zod schemas first** for form validation:
+1. **Use centralized Zod schemas**: Define all schemas in `shared/schemas/` and import them to ensure consistency across the codebase:
+   ```typescript
+   // shared/schemas/index.ts
+   export * from "./formDetails";
+   export * from "./passwordPolicy";
+   
+   // In your code, import from the centralized location
+   import { FormDetailsSchema, QuestionSchema } from "@/shared/schemas";
+   ```
+
+2. **Define Zod schemas first** for form validation:
    ```typescript
    import { z } from "zod";
 

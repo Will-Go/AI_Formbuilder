@@ -20,9 +20,28 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 import { QUESTION_TYPE_META } from "@/constants/question-types";
 import { createQuestionByType } from "@/constants/defaults";
-import type { Option, Question, QuestionType } from "@/shared/types/forms";
+import type {
+  Option,
+  Question,
+  QuestionType,
+  Form,
+} from "@/shared/types/forms";
 import { createId } from "@/shared/utils/id";
 import RichTextEditor from "@/shared/components/RichTextEditor";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
+import { notifyError } from "@/shared/utils/toastNotify";
+import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
+import { FORM_DETAILS_QUERY_KEY } from "../pages/FormBuilderPage";
+import {
+  optimisticDeleteQuestion,
+  optimisticDuplicateQuestion,
+  optimisticUpdateQuestion,
+} from "../utils/formOptimisticUpdates";
+import { isOptionsQuestion, hasRequiredQuestion } from "../utils/questionUtils";
+import { Button } from "@mui/material";
 
 function preserveCommonFields(prev: Question, next: Question): Question {
   return {
@@ -38,68 +57,310 @@ function preserveCommonFields(prev: Question, next: Question): Question {
 
 interface QuestionCardProps {
   question: Question;
+  formId: string;
   selected: boolean;
   onSelect: () => void;
-  onUpdateQuestion: (
-    questionId: string,
-    updates: Record<string, unknown>,
-  ) => void;
-  onDeleteQuestion: (questionId: string) => void;
-  onDuplicateQuestion: (questionId: string) => void;
   isPreview?: boolean;
   isDragging?: boolean;
   dragHandleRef?: React.Ref<HTMLButtonElement>;
+  isDeletable?: boolean;
 }
 
 export default function QuestionCard({
   question,
+  formId,
   selected,
   onSelect,
-  onUpdateQuestion,
-  onDeleteQuestion,
-  onDuplicateQuestion,
   isPreview,
   isDragging,
   dragHandleRef,
+  isDeletable = true,
 }: QuestionCardProps) {
+  const queryClient = useQueryClient();
+  const setForm = useFormsStore((s) => s.setForm);
+
+  const { mutate: mutateUpdateQuestion } = useAppMutation<
+    unknown,
+    Error,
+    { questionId: string; updates: Record<string, unknown> },
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "update-question", formId, question.id],
+    mutationFn: async ({ questionId, updates }) => {
+      return apiRequest({
+        method: "patch",
+        url: `/form/${formId}/questions/${questionId}`,
+        data: updates,
+      });
+    },
+    onMutate: async ({ questionId, updates }) => {
+      await queryClient.cancelQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+
+      const previousForm = queryClient.getQueryData<Form>([
+        ...FORM_DETAILS_QUERY_KEY,
+        formId,
+      ]);
+
+      if (previousForm) {
+        const nextForm = optimisticUpdateQuestion(
+          previousForm,
+          questionId,
+          updates,
+        );
+        queryClient.setQueryData<Form>(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          nextForm,
+        );
+      }
+
+      return { previousForm };
+    },
+    onError: (err, { questionId }, context) => {
+      if (context?.previousForm) {
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          context.previousForm,
+        );
+      }
+    },
+    errorMsg: "Failed to update question",
+  });
+
+  const deleteQuestionMutation = useAppMutation<
+    unknown,
+    Error,
+    string,
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "delete-question", formId, question.id],
+    mutationFn: async (questionId) => {
+      return apiRequest({
+        method: "delete",
+        url: `/form/${formId}/questions/${questionId}`,
+      });
+    },
+    onMutate: async (questionId) => {
+      await queryClient.cancelQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+      const previousForm = queryClient.getQueryData<Form>([
+        ...FORM_DETAILS_QUERY_KEY,
+        formId,
+      ]);
+      if (previousForm) {
+        const nextForm = optimisticDeleteQuestion(previousForm, questionId);
+        setForm(nextForm);
+        queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
+      }
+      return { previousForm };
+    },
+    onError: (err, questionId, context) => {
+      notifyError(`Failed to delete question: ${err.message}`);
+      if (context?.previousForm) {
+        setForm(context.previousForm);
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          context.previousForm,
+        );
+      }
+    },
+    errorMsg: "Failed to delete question",
+  });
+
+  const duplicateQuestionMutation = useAppMutation<
+    Form,
+    Error,
+    string,
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "duplicate-question", formId, question.id],
+    mutationFn: async (questionId) => {
+      return apiRequest({
+        method: "post",
+        url: `/form/${formId}/questions/${questionId}/duplicate`,
+      });
+    },
+    onMutate: async (questionId) => {
+      await queryClient.cancelQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+      const previousForm = queryClient.getQueryData<Form>([
+        ...FORM_DETAILS_QUERY_KEY,
+        formId,
+      ]);
+      if (previousForm) {
+        const nextForm = optimisticDuplicateQuestion(previousForm, questionId);
+        setForm(nextForm);
+        queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
+      }
+      return { previousForm };
+    },
+    onError: (err, questionId, context) => {
+      notifyError(`Failed to duplicate question: ${err.message}`);
+      if (context?.previousForm) {
+        setForm(context.previousForm);
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          context.previousForm,
+        );
+      }
+    },
+    onSuccess: (updatedForm) => {
+      if (updatedForm) {
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          updatedForm,
+        );
+      }
+    },
+    errorMsg: "Failed to duplicate question",
+  });
+
+  const [pendingUpdates, setPendingUpdates] = React.useState<
+    Record<string, unknown>
+  >({});
+  const debouncedUpdates = useDebouncedValue(pendingUpdates, 500);
+
+  React.useEffect(() => {
+    if (Object.keys(debouncedUpdates).length === 0) return;
+    if (isPreview) return;
+
+    mutateUpdateQuestion({
+      questionId: question.id,
+      updates: debouncedUpdates,
+    });
+    setPendingUpdates({});
+  }, [debouncedUpdates, mutateUpdateQuestion, question.id, isPreview]);
+
+  const queueQuestionUpdate = React.useCallback(
+    (updates: Record<string, unknown>) => {
+      if (isPreview) return;
+      setPendingUpdates((prev) => ({
+        ...prev,
+        ...updates,
+      }));
+    },
+    [isPreview],
+  );
+
+  // Merge pending updates into the question to ensure controlled inputs update instantly
+  const displayQuestion = { ...question, ...pendingUpdates } as Question;
+
+  const isOptionQuestion = isOptionsQuestion(displayQuestion);
+
   const optionLabel =
-    "options" in question && Array.isArray(question.options)
-      ? question.options
+    "options" in displayQuestion && Array.isArray(displayQuestion.options)
+      ? displayQuestion.options
       : null;
 
   const typeLabel =
-    QUESTION_TYPE_META.find((m) => m.type === question.type)?.label ??
-    question.type;
-  const isSectionDivider = question.type === "section_divider";
+    QUESTION_TYPE_META.find((m) => m.type === displayQuestion.type)?.label ??
+    displayQuestion.type;
+  const isSectionDivider = displayQuestion.type === "section_divider";
   const isRichTextEditable =
-    question.type === "section_divider" || question.type === "paragraph";
+    displayQuestion.type === "section_divider" ||
+    displayQuestion.type === "paragraph";
+
+  const addOptionMutation = useAppMutation<
+    { ok: boolean; question: Question },
+    Error,
+    { questionId: string },
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "add-option", formId, question.id],
+    mutationFn: async ({ questionId }) => {
+      if (!("options" in displayQuestion)) {
+        throw new Error("Question does not support options");
+      }
+
+      const nextOpt: Option = {
+        id: createId("opt"),
+        label: `Option ${displayQuestion.options.length + 1}`,
+        value: `option_${displayQuestion.options.length + 1}`,
+        order: displayQuestion.options.length,
+      };
+
+      return apiRequest({
+        method: "patch",
+        url: `/form/${formId}/questions/${questionId}`,
+        data: { options: [...displayQuestion.options, nextOpt] },
+      });
+    },
+    onMutate: async ({ questionId }) => {
+      await queryClient.cancelQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+
+      const previousForm = queryClient.getQueryData<Form>([
+        ...FORM_DETAILS_QUERY_KEY,
+        formId,
+      ]);
+
+      if (previousForm && "options" in displayQuestion) {
+        const nextOpt: Option = {
+          id: createId("opt"),
+          label: `Option ${displayQuestion.options.length + 1}`,
+          value: `option_${displayQuestion.options.length + 1}`,
+          order: displayQuestion.options.length,
+        };
+
+        const nextForm = optimisticUpdateQuestion(previousForm, questionId, {
+          options: [...displayQuestion.options, nextOpt],
+        });
+        queryClient.setQueryData<Form>(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          nextForm,
+        );
+      }
+
+      return { previousForm };
+    },
+    onError: (err, { questionId }, context) => {
+      notifyError(`Failed to add option: ${err.message}`);
+      if (context?.previousForm) {
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          context.previousForm,
+        );
+      }
+    },
+    onSuccess: (res, { questionId }) => {
+      if (res.ok && res.question) {
+        queryClient.setQueryData<Form>(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          (old) => {
+            if (!old) return old;
+            return optimisticUpdateQuestion(old, questionId, res.question);
+          },
+        );
+      }
+    },
+    errorMsg: "Failed to add option",
+  });
 
   const addOption = () => {
-    if (!("options" in question)) return;
-    const nextOpt: Option = {
-      id: createId("opt"),
-      label: `Option ${question.options.length + 1}`,
-      value: `option_${question.options.length + 1}`,
-      order: question.options.length,
-    };
-    onUpdateQuestion(question.id, {
-      options: [...question.options, nextOpt],
-    });
+    if (!("options" in displayQuestion) || isPreview) return;
+    addOptionMutation.mutate({ questionId: question.id });
   };
 
   const updateOption = (optId: string, label: string) => {
-    if (!("options" in question)) return;
-    onUpdateQuestion(question.id, {
-      options: question.options.map((o) =>
+    if (!("options" in displayQuestion) || isPreview) return;
+    queueQuestionUpdate({
+      options: displayQuestion.options.map((o) =>
         o.id === optId ? { ...o, label } : o,
       ),
     });
   };
 
   const deleteOption = (optId: string) => {
-    if (!("options" in question)) return;
-    onUpdateQuestion(question.id, {
-      options: question.options.filter((o) => o.id !== optId),
+    if (!("options" in displayQuestion) || isPreview) return;
+    mutateUpdateQuestion({
+      questionId: question.id,
+      updates: {
+        options: displayQuestion.options.filter((o) => o.id !== optId),
+      },
     });
   };
 
@@ -124,6 +385,10 @@ export default function QuestionCard({
         boxShadow: isSectionDivider
           ? "inset 0 0 0 1px rgba(25, 118, 210, 0.08)"
           : "none",
+        "&:focus-within": {
+          borderLeftWidth: isSectionDivider ? 6 : 5,
+          borderLeftColor: isSectionDivider ? "primary.dark" : "primary.main",
+        },
         ...(isPreview && {
           borderStyle: "dashed",
           borderWidth: 2,
@@ -182,22 +447,54 @@ export default function QuestionCard({
         <Box sx={{ flex: 1 }} />
         <FormControl size="small">
           <Select
-            value={question.type}
+            value={displayQuestion.type}
             onChange={(e) => {
+              if (isPreview) return;
               const nextType = e.target.value as QuestionType;
-              const next = createQuestionByType(nextType, question.order);
-              onUpdateQuestion(
-                question.id,
-                preserveCommonFields(question, next),
+              const next = createQuestionByType(
+                nextType,
+                displayQuestion.order,
               );
+              mutateUpdateQuestion({
+                questionId: displayQuestion.id,
+                updates: preserveCommonFields(displayQuestion, next),
+              });
             }}
             sx={{ minWidth: 180 }}
+            disabled={isPreview}
+            renderValue={(selected) => {
+              const meta = QUESTION_TYPE_META.find((m) => m.type === selected);
+              const Icon = meta?.icon;
+              return (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {Icon && (
+                    <Icon fontSize="small" sx={{ color: "text.secondary" }} />
+                  )}
+                  <Typography variant="body2">{meta?.label}</Typography>
+                </Box>
+              );
+            }}
           >
-            {QUESTION_TYPE_META.map((m) => (
-              <MenuItem key={m.type} value={m.type}>
-                {m.label}
-              </MenuItem>
-            ))}
+            {QUESTION_TYPE_META.map((m) => {
+              const Icon = m.icon;
+              return (
+                <MenuItem key={m.type} value={m.type}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      width: "100%",
+                    }}
+                  >
+                    {Icon && (
+                      <Icon fontSize="small" sx={{ color: "text.secondary" }} />
+                    )}
+                    <Typography variant="body2">{m.label}</Typography>
+                  </Box>
+                </MenuItem>
+              );
+            })}
           </Select>
         </FormControl>
       </Box>
@@ -205,10 +502,8 @@ export default function QuestionCard({
       <Stack spacing={isSectionDivider ? 2 : 1.5}>
         {isRichTextEditable ? (
           <RichTextEditor
-            value={question.label}
-            onChange={(value) =>
-              onUpdateQuestion(question.id, { label: value })
-            }
+            value={displayQuestion.label}
+            onChange={(value) => queueQuestionUpdate({ label: value })}
             placeholder={isSectionDivider ? "Section title" : "Question"}
             allowLists={false}
             fontSize={isSectionDivider ? 22 : 18}
@@ -217,20 +512,19 @@ export default function QuestionCard({
         ) : (
           <TextField
             variant="standard"
-            value={question.label}
-            onChange={(e) =>
-              onUpdateQuestion(question.id, { label: e.target.value })
-            }
+            value={displayQuestion.label}
+            onChange={(e) => queueQuestionUpdate({ label: e.target.value })}
             placeholder="Question"
-            InputProps={{ sx: { fontSize: 18, fontWeight: 650 } }}
+            InputProps={{
+              sx: { fontSize: 18, fontWeight: 650 },
+              readOnly: isPreview,
+            }}
           />
         )}
         {isRichTextEditable ? (
           <RichTextEditor
-            value={question.description ?? ""}
-            onChange={(value) =>
-              onUpdateQuestion(question.id, { description: value })
-            }
+            value={displayQuestion.description ?? ""}
+            onChange={(value) => queueQuestionUpdate({ description: value })}
             placeholder={
               isSectionDivider
                 ? "Section description (optional)"
@@ -242,29 +536,30 @@ export default function QuestionCard({
         ) : (
           <TextField
             variant="standard"
-            value={question.description ?? ""}
+            value={displayQuestion.description ?? ""}
             onChange={(e) =>
-              onUpdateQuestion(question.id, { description: e.target.value })
+              queueQuestionUpdate({ description: e.target.value })
             }
             placeholder="Description (optional)"
             multiline
-            InputProps={{ sx: { fontSize: 13 } }}
+            InputProps={{ sx: { fontSize: 13 }, readOnly: isPreview }}
           />
         )}
 
-        {"placeholder" in question ? (
+        {"placeholder" in displayQuestion ? (
           <TextField
             variant="outlined"
             size="small"
-            value={question.placeholder ?? ""}
+            value={displayQuestion.placeholder ?? ""}
             onChange={(e) =>
-              onUpdateQuestion(question.id, { placeholder: e.target.value })
+              queueQuestionUpdate({ placeholder: e.target.value })
             }
             placeholder="Placeholder"
+            InputProps={{ readOnly: isPreview }}
           />
         ) : null}
 
-        {optionLabel ? (
+        {isOptionQuestion && optionLabel ? (
           <Box sx={{ mt: 1 }}>
             <Stack spacing={1}>
               {optionLabel.map((o, idx) => (
@@ -285,11 +580,14 @@ export default function QuestionCard({
                     value={o.label}
                     onChange={(e) => updateOption(o.id, e.target.value)}
                     fullWidth
+                    InputProps={{ readOnly: isPreview }}
                   />
+
                   <Tooltip title="Delete option" placement="top">
                     <IconButton
                       aria-label="Delete option"
                       onClick={() => deleteOption(o.id)}
+                      disabled={isPreview}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -297,65 +595,68 @@ export default function QuestionCard({
                 </Box>
               ))}
               <Box>
-                <Tooltip title="Add option" placement="top">
-                  <IconButton aria-label="Add option" onClick={addOption}>
-                    <AddIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="primary.main"
-                  sx={{ ml: 0.5 }}
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<AddIcon fontSize="small" />}
+                  onClick={addOption}
+                  disabled={isPreview}
                 >
-                  Add option
-                </Typography>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="primary.main"
+                    sx={{ ml: 0.5 }}
+                  >
+                    Add option
+                  </Typography>
+                </Button>
               </Box>
             </Stack>
           </Box>
         ) : null}
 
-        {question.type === "paragraph" ? (
+        {displayQuestion.type === "paragraph" ? (
           <RichTextEditor
-            value={question.text ?? ""}
-            onChange={(value) => onUpdateQuestion(question.id, { text: value })}
+            value={displayQuestion.text ?? ""}
+            onChange={(value) => queueQuestionUpdate({ text: value })}
             placeholder="Text"
             allowLists={true}
             fontSize={14}
           />
         ) : null}
 
-        {question.type === "rating" ? (
+        {displayQuestion.type === "rating" ? (
           <TextField
             size="small"
             variant="outlined"
             type="number"
-            inputProps={{ min: 2, max: 10 }}
-            value={question.max}
+            inputProps={{ min: 2, max: 10, readOnly: isPreview }}
+            value={displayQuestion.max}
             onChange={(e) => {
               const max = Number(e.target.value);
-              onUpdateQuestion(question.id, {
+              queueQuestionUpdate({
                 max: Number.isFinite(max)
                   ? Math.max(2, Math.min(10, max))
-                  : question.max,
+                  : displayQuestion.max,
               });
             }}
             label="Max rating"
           />
         ) : null}
 
-        {question.type === "linear_scale" ? (
+        {displayQuestion.type === "linear_scale" ? (
           <Box sx={{ display: "flex", gap: 1 }}>
             <TextField
               size="small"
               variant="outlined"
               type="number"
-              value={question.min}
-              inputProps={{ min: 0, max: 9 }}
+              value={displayQuestion.min}
+              inputProps={{ min: 0, max: 9, readOnly: isPreview }}
               onChange={(e) => {
                 const min = Number(e.target.value);
                 if (Number.isFinite(min)) {
-                  onUpdateQuestion(question.id, {
+                  queueQuestionUpdate({
                     min: Math.max(0, Math.min(9, min)),
                   });
                 }
@@ -367,13 +668,13 @@ export default function QuestionCard({
               size="small"
               variant="outlined"
               type="number"
-              value={question.max}
-              inputProps={{ min: 1, max: 10 }}
+              value={displayQuestion.max}
+              inputProps={{ min: 1, max: 10, readOnly: isPreview }}
               onChange={(e) => {
                 const max = Number(e.target.value);
                 if (Number.isFinite(max)) {
-                  onUpdateQuestion(question.id, {
-                    max: Math.max(question.min + 1, Math.min(10, max)),
+                  queueQuestionUpdate({
+                    max: Math.max(displayQuestion.min + 1, Math.min(10, max)),
                   });
                 }
               }}
@@ -383,27 +684,27 @@ export default function QuestionCard({
           </Box>
         ) : null}
 
-        {question.type === "yes_no" ? (
+        {displayQuestion.type === "yes_no" ? (
           <Box sx={{ display: "flex", gap: 1 }}>
             <TextField
               size="small"
               variant="outlined"
-              value={question.yesLabel ?? "Yes"}
+              value={displayQuestion.yesLabel ?? "Yes"}
               onChange={(e) =>
-                onUpdateQuestion(question.id, { yesLabel: e.target.value })
+                queueQuestionUpdate({ yesLabel: e.target.value })
               }
               label="Yes label"
               fullWidth
+              InputProps={{ readOnly: isPreview }}
             />
             <TextField
               size="small"
               variant="outlined"
-              value={question.noLabel ?? "No"}
-              onChange={(e) =>
-                onUpdateQuestion(question.id, { noLabel: e.target.value })
-              }
+              value={displayQuestion.noLabel ?? "No"}
+              onChange={(e) => queueQuestionUpdate({ noLabel: e.target.value })}
               label="No label"
               fullWidth
+              InputProps={{ readOnly: isPreview }}
             />
           </Box>
         ) : null}
@@ -432,31 +733,43 @@ export default function QuestionCard({
         <Tooltip title="Duplicate question" placement="top">
           <IconButton
             aria-label="Duplicate"
-            onClick={() => onDuplicateQuestion(question.id)}
+            onClick={() => duplicateQuestionMutation.mutate(displayQuestion.id)}
+            disabled={isPreview}
           >
             <ContentCopyIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Delete question" placement="top">
-          <IconButton
-            aria-label="Delete"
-            onClick={() => onDeleteQuestion(question.id)}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={question.required}
-              onChange={(e) =>
-                onUpdateQuestion(question.id, { required: e.target.checked })
+        {isDeletable && (
+          <Tooltip title="Delete question" placement="top">
+            <IconButton
+              aria-label="Delete"
+              onClick={() => deleteQuestionMutation.mutate(displayQuestion.id)}
+              disabled={isPreview}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {hasRequiredQuestion(displayQuestion) && (
+          <>
+            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={displayQuestion.required}
+                  onChange={(e) =>
+                    mutateUpdateQuestion({
+                      questionId: displayQuestion.id,
+                      updates: { required: e.target.checked },
+                    })
+                  }
+                  disabled={isPreview}
+                />
               }
+              label="Required"
             />
-          }
-          label="Required"
-        />
+          </>
+        )}
       </Box>
     </Paper>
   );

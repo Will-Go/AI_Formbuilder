@@ -9,7 +9,6 @@ import type { ElementType } from "react";
 import type { QuestionType } from "@/shared/types/forms";
 
 interface PaletteItemProps {
-  formId: string;
   type: QuestionType;
   label: string;
   icon: ElementType;
@@ -18,7 +17,6 @@ interface PaletteItemProps {
 }
 
 export function PaletteItem({
-  formId,
   type,
   label,
   icon,

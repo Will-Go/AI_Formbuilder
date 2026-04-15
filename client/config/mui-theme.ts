@@ -25,7 +25,12 @@ export const muiTheme = createTheme({
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: { textTransform: "none" },
+        root: {
+          textTransform: "none",
+          ":hover": {
+            cursor: "pointer",
+          },
+        },
       },
     },
     MuiTab: {

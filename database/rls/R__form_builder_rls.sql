@@ -4,7 +4,7 @@ ALTER TABLE public.options ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.answers ENABLE ROW LEVEL SECURITY;
 
-DROP FUNCTION IF EXISTS public.is_form_shared_with_current_user(uuid);
+-- DROP FUNCTION IF EXISTS public.is_form_shared_with_current_user;
 CREATE OR REPLACE FUNCTION public.is_form_shared_with_current_user(p_form_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -20,7 +20,7 @@ AS $$
   );
 $$;
 
-DROP FUNCTION IF EXISTS public.is_current_user_form_owner(uuid);
+-- DROP FUNCTION IF EXISTS public.is_current_user_form_owner;
 CREATE OR REPLACE FUNCTION public.is_current_user_form_owner(p_form_id uuid)
 RETURNS boolean
 LANGUAGE sql

@@ -4,16 +4,25 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import { PreviewFormContent } from "@/modules/form-preview/components/PreviewFormContent";
-
+import { useAppQuery } from "@/shared/hooks/useAppQuery";
+import { apiRequest } from "@/shared/utils/apiRequest";
+import type { Form } from "@/shared/types/forms";
 
 export default function FormPreviewPage() {
   const router = useRouter();
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
 
-  const form = useFormsStore((s) => s.getFormById(formId));
+  const { data: form, isLoading } = useAppQuery<Form>({
+    queryKey: ["form-builder", "form-details", formId],
+    queryFn: () => apiRequest({ method: "get", url: `/form/${formId}` }),
+    showTranslatedErrorToast: false,
+  });
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
 
   if (!form) {
     return (

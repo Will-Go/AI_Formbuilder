@@ -11,6 +11,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { stripHtml } from "@/shared/utils/html";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -97,7 +98,7 @@ export default function FormDashboardPage() {
         const optimisticCopy: Form = {
           ...source,
           id: `temp-copy-${Date.now()}`,
-          title: `${source.title} (copy)`,
+          title: source.title,
           created_at: now,
           updated_at: now,
           status: FormStatus.DRAFT,
@@ -122,14 +123,14 @@ export default function FormDashboardPage() {
     },
     onSuccess: (response) => {
       if (response.id) {
-        router.push(`/forms/${response.id}/edit`);
+        router.push(`/forms/${response.id}?tab=builder`);
       }
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: FORMS_QUERY_KEY });
     },
     successMsg: (data: unknown) =>
-      `Form "${(data as Form).title}" copied successfully`,
+      `Form "${stripHtml((data as Form).title)}" copied successfully`,
   });
 
   const { mutateAsync: deleteFormMutation } = useAppMutation<

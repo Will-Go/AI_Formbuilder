@@ -14,8 +14,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import React, { useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 import { useResponsesStore } from "@/modules/form-responses/store/responsesStore";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
 import type { Form, Question } from "@/shared/types/forms";
 import { FormStatus } from "@/shared/types/forms";
 import { PublishDecisionDialog } from "@/modules/form-builder/components/PublishDecisionDialog";
@@ -37,7 +39,61 @@ interface PreviewFormContentProps {
 
 export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
   const router = useRouter();
-  const updateFormMeta = useFormsStore((s) => s.updateFormMeta);
+  const queryClient = useQueryClient();
+  const updateFormMetaMutation = useAppMutation<
+    unknown,
+    Error,
+    Partial<Form>,
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "update-form-meta", formId],
+    mutationFn: async (updates) => {
+      return apiRequest({
+        method: "patch",
+        url: `/form/${formId}`,
+        data: updates,
+      });
+    },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({
+        queryKey: ["form-builder", "form-details", formId],
+      });
+
+      const previousForm = queryClient.getQueryData<Form>([
+        "form-builder",
+        "form-details",
+        formId,
+      ]);
+
+      if (previousForm) {
+        queryClient.setQueryData<Form>(["form-builder", "form-details", formId], {
+          ...previousForm,
+          ...updates,
+        });
+      }
+
+      return { previousForm };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousForm) {
+        queryClient.setQueryData(
+          ["form-builder", "form-details", formId],
+          context.previousForm,
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["form-builder", "form-details", formId],
+      });
+    },
+    errorMsg: "Failed to update form",
+  });
+
+  const updateFormMeta = (id: string, updates: Partial<Form>) => {
+    updateFormMetaMutation.mutate(updates);
+  };
+
   const submitResponse = useResponsesStore((s) => s.submitResponse);
   const [submitted, setSubmitted] = React.useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = React.useState(0);

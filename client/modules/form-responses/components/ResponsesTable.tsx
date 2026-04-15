@@ -39,7 +39,7 @@ export default function ResponsesTable({
         <TableBody>
           {responses.map((r) => (
             <TableRow key={r.id} hover>
-              <TableCell>{formatShortDate(r.submittedAt)}</TableCell>
+              <TableCell>{formatShortDate(r.submitted_at)}</TableCell>
               <TableCell>{r.id}</TableCell>
               <TableCell>{r.answers.length}</TableCell>
             </TableRow>

@@ -11,14 +11,14 @@ export function toAnswers(
     if (q.type === "section_divider" || q.type === "paragraph") continue;
     const v = values[q.id];
     if (q.type === "yes_no") {
-      if (v === "yes") answers.push({ questionId: q.id, value: true });
-      else if (v === "no") answers.push({ questionId: q.id, value: false });
-      else answers.push({ questionId: q.id, value: null });
+      if (v === "yes") answers.push({ question_id: q.id, value: true });
+      else if (v === "no") answers.push({ question_id: q.id, value: false });
+      else answers.push({ question_id: q.id, value: null });
       continue;
     }
     if (q.type === "checkbox") {
       answers.push({
-        questionId: q.id,
+        question_id: q.id,
         value: Array.isArray(v) ? (v as string[]) : [],
       });
       continue;
@@ -29,12 +29,12 @@ export function toAnswers(
       q.type === "linear_scale"
     ) {
       answers.push({
-        questionId: q.id,
+        question_id: q.id,
         value: typeof v === "number" ? v : null,
       });
       continue;
     }
-    answers.push({ questionId: q.id, value: typeof v === "string" ? v : "" });
+    answers.push({ question_id: q.id, value: typeof v === "string" ? v : "" });
   }
 
   return answers;

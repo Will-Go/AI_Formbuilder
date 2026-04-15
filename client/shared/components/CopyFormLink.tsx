@@ -10,8 +10,10 @@ import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import { PublishDecisionDialog } from "@/modules/form-builder/components/PublishDecisionDialog";
 import { ShareDialog } from "@/modules/form-builder/components/ShareDialog";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
-import { FormStatus } from "@/shared/types/forms";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
+import { Form, FormStatus } from "@/shared/types/forms";
 
 interface CopyFormLinkProps {
   formId: string;
@@ -36,7 +38,61 @@ export function CopyFormLink({
   startIcon = <LinkIcon />,
   sx,
 }: CopyFormLinkProps) {
-  const updateFormMeta = useFormsStore((s) => s.updateFormMeta);
+  const queryClient = useQueryClient();
+  const updateFormMetaMutation = useAppMutation<
+    unknown,
+    Error,
+    Partial<Form>,
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "update-form-meta", formId],
+    mutationFn: async (updates) => {
+      return apiRequest({
+        method: "patch",
+        url: `/form/${formId}`,
+        data: updates,
+      });
+    },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({
+        queryKey: ["form-builder", "form-details", formId],
+      });
+
+      const previousForm = queryClient.getQueryData<Form>([
+        "form-builder",
+        "form-details",
+        formId,
+      ]);
+
+      if (previousForm) {
+        queryClient.setQueryData<Form>(["form-builder", "form-details", formId], {
+          ...previousForm,
+          ...updates,
+        });
+      }
+
+      return { previousForm };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousForm) {
+        queryClient.setQueryData(
+          ["form-builder", "form-details", formId],
+          context.previousForm,
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["form-builder", "form-details", formId],
+      });
+    },
+    errorMsg: "Failed to update form",
+  });
+
+  const updateFormMeta = (id: string, updates: Partial<Form>) => {
+    updateFormMetaMutation.mutate(updates);
+  };
+
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [publishDecisionDialogOpen, setPublishDecisionDialogOpen] =

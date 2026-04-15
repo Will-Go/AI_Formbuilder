@@ -21,8 +21,8 @@ export const useResponsesStore = create<ResponsesState>()(
       submitResponse: (formId, answers) => {
         const res: Response = {
           id: createId("res"),
-          formId,
-          submittedAt: nowIso(),
+          form_id: formId,
+          submitted_at: nowIso(),
           answers,
         };
         set((s) => ({ responses: [res, ...s.responses] }));
@@ -30,16 +30,20 @@ export const useResponsesStore = create<ResponsesState>()(
       },
       deleteResponsesForForm: (formId) => {
         set((s) => ({
-          responses: s.responses.filter((r) => r.formId !== formId),
+          responses: s.responses.filter((r) => r.form_id !== formId),
         }));
       },
       listResponsesForForm: (formId) =>
         get()
-          .responses.filter((r) => r.formId === formId)
+          .responses.filter((r) => r.form_id === formId)
           .slice()
-          .sort((a, b) => (a.submittedAt < b.submittedAt ? 1 : -1)),
+          .sort(
+            (a, b) =>
+              new Date(b.submitted_at).getTime() -
+              new Date(a.submitted_at).getTime(),
+          ),
       exportResponsesForForm: (formId) =>
-        get().responses.filter((r) => r.formId === formId),
+        get().responses.filter((r) => r.form_id === formId),
     }),
     {
       name: "ai_form:responses_store:v1",

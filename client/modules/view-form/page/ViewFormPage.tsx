@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 import { Form, FormStatus } from "@/shared/types/forms";
 import Box from "@mui/material/Box";
 
@@ -11,20 +10,18 @@ import Typography from "@mui/material/Typography";
 
 import { AccessControl } from "../components/AccessControl";
 import { FormRenderer } from "../components/FormRenderer";
+import { useAppQuery } from "@/shared/hooks/useAppQuery";
+import { apiRequest } from "@/shared/utils/apiRequest";
 
 export default function ViewFormPage() {
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
-  const getFormById = useFormsStore((s) => s.getFormById);
 
-  const [form, setForm] = React.useState<Form | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const fetchedForm = getFormById(formId) || null;
-    setForm(fetchedForm);
-    setLoading(false);
-  }, [formId, getFormById]);
+  const { data: form, isLoading: loading } = useAppQuery<Form>({
+    queryKey: ["view-form", formId],
+    queryFn: () => apiRequest({ method: "get", url: `/form/${formId}` }),
+    showTranslatedErrorToast: false,
+  });
 
   if (loading) {
     return (

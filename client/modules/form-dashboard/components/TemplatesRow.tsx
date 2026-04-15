@@ -35,7 +35,7 @@ export default function TemplatesRow() {
     onSuccess: async (response) => {
       await queryClient.invalidateQueries({ queryKey: FORMS_QUERY_KEY });
       if (response.formId) {
-        router.push(`/forms/${response.formId}/edit`);
+        router.push(`/forms/${response.formId}?tab=builder`);
       }
     },
   });

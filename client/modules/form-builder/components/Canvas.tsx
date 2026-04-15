@@ -13,7 +13,6 @@ import React from "react";
 
 import { createQuestionByType } from "@/constants/defaults";
 import type { Question, QuestionType, Form } from "@/shared/types/forms";
-import FormHeaderCard from "./FormHeaderCard";
 import QuestionCard from "./QuestionCard";
 
 function getQuestionContainerSx(question: Question) {
@@ -37,26 +36,23 @@ function getPreviewContainerSx(question: Question) {
   };
 }
 
-function SortableQuestionItem({
-  question,
-  index,
-  selected,
-  onSelect,
-  onUpdateQuestion,
-  onDeleteQuestion,
-  onDuplicateQuestion,
-}: {
+interface SortableQuestionItemProps {
   question: Question;
+  formId: string;
   index: number;
   selected: boolean;
   onSelect: () => void;
-  onUpdateQuestion: (
-    questionId: string,
-    updates: Record<string, unknown>,
-  ) => void;
-  onDeleteQuestion: (questionId: string) => void;
-  onDuplicateQuestion: (questionId: string) => void;
-}) {
+  isDeletable?: boolean;
+}
+
+function SortableQuestionItem({
+  question,
+  formId,
+  index,
+  selected,
+  onSelect,
+  isDeletable = true,
+}: SortableQuestionItemProps) {
   const [element, setElement] = React.useState<Element | null>(null);
   const handleRef = React.useRef<HTMLButtonElement | null>(null);
   const { isDragging } = useSortable({
@@ -77,31 +73,15 @@ function SortableQuestionItem({
       sx={getQuestionContainerSx(question)}
       data-shadow={isDragging || undefined}
     >
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{
-          opacity: 0,
-          scale: 0.95,
-          height: 0,
-          marginTop: 0,
-          marginBottom: 0,
-          overflow: "hidden",
-        }}
-        transition={{ duration: 0.2 }}
-      >
-        <QuestionCard
-          question={question}
-          selected={selected}
-          onSelect={onSelect}
-          onUpdateQuestion={onUpdateQuestion}
-          onDeleteQuestion={onDeleteQuestion}
-          onDuplicateQuestion={onDuplicateQuestion}
-          isDragging={isDragging}
-          dragHandleRef={handleRef}
-        />
-      </motion.div>
+      <QuestionCard
+        question={question}
+        formId={formId}
+        selected={selected}
+        onSelect={onSelect}
+        isDragging={isDragging}
+        dragHandleRef={handleRef}
+        isDeletable={isDeletable}
+      />
     </Box>
   );
 }
@@ -169,13 +149,6 @@ interface CanvasProps {
   isInvalidDrop: boolean;
   onAddQuestion: (type: QuestionType) => void;
   onSelectQuestion: (questionId: string) => void;
-  onUpdateQuestion: (
-    questionId: string,
-    updates: Record<string, unknown>,
-  ) => void;
-  onDeleteQuestion: (questionId: string) => void;
-  onDuplicateQuestion: (questionId: string) => void;
-  onUpdateFormMeta: (updates: Partial<Form>) => void;
 }
 
 export default function Canvas({
@@ -188,10 +161,6 @@ export default function Canvas({
   isInvalidDrop,
   onAddQuestion,
   onSelectQuestion,
-  onUpdateQuestion,
-  onDeleteQuestion,
-  onDuplicateQuestion,
-  onUpdateFormMeta,
 }: CanvasProps) {
   const { ref: setCanvasDropRef } = useDroppable({
     id: `canvas-drop:${formId}`,
@@ -214,7 +183,6 @@ export default function Canvas({
   return (
     <Box sx={{ position: "relative" }}>
       <Box sx={{ maxWidth: 860, mx: "auto" }}>
-        <FormHeaderCard form={form} onUpdateFormMeta={onUpdateFormMeta} />
         <Box sx={{ height: 16 }} />
         <Box
           ref={setCanvasDropRef}
@@ -240,7 +208,7 @@ export default function Canvas({
             highlighted={dropIndex === 0 && !previewQuestion}
           />
           <Stack spacing={2}>
-            <AnimatePresence initial={false} mode="popLayout">
+            <AnimatePresence>
               {dropIndex === 0 && previewQuestion ? (
                 <motion.div
                   key="preview-0"
@@ -261,11 +229,9 @@ export default function Canvas({
                     <CanvasPreviewSlot index={0}>
                       <QuestionCard
                         question={previewQuestion}
+                        formId={formId}
                         selected={false}
                         onSelect={() => {}}
-                        onUpdateQuestion={() => {}}
-                        onDeleteQuestion={() => {}}
-                        onDuplicateQuestion={() => {}}
                         isPreview
                       />
                     </CanvasPreviewSlot>
@@ -277,12 +243,11 @@ export default function Canvas({
                 <React.Fragment key={q.id}>
                   <SortableQuestionItem
                     question={q}
+                    formId={formId}
                     index={idx}
                     selected={q.id === selectedQuestionId}
                     onSelect={() => onSelectQuestion(q.id)}
-                    onUpdateQuestion={onUpdateQuestion}
-                    onDeleteQuestion={onDeleteQuestion}
-                    onDuplicateQuestion={onDuplicateQuestion}
+                    isDeletable={idx > 0}
                   />
                   <CanvasDropSlot
                     index={idx + 1}
@@ -309,11 +274,9 @@ export default function Canvas({
                         <CanvasPreviewSlot index={idx + 1}>
                           <QuestionCard
                             question={previewQuestion}
+                            formId={formId}
                             selected={false}
                             onSelect={() => {}}
-                            onUpdateQuestion={() => {}}
-                            onDeleteQuestion={() => {}}
-                            onDuplicateQuestion={() => {}}
                             isPreview
                           />
                         </CanvasPreviewSlot>
@@ -350,7 +313,7 @@ export default function Canvas({
           top: 140,
           ml: { md: 2 },
           mt: 2,
-          display: { xs: "none", md: "flex" },
+          display: "flex",
           flexDirection: "column",
           alignItems: "center",
           p: 1,

@@ -83,10 +83,29 @@ BEGIN
     ) RETURNING * INTO v_form;
 
 
-    -- Insert first question (multiple_choice type)
+    -- Insert first question (section_divider type)
     DECLARE
+      v_sd_question_id UUID;
       v_mc_question_id UUID;
     BEGIN
+      INSERT INTO public.questions (
+        form_id,
+        type,
+        label,
+        description,
+        required,
+        "order",
+        config
+      ) VALUES (
+        v_form.id,
+        'section_divider'::public.question_type,
+        v_final_title, -- Use form title as section title
+        p_description, -- Use form description
+        FALSE,
+        1,
+        '{}'::jsonb
+      ) RETURNING id INTO v_sd_question_id;
+
       INSERT INTO public.questions (
         form_id,
         type,
@@ -101,7 +120,7 @@ BEGIN
         '', -- Empty label
         NULL, -- NULL description
         FALSE,
-        1,
+        2,
         '{}'::jsonb
       ) RETURNING id INTO v_mc_question_id;
 

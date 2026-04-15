@@ -270,3 +270,92 @@ export async function patchForm(
   // This ensures we get the fully nested structure with questions/options
   return getFormDetails(formId);
 }
+
+export async function duplicateQuestion(
+  formId: string,
+  questionId: string,
+): Promise<Form> {
+  if (!formId) {
+    throw new Error("formId is required");
+  }
+  if (!questionId) {
+    throw new Error("questionId is required");
+  }
+
+  const supabase = await createClient();
+
+  // Fetch the question to duplicate along with its options
+  const { data: originalQuestion, error: fetchQuestionError } = await supabase
+    .from("questions")
+    .select("*, options(*)")
+    .eq("id", questionId)
+    .eq("form_id", formId)
+    .single();
+
+  if (fetchQuestionError) {
+    throw new Error(`Failed to fetch original question: ${fetchQuestionError.message}`);
+  }
+
+  if (!originalQuestion) {
+    throw new Error("Original question not found");
+  }
+
+  // Get current max order for questions in this form
+  const { data: maxOrderData, error: maxOrderError } = await supabase
+    .from("questions")
+    .select("order")
+    .eq("form_id", formId)
+    .order("order", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (maxOrderError && maxOrderError.code !== "PGRST116") { // PGRST116 means no rows found
+    throw new Error(`Failed to get max question order: ${maxOrderError.message}`);
+  }
+
+  const newOrder = (maxOrderData?.order ?? 0) + 1;
+
+  // Insert the duplicated question
+  const { data: newQuestion, error: insertQuestionError } = await supabase
+    .from("questions")
+    .insert({
+      form_id: formId,
+      type: originalQuestion.type,
+      label: originalQuestion.label,
+      description: originalQuestion.description,
+      required: originalQuestion.required,
+      order: newOrder,
+      config: originalQuestion.config,
+    })
+    .select("id")
+    .single();
+
+  if (insertQuestionError) {
+    throw new Error(`Failed to duplicate question: ${insertQuestionError.message}`);
+  }
+
+  if (!newQuestion) {
+    throw new Error("Failed to duplicate question: No new question ID returned");
+  }
+
+  // Duplicate options if they exist
+  if (originalQuestion.options && originalQuestion.options.length > 0) {
+    const newOptions = originalQuestion.options.map((option: { value: string; label: string; order: number }) => ({
+      question_id: newQuestion.id,
+      value: option.value,
+      label: option.label,
+      order: option.order,
+    }));
+
+    const { error: insertOptionsError } = await supabase
+      .from("options")
+      .insert(newOptions);
+
+    if (insertOptionsError) {
+      throw new Error(`Failed to duplicate options: ${insertOptionsError.message}`);
+    }
+  }
+
+  // Return the full form details with the new question
+  return getFormDetails(formId);
+}

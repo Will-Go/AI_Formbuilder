@@ -33,15 +33,18 @@ import CloudDoneIcon from "@mui/icons-material/CloudDone";
 import SyncIcon from "@mui/icons-material/Sync";
 import { stripHtml } from "@/shared/utils/html";
 import useQueryParams from "@/shared/hooks/useQueryParams";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
+import { FORM_DETAILS_QUERY_KEY } from "../pages/FormBuilderPage";
+import { FORMS_QUERY_KEY } from "@/modules/form-dashboard/pages/FormDashboardPage";
 
 export default function BuilderTopBar({
   form,
   isSaving = false,
-  onUpdateFormMeta,
 }: {
   form: Form;
   isSaving?: boolean;
-  onUpdateFormMeta: (updates: Partial<Form>) => void;
 }) {
   const { queryParams } = useQueryParams(["tab"]);
   const tab = queryParams?.tab || "builder";
@@ -49,13 +52,66 @@ export default function BuilderTopBar({
   const router = useRouter();
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
+  const queryClient = useQueryClient();
 
-  //TODO: update this and set a template for the moment:
+  const updateFormMetaMutation = useAppMutation<
+    unknown,
+    Error,
+    Partial<Form>,
+    { previousForm?: Form }
+  >({
+    mutationKey: ["form-builder", "update-form-meta", formId],
+    mutationFn: async (updates) => {
+      return apiRequest({
+        method: "patch",
+        url: `/form/${formId}`,
+        data: updates,
+      });
+    },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+
+      const previousForm = queryClient.getQueryData<Form>([
+        ...FORM_DETAILS_QUERY_KEY,
+        formId,
+      ]);
+
+      if (previousForm) {
+        queryClient.setQueryData<Form>([...FORM_DETAILS_QUERY_KEY, formId], {
+          ...previousForm,
+          ...updates,
+        });
+      }
+
+      return { previousForm };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousForm) {
+        queryClient.setQueryData(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          context.previousForm,
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...FORMS_QUERY_KEY],
+      });
+    },
+    errorMsg: "Failed to update form",
+  });
+
   const updateFormMeta = (meta: Partial<Form>) => {
-    onUpdateFormMeta(meta);
+    updateFormMetaMutation.mutate(meta);
   };
 
   const [title, setTitle] = React.useState(() => stripHtml(form.title));
+  const [description, setDescription] = React.useState(() => stripHtml(form.description ?? ""));
 
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -64,7 +120,8 @@ export default function BuilderTopBar({
 
   React.useEffect(() => {
     setTitle(stripHtml(form.title));
-  }, [form.title]);
+    setDescription(stripHtml(form.description ?? ""));
+  }, [form.title, form.description]);
 
   const handleTitleBlur = () => {
     const trimmed = title.trim();
@@ -72,6 +129,15 @@ export default function BuilderTopBar({
       updateFormMeta({ title: trimmed });
     } else {
       setTitle(stripHtml(form.title));
+    }
+  };
+
+  const handleDescriptionBlur = () => {
+    const trimmed = description.trim();
+    if (trimmed !== stripHtml(form.description ?? "")) {
+      updateFormMeta({ description: trimmed });
+    } else {
+      setDescription(stripHtml(form.description ?? ""));
     }
   };
 
@@ -94,50 +160,93 @@ export default function BuilderTopBar({
         maxHeight: 112,
       }}
     >
-      <Toolbar sx={{ gap: 1 }}>
-        <IconButton aria-label="Back" onClick={() => router.push("/forms")}>
-          <ArrowBackIcon />
+      <Toolbar sx={{ gap: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 } }}>
+        <IconButton
+          aria-label="Back"
+          onClick={() => router.push("/forms")}
+          sx={{ display: "inline-flex" }}
+          size="small"
+        >
+          <ArrowBackIcon fontSize="small" />
         </IconButton>
         <Box
-          sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 0.5, sm: 1 },
+            minWidth: 0,
+            flex: { xs: 1, sm: "auto" },
+          }}
         >
-          <Image
-            src={"/form_ai_icon.svg"}
-            alt="Form Icon"
-            width={24}
-            height={24}
-          />
-          <InputBase
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleTitleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder="Untitled form"
-            sx={{
-              fontSize: "1.125rem",
-              fontWeight: 500,
-              padding: "2px 4px",
-              borderRadius: 1,
-              transition: "background-color 0.2s",
-              "&:hover": {
-                bgcolor: "rgba(0,0,0,0.04)",
-              },
-              "&:focus-within": {
-                bgcolor: "background.paper",
-                boxShadow: "0 0 0 2px rgba(103, 58, 183, 0.2)",
-              },
-              "& .MuiInputBase-input": {
-                padding: 0,
-              },
-            }}
-          />
+          <Box sx={{ display: { xs: "none", sm: "flex" } }}>
+            <Image
+              src={"/form_ai_icon.svg"}
+              alt="Form Icon"
+              width={24}
+              height={24}
+            />
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <InputBase
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="Untitled form"
+              sx={{
+                fontSize: { xs: "1rem", sm: "1.125rem" },
+                fontWeight: 500,
+                padding: "2px 4px",
+                borderRadius: 1,
+                transition: "background-color 0.2s",
+                "&:hover": {
+                  bgcolor: "rgba(0,0,0,0.04)",
+                },
+                "&:focus-within": {
+                  bgcolor: "background.paper",
+                  boxShadow: "0 0 0 2px rgba(103, 58, 183, 0.2)",
+                },
+                "& .MuiInputBase-input": {
+                  padding: 0,
+                  textOverflow: "ellipsis",
+                },
+                maxWidth: { xs: 120, sm: 200, md: "none" },
+              }}
+            />
+            <InputBase
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={handleDescriptionBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="Form description"
+              sx={{
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                color: "text.secondary",
+                padding: "2px 4px",
+                borderRadius: 1,
+                transition: "background-color 0.2s",
+                "&:hover": {
+                  bgcolor: "rgba(0,0,0,0.04)",
+                },
+                "&:focus-within": {
+                  bgcolor: "background.paper",
+                  boxShadow: "0 0 0 2px rgba(103, 58, 183, 0.2)",
+                },
+                "& .MuiInputBase-input": {
+                  padding: 0,
+                  textOverflow: "ellipsis",
+                },
+                maxWidth: { xs: 120, sm: 200, md: "none" },
+              }}
+            />
+          </Box>
           {form.status === FormStatus.PUBLISHED && (
             <Chip
               label="Public"
               size="small"
               color="success"
               variant="outlined"
-              sx={{ ml: 1 }}
+              sx={{ ml: { xs: 0, sm: 1 }, display: { xs: "none", md: "flex" } }}
             />
           )}
           {form.status === FormStatus.PRIVATE && (
@@ -146,7 +255,7 @@ export default function BuilderTopBar({
               size="small"
               color="secondary"
               variant="outlined"
-              sx={{ ml: 1 }}
+              sx={{ ml: { xs: 0, sm: 1 }, display: { xs: "none", md: "flex" } }}
             />
           )}
           {form.status === FormStatus.CLOSED && (
@@ -155,13 +264,13 @@ export default function BuilderTopBar({
               size="small"
               color="error"
               variant="outlined"
-              sx={{ ml: 1 }}
+              sx={{ ml: { xs: 0, sm: 1 }, display: { xs: "none", md: "flex" } }}
             />
           )}
           {/* Saving Status Indicator */}
           <Box
             sx={{
-              display: "flex",
+              display: { xs: "none", md: "flex" },
               alignItems: "center",
               gap: 0.5,
               ml: 2,
@@ -185,47 +294,68 @@ export default function BuilderTopBar({
             )}
           </Box>
         </Box>
-        <Box sx={{ flex: 1 }} />
-        <Link href={`/forms/${formId}/preview`} target="_blank">
-          <IconButton aria-label="Preview">
-            <PreviewIcon />
-          </IconButton>
-        </Link>
-        <CopyFormLink
-          formId={formId}
-          formStatus={form.status}
-          formTitle={title}
-          isPublished={form.status === FormStatus.PUBLISHED}
-          startIcon={<ShareIcon />}
-          buttonText="Share"
-          variant="text"
-        />
-
-        <Button
-          startIcon={
-            form.status === FormStatus.PUBLISHED ? <TuneIcon /> : <SendIcon />
-          }
-          variant={
-            form.status === FormStatus.PUBLISHED ? "outlined" : "contained"
-          }
-          onClick={() => {
-            if (
-              form.status === FormStatus.PUBLISHED ||
-              form.status === FormStatus.PRIVATE
-            ) {
-              setPublishedOptionsDialogOpen(true);
-            } else {
-              setPublishDialogOpen(true);
-            }
-          }}
+        <Box sx={{ flex: { xs: 0, sm: 1 } }} />
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: { xs: 0, sm: 1 } }}
         >
-          {form.status === FormStatus.PUBLISHED ||
-          form.status === FormStatus.PRIVATE
-            ? "Published"
-            : "Publish"}
-        </Button>
+          <Link href={`/forms/${formId}/preview`} target="_blank">
+            <IconButton aria-label="Preview" size="small">
+              <PreviewIcon />
+            </IconButton>
+          </Link>
+          <Box sx={{ display: { xs: "none", sm: "block" } }}>
+            <CopyFormLink
+              formId={formId}
+              formStatus={form.status}
+              formTitle={title}
+              isPublished={form.status === FormStatus.PUBLISHED}
+              startIcon={<ShareIcon />}
+              buttonText="Share"
+              variant="text"
+            />
+          </Box>
 
-        <UserProfile />
+          <Button
+            startIcon={
+              form.status === FormStatus.PUBLISHED ? <TuneIcon /> : <SendIcon />
+            }
+            variant={
+              form.status === FormStatus.PUBLISHED ? "outlined" : "contained"
+            }
+            size="small"
+            sx={{
+              ml: { xs: 0.5, sm: 0 },
+              minWidth: { xs: "auto", sm: 100 },
+              px: { xs: 1, sm: 2 },
+              "& .MuiButton-startIcon": {
+                mr: { xs: 0, sm: 1 },
+                ml: { xs: 0, sm: -0.5 },
+              },
+            }}
+            onClick={() => {
+              if (
+                form.status === FormStatus.PUBLISHED ||
+                form.status === FormStatus.PRIVATE
+              ) {
+                setPublishedOptionsDialogOpen(true);
+              } else {
+                setPublishDialogOpen(true);
+              }
+            }}
+          >
+            <Box
+              component="span"
+              sx={{ display: { xs: "none", sm: "inline" } }}
+            >
+              {form.status === FormStatus.PUBLISHED ||
+              form.status === FormStatus.PRIVATE
+                ? "Published"
+                : "Publish"}
+            </Box>
+          </Button>
+
+          <UserProfile />
+        </Box>
       </Toolbar>
       <Box sx={{ px: { xs: 1.5, sm: 3 } }}>
         <Tabs value={tab} aria-label="Builder tabs">
