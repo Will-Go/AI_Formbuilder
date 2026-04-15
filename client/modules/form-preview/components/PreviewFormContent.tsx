@@ -6,7 +6,6 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Fab from "@mui/material/Fab";
-import Alert from "@mui/material/Alert";
 import EditIcon from "@mui/icons-material/Edit";
 import LinearProgress from "@mui/material/LinearProgress";
 import Tooltip from "@mui/material/Tooltip";
@@ -14,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import React, { useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useResponsesStore } from "@/modules/form-responses/store/responsesStore";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
@@ -23,6 +23,7 @@ import { FormStatus } from "@/shared/types/forms";
 import { PublishDecisionDialog } from "@/modules/form-builder/components/PublishDecisionDialog";
 import { ShareDialog } from "@/modules/form-builder/components/ShareDialog";
 import { buildResponseSchema } from "../../form-builder/preview/buildResponseSchema";
+import { SuccessResponseView } from "@/shared/components/SuccessResponseView";
 import {
   QuestionRenderer,
   FormHeader,
@@ -30,7 +31,6 @@ import {
 import { toAnswers } from "./toAnswers";
 import { PreviewTopBar } from "./PreviewTopBar";
 import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
-
 
 interface PreviewFormContentProps {
   formId: string;
@@ -66,10 +66,13 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
       ]);
 
       if (previousForm) {
-        queryClient.setQueryData<Form>(["form-builder", "form-details", formId], {
-          ...previousForm,
-          ...updates,
-        });
+        queryClient.setQueryData<Form>(
+          ["form-builder", "form-details", formId],
+          {
+            ...previousForm,
+            ...updates,
+          },
+        );
       }
 
       return { previousForm };
@@ -257,120 +260,126 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
             flexDirection: "column",
           }}
         >
-          {submitted ? (
-            <Paper variant="outlined" sx={{ p: 3 }}>
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Response recorded.
-              </Alert>
-              <Button
-                variant="contained"
-                onClick={() => router.push(`/forms/${formId}/responses`)}
+          <AnimatePresence mode="wait">
+            {submitted ? (
+              <SuccessResponseView
+                formTitle={form.title}
+                onViewResponses={() =>
+                  router.push(`/forms/${formId}?tab=response`)
+                }
+                onSubmitAnother={() => setSubmitted(false)}
+              />
+            ) : (
+              <Box
+                key="form-view"
+                component={motion.div}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
               >
-                View responses
-              </Button>
-              <Button sx={{ ml: 1 }} onClick={() => setSubmitted(false)}>
-                Submit another response
-              </Button>
-            </Paper>
-          ) : (
-            <FormProvider {...methods}>
-              <form
-                onSubmit={methods.handleSubmit(onSubmit, onInvalid)}
-                noValidate
-              >
-                <Stack spacing={2}>
-                  {currentSectionIndex === 0 ? (
-                    <FormHeader form={form} />
-                  ) : currentSection.divider ? (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 3,
-                        borderTop: 6,
-                        borderTopColor: "primary.main",
-                        borderRadius: 2,
-                      }}
-                    >
-                      <TextHTMLDisplayer
-                        html={currentSection.divider.label}
-                        textClassName="text-3xl"
-                      />
-                      {currentSection.divider.description && (
-                        <Box sx={{ mt: 1, color: "text.secondary" }}>
-                          <TextHTMLDisplayer
-                            html={currentSection.divider.description}
-                          />
-                        </Box>
-                      )}
-                    </Paper>
-                  ) : null}
-
-                  {currentSection.questions.map((q) => (
-                    <QuestionRenderer key={q.id} question={q} />
-                  ))}
-
-                  <Box sx={{ mt: "auto", pt: 4 }}>
-                    {totalSections > 1 && (
-                      <Box sx={{ mb: 3 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={progressPercentage}
+                <FormProvider {...methods}>
+                  <form
+                    onSubmit={methods.handleSubmit(onSubmit, onInvalid)}
+                    noValidate
+                  >
+                    <Stack spacing={2}>
+                      {currentSectionIndex === 0 ? (
+                        <FormHeader form={form} />
+                      ) : currentSection.divider ? (
+                        <Paper
+                          variant="outlined"
                           sx={{
-                            height: 8,
-                            borderRadius: 4,
-                            mb: 1,
+                            p: 3,
+                            borderTop: 6,
+                            borderTopColor: "primary.main",
+                            borderRadius: 2,
                           }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          Page {currentSectionIndex + 1} of {totalSections}
-                        </Typography>
-                      </Box>
-                    )}
+                        >
+                          <TextHTMLDisplayer
+                            html={currentSection.divider.label}
+                            textClassName="text-3xl"
+                          />
+                          {currentSection.divider.description && (
+                            <Box sx={{ mt: 1, color: "text.secondary" }}>
+                              <TextHTMLDisplayer
+                                html={currentSection.divider.description}
+                              />
+                            </Box>
+                          )}
+                        </Paper>
+                      ) : null}
 
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box sx={{ display: "flex", gap: 2 }}>
-                        {currentSectionIndex > 0 && (
-                          <Button
-                            variant="outlined"
-                            onClick={handleBack}
-                            sx={{ px: 3 }}
-                          >
-                            Back
-                          </Button>
+                      {currentSection.questions.map((q) => (
+                        <QuestionRenderer key={q.id} question={q} />
+                      ))}
+
+                      <Box sx={{ mt: "auto", pt: 4 }}>
+                        {totalSections > 1 && (
+                          <Box sx={{ mb: 3 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={progressPercentage}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                mb: 1,
+                              }}
+                            />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Page {currentSectionIndex + 1} of {totalSections}
+                            </Typography>
+                          </Box>
                         )}
-                        {currentSectionIndex < totalSections - 1 ? (
-                          <Button
-                            variant="contained"
-                            onClick={handleNext}
-                            sx={{ px: 4 }}
-                          >
-                            Next
+
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Box sx={{ display: "flex", gap: 2 }}>
+                            {currentSectionIndex > 0 && (
+                              <Button
+                                variant="outlined"
+                                onClick={handleBack}
+                                sx={{ px: 3 }}
+                              >
+                                Back
+                              </Button>
+                            )}
+                            {currentSectionIndex < totalSections - 1 ? (
+                              <Button
+                                variant="contained"
+                                onClick={handleNext}
+                                sx={{ px: 4 }}
+                              >
+                                Next
+                              </Button>
+                            ) : (
+                              <Button
+                                type="submit"
+                                variant="contained"
+                                sx={{ px: 4 }}
+                              >
+                                Submit
+                              </Button>
+                            )}
+                          </Box>
+                          <Button color="primary" onClick={handleClear}>
+                            Clear form
                           </Button>
-                        ) : (
-                          <Button
-                            type="submit"
-                            variant="contained"
-                            sx={{ px: 4 }}
-                          >
-                            Submit
-                          </Button>
-                        )}
+                        </Box>
                       </Box>
-                      <Button color="primary" onClick={handleClear}>
-                        Clear form
-                      </Button>
-                    </Box>
-                  </Box>
-                </Stack>
-              </form>
-            </FormProvider>
-          )}
+                    </Stack>
+                  </form>
+                </FormProvider>
+              </Box>
+            )}
+          </AnimatePresence>
         </Box>
       </Box>
 
@@ -406,7 +415,7 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
             color: "text.primary",
             "&:hover": { bgcolor: "action.hover" },
           }}
-          onClick={() => router.push(`/forms/${formId}/edit`)}
+          onClick={() => router.push(`/forms/${formId}?tab=builder`)}
         >
           <EditIcon />
         </Fab>
