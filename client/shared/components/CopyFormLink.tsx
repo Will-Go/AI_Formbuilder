@@ -18,6 +18,7 @@ import { Form, FormStatus } from "@/shared/types/forms";
 interface CopyFormLinkProps {
   formId: string;
   formStatus: FormStatus;
+  isCopy?: boolean;
   formTitle: string;
   buttonText?: string;
   snackbarMessage?: string;
@@ -30,6 +31,7 @@ export function CopyFormLink({
   formId,
   formStatus,
   formTitle,
+  isCopy = true,
   buttonText = "Copy respondent link",
   snackbarMessage = "Link copied to clipboard",
   variant = "outlined",
@@ -110,6 +112,11 @@ export function CopyFormLink({
   };
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isCopy) {
+      handleCopyLink();
+      return;
+    }
+
     if (isPublished) {
       setShareDialogOpen(true);
     } else {

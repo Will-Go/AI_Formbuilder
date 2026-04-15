@@ -310,6 +310,7 @@ export default function BuilderTopBar({
           </Link>
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
             <CopyFormLink
+              isCopy={false}
               formId={formId}
               formStatus={form.status}
               formTitle={title}

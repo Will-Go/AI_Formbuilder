@@ -13,7 +13,7 @@ export default async function Page({
   try {
     form = await apiRequestSS<Form>({
       method: "get",
-      url: `/api/form/${formId}`,
+      url: `/form/${formId}`,
     });
   } catch (_error) {
     console.error("Error fetching form:", _error);
