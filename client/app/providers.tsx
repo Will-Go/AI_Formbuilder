@@ -4,7 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import React from "react";
 import { Toaster } from "sonner";
-import { muiTheme } from "@/config/mui-theme";
+import { muiTheme } from "@/shared/config/mui-theme";
 import EmotionRegistry from "./EmotionRegistry";
 import ReactQueryWrapper from "@/shared/wrapper/ReactQueryWrapper";
 import AuthProvider from "@/shared/context/AuthContext";

@@ -3,8 +3,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Answer, Response } from "@/shared/types/responses";
-import { createId } from "@/shared/utils/id";
 import { nowIso } from "@/shared/utils/dateFormatter";
+import { v4 as uuidv4 } from "uuid";
 
 type ResponsesState = {
   responses: Response[];
@@ -20,7 +20,7 @@ export const useResponsesStore = create<ResponsesState>()(
       responses: [],
       submitResponse: (formId, answers) => {
         const res: Response = {
-          id: createId("res"),
+          id: uuidv4(),
           form_id: formId,
           submitted_at: nowIso(),
           answers,

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import type { Form, Question, QuestionType } from "../../../shared/types/forms";
 
 function sortQuestions(questions: Question[]): Question[] {
@@ -36,7 +37,7 @@ export function optimisticAddQuestion(
         ...baseQuestion,
         options: [
           {
-            id: `temp-option-${Date.now()}`,
+            id: uuidv4(),
             value: "Option 1",
             label: "Option 1",
             order: 0,

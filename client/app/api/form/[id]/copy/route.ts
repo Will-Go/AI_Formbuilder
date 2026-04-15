@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { copyForm } from "@/daos/formsDao";
+import { copyForm } from "@/shared/daos/formsDao";
 import { createClient } from "@/shared/services/supabase/server";
 import { withAuth } from "@/shared/utils/with-is-auth";
 import type { FormErrorResponse } from "@/shared/types/forms";
@@ -45,7 +45,9 @@ export const POST = withAuth(
 
       if (sourceError || !sourceForm) {
         return NextResponse.json(
-          { error: "Form not found or access denied" } satisfies FormErrorResponse,
+          {
+            error: "Form not found or access denied",
+          } satisfies FormErrorResponse,
           { status: 404 },
         );
       }
@@ -57,10 +59,9 @@ export const POST = withAuth(
       const message =
         error instanceof Error ? error.message : "Unexpected server error";
       console.error("Error copying form:", message);
-      return NextResponse.json(
-        { error: message } satisfies FormErrorResponse,
-        { status: 500 },
-      );
+      return NextResponse.json({ error: message } satisfies FormErrorResponse, {
+        status: 500,
+      });
     }
   },
 );

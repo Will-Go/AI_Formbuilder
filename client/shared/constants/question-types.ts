@@ -1,13 +1,10 @@
 import type { QuestionType } from "@/shared/types/forms";
 import type { ElementType } from "react";
 import ArrowDropDownCircleIcon from "@mui/icons-material/ArrowDropDownCircle";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import EmailIcon from "@mui/icons-material/Email";
 import HorizontalRuleIcon from "@mui/icons-material/HorizontalRule";
 import LinearScaleIcon from "@mui/icons-material/LinearScale";
-import NumbersIcon from "@mui/icons-material/Numbers";
-import PhoneIcon from "@mui/icons-material/Phone";
 import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
 import ShortTextIcon from "@mui/icons-material/ShortText";
 import StarRateIcon from "@mui/icons-material/StarRate";
@@ -49,12 +46,12 @@ export const QUESTION_TYPE_META: readonly QuestionTypeMeta[] = [
     group: "Selection",
     icon: CheckBoxIcon,
   },
-  {
-    type: "dropdown",
-    label: "Dropdown",
-    group: "Selection",
-    icon: ArrowDropDownCircleIcon,
-  },
+  // {
+  //   type: "dropdown",
+  //   label: "Dropdown",
+  //   group: "Selection",
+  //   icon: ArrowDropDownCircleIcon,
+  // },
   { type: "email", label: "Email", group: "Structured", icon: EmailIcon },
   // { type: "phone", label: "Phone", group: "Structured", icon: PhoneIcon },
   // { type: "number", label: "Number", group: "Structured", icon: NumbersIcon },

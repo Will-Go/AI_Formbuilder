@@ -3,7 +3,6 @@
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
-import AddIcon from "@mui/icons-material/Add";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import FormControl from "@mui/material/FormControl";
@@ -18,15 +17,9 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import React from "react";
-import { QUESTION_TYPE_META } from "@/constants/question-types";
-import { createQuestionByType } from "@/constants/defaults";
-import type {
-  Option,
-  Question,
-  QuestionType,
-  Form,
-} from "@/shared/types/forms";
-import { createId } from "@/shared/utils/id";
+import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
+import { createQuestionByType } from "@/shared/constants/defaults";
+import type { Question, QuestionType, Form } from "@/shared/types/forms";
 import RichTextEditor from "@/shared/components/RichTextEditor";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
@@ -41,7 +34,7 @@ import {
   optimisticUpdateQuestion,
 } from "../utils/formOptimisticUpdates";
 import { isOptionsQuestion, hasRequiredQuestion } from "../utils/questionUtils";
-import { Button } from "@mui/material";
+import { OptionsQuestionSection } from "./OptionsQuestionSection";
 
 function preserveCommonFields(prev: Question, next: Question): Question {
   return {
@@ -80,7 +73,7 @@ export default function QuestionCard({
   const setForm = useFormsStore((s) => s.setForm);
 
   const { mutate: mutateUpdateQuestion } = useAppMutation<
-    unknown,
+    { ok: boolean; question: Question },
     Error,
     { questionId: string; updates: Record<string, unknown> },
     { previousForm?: Form }
@@ -117,11 +110,22 @@ export default function QuestionCard({
 
       return { previousForm };
     },
-    onError: (err, { questionId }, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousForm) {
         queryClient.setQueryData(
           [...FORM_DETAILS_QUERY_KEY, formId],
           context.previousForm,
+        );
+      }
+    },
+    onSuccess: (res, { questionId }) => {
+      if (res.ok && res.question) {
+        queryClient.setQueryData<Form>(
+          [...FORM_DETAILS_QUERY_KEY, formId],
+          (old) => {
+            if (!old) return old;
+            return optimisticUpdateQuestion(old, questionId, res.question);
+          },
         );
       }
     },
@@ -253,7 +257,7 @@ export default function QuestionCard({
   const optionLabel =
     "options" in displayQuestion && Array.isArray(displayQuestion.options)
       ? displayQuestion.options
-      : null;
+      : undefined;
 
   const typeLabel =
     QUESTION_TYPE_META.find((m) => m.type === displayQuestion.type)?.label ??
@@ -262,107 +266,6 @@ export default function QuestionCard({
   const isRichTextEditable =
     displayQuestion.type === "section_divider" ||
     displayQuestion.type === "paragraph";
-
-  const addOptionMutation = useAppMutation<
-    { ok: boolean; question: Question },
-    Error,
-    { questionId: string },
-    { previousForm?: Form }
-  >({
-    mutationKey: ["form-builder", "add-option", formId, question.id],
-    mutationFn: async ({ questionId }) => {
-      if (!("options" in displayQuestion)) {
-        throw new Error("Question does not support options");
-      }
-
-      const nextOpt: Option = {
-        id: createId("opt"),
-        label: `Option ${displayQuestion.options.length + 1}`,
-        value: `option_${displayQuestion.options.length + 1}`,
-        order: displayQuestion.options.length,
-      };
-
-      return apiRequest({
-        method: "patch",
-        url: `/form/${formId}/questions/${questionId}`,
-        data: { options: [...displayQuestion.options, nextOpt] },
-      });
-    },
-    onMutate: async ({ questionId }) => {
-      await queryClient.cancelQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-
-      const previousForm = queryClient.getQueryData<Form>([
-        ...FORM_DETAILS_QUERY_KEY,
-        formId,
-      ]);
-
-      if (previousForm && "options" in displayQuestion) {
-        const nextOpt: Option = {
-          id: createId("opt"),
-          label: `Option ${displayQuestion.options.length + 1}`,
-          value: `option_${displayQuestion.options.length + 1}`,
-          order: displayQuestion.options.length,
-        };
-
-        const nextForm = optimisticUpdateQuestion(previousForm, questionId, {
-          options: [...displayQuestion.options, nextOpt],
-        });
-        queryClient.setQueryData<Form>(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          nextForm,
-        );
-      }
-
-      return { previousForm };
-    },
-    onError: (err, { questionId }, context) => {
-      notifyError(`Failed to add option: ${err.message}`);
-      if (context?.previousForm) {
-        queryClient.setQueryData(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          context.previousForm,
-        );
-      }
-    },
-    onSuccess: (res, { questionId }) => {
-      if (res.ok && res.question) {
-        queryClient.setQueryData<Form>(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          (old) => {
-            if (!old) return old;
-            return optimisticUpdateQuestion(old, questionId, res.question);
-          },
-        );
-      }
-    },
-    errorMsg: "Failed to add option",
-  });
-
-  const addOption = () => {
-    if (!("options" in displayQuestion) || isPreview) return;
-    addOptionMutation.mutate({ questionId: question.id });
-  };
-
-  const updateOption = (optId: string, label: string) => {
-    if (!("options" in displayQuestion) || isPreview) return;
-    queueQuestionUpdate({
-      options: displayQuestion.options.map((o) =>
-        o.id === optId ? { ...o, label } : o,
-      ),
-    });
-  };
-
-  const deleteOption = (optId: string) => {
-    if (!("options" in displayQuestion) || isPreview) return;
-    mutateUpdateQuestion({
-      questionId: question.id,
-      updates: {
-        options: displayQuestion.options.filter((o) => o.id !== optId),
-      },
-    });
-  };
 
   return (
     <Paper
@@ -559,62 +462,13 @@ export default function QuestionCard({
           />
         ) : null}
 
-        {isOptionQuestion && optionLabel ? (
-          <Box sx={{ mt: 1 }}>
-            <Stack spacing={1}>
-              {optionLabel.map((o, idx) => (
-                <Box
-                  key={o.id}
-                  sx={{ display: "flex", gap: 1, alignItems: "center" }}
-                >
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ width: 24 }}
-                  >
-                    {idx + 1}.
-                  </Typography>
-                  <TextField
-                    size="small"
-                    variant="outlined"
-                    value={o.label}
-                    onChange={(e) => updateOption(o.id, e.target.value)}
-                    fullWidth
-                    InputProps={{ readOnly: isPreview }}
-                  />
-
-                  <Tooltip title="Delete option" placement="top">
-                    <IconButton
-                      aria-label="Delete option"
-                      onClick={() => deleteOption(o.id)}
-                      disabled={isPreview}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              ))}
-              <Box>
-                <Button
-                  variant="text"
-                  size="small"
-                  startIcon={<AddIcon fontSize="small" />}
-                  onClick={addOption}
-                  disabled={isPreview}
-                >
-                  <Typography
-                    component="span"
-                    variant="body2"
-                    color="primary.main"
-                    sx={{ ml: 0.5 }}
-                  >
-                    Add option
-                  </Typography>
-                </Button>
-              </Box>
-            </Stack>
-          </Box>
-        ) : null}
+        {isOptionQuestion && (
+          <OptionsQuestionSection
+            questionId={displayQuestion.id}
+            initialOptions={optionLabel}
+            isPreview={isPreview}
+          />
+        )}
 
         {displayQuestion.type === "paragraph" ? (
           <RichTextEditor

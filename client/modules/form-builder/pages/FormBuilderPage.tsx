@@ -19,7 +19,7 @@ import { v4 as uuidv4 } from "uuid";
 import React, { useCallback } from "react";
 import { motion } from "framer-motion";
 import { Tooltip } from "@mui/material";
-import { QUESTION_TYPE_META } from "@/constants/question-types";
+import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
 import { useQueryClient, useIsMutating } from "@tanstack/react-query";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";

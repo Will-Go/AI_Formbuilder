@@ -71,7 +71,7 @@ async function getFormQuestions(
 async function replaceQuestionOptions(
   supabase: Awaited<ReturnType<typeof createClient>>,
   questionId: string,
-  options: Array<{ value: string; label: string; order?: number }>,
+  options: Array<{ id?: string; value: string; label: string; order?: number }>,
 ) {
   const { error: deleteError } = await supabase
     .from("options")
@@ -87,6 +87,7 @@ async function replaceQuestionOptions(
   }
 
   const normalized = options.map((option, index) => ({
+    ...(option.id ? { id: option.id } : {}),
     question_id: questionId,
     value: option.value.trim(),
     label: option.label.trim(),

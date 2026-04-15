@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/shared/services/supabase/server";
 import { withAuth } from "@/shared/utils/with-is-auth";
-import { duplicateQuestion } from "@/daos/formsDao";
+import { duplicateQuestion } from "@/shared/daos/formsDao";
 import type { FormErrorResponse } from "@/shared/types/forms";
 
 interface RouteParams {

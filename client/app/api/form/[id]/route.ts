@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/shared/services/supabase/server";
 import { FormDetailsSchema } from "@/shared/schemas/formDetails";
 import { withAuth } from "@/shared/utils/with-is-auth";
-import { patchForm } from "@/daos/formsDao";
+import { patchForm } from "@/shared/daos/formsDao";
 
 import { z } from "zod";
 interface RouteParams {

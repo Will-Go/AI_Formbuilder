@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getForms, createForm } from "@/daos/formsDao";
+import { getForms, createForm } from "@/shared/daos/formsDao";
 import { createClient } from "@/shared/services/supabase/server";
 import {
   FormStatus,

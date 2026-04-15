@@ -1,4 +1,4 @@
-import { QUESTION_TYPE_META } from "@/constants/question-types";
+import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
 import type { Question, QuestionType } from "@/shared/types/forms";
 
 export function getQuestionTypeLabel(type: QuestionType): string {
@@ -8,4 +8,3 @@ export function getQuestionTypeLabel(type: QuestionType): string {
 export function isLayoutQuestion(q: Question): boolean {
   return q.type === "paragraph" || q.type === "section_divider";
 }
-

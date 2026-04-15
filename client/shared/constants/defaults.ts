@@ -11,11 +11,11 @@ import type {
   ShortTextQuestion,
   YesNoQuestion,
 } from "@/shared/types/forms";
-import { createId } from "@/shared/utils/id";
+import { v4 as uuidv4 } from "uuid";
 
 export function createDefaultQuestion(order: number): Question {
   const q: ShortTextQuestion = {
-    id: createId("q"),
+    id: uuidv4(),
     type: "short_text",
     label: "Untitled question",
     description: "",
@@ -31,7 +31,7 @@ export function createQuestionByType(
   order: number,
 ): Question {
   const base = {
-    id: createId("q"),
+    id: uuidv4(),
     label: "",
     description: "",
     required: false,
@@ -51,8 +51,8 @@ export function createQuestionByType(
       ...base,
       type,
       options: [
-        { id: createId("opt"), label: "Option 1", value: "Option 1", order: 0 },
-        { id: createId("opt"), label: "Option 2", value: "Option 2", order: 1 },
+        { id: uuidv4(), label: "Option 1", value: "Option 1", order: 0 },
+        { id: uuidv4(), label: "Option 2", value: "Option 2", order: 1 },
       ],
     };
     return q;
@@ -62,8 +62,8 @@ export function createQuestionByType(
       ...base,
       type,
       options: [
-        { id: createId("opt"), label: "Option 1", value: "Option 1", order: 0 },
-        { id: createId("opt"), label: "Option 2", value: "Option 2", order: 1 },
+        { id: uuidv4(), label: "Option 1", value: "Option 1", order: 0 },
+        { id: uuidv4(), label: "Option 2", value: "Option 2", order: 1 },
       ],
     };
     return q;
@@ -73,8 +73,8 @@ export function createQuestionByType(
       ...base,
       type,
       options: [
-        { id: createId("opt"), label: "Option 1", value: "Option 1", order: 0 },
-        { id: createId("opt"), label: "Option 2", value: "Option 2", order: 1 },
+        { id: uuidv4(), label: "Option 1", value: "Option 1", order: 0 },
+        { id: uuidv4(), label: "Option 2", value: "Option 2", order: 1 },
       ],
     };
     return q;

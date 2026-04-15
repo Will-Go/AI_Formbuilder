@@ -5,7 +5,7 @@ import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import { QUESTION_TYPE_META } from "@/constants/question-types";
+import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
 import type { QuestionType } from "@/shared/types/forms";
 import { PaletteItem } from "./PaletteItem";
 

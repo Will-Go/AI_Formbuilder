@@ -11,7 +11,7 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
 
-import { createQuestionByType } from "@/constants/defaults";
+import { createQuestionByType } from "@/shared/constants/defaults";
 import type { Question, QuestionType, Form } from "@/shared/types/forms";
 import QuestionCard from "./QuestionCard";
 

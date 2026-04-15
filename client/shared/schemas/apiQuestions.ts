@@ -19,6 +19,7 @@ export const QUESTION_TYPES: [QuestionType, ...QuestionType[]] = [
 ];
 
 export const OptionInputSchema = z.object({
+  id: z.string().uuid().optional(),
   value: z.string().trim().min(1).max(255),
   label: z.string().trim().max(255),
   order: z.number().int().min(0).optional(),
