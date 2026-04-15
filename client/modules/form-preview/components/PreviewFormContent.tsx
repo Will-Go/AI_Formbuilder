@@ -265,7 +265,7 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
               <SuccessResponseView
                 formTitle={form.title}
                 onViewResponses={() =>
-                  router.push(`/forms/${formId}?tab=response`)
+                  router.push(`/forms/${formId}?tab=responses`)
                 }
                 onSubmitAnother={() => setSubmitted(false)}
               />
