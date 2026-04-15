@@ -118,17 +118,6 @@ export default function QuestionCard({
         );
       }
     },
-    onSuccess: (res, { questionId }) => {
-      if (res.ok && res.question) {
-        queryClient.setQueryData<Form>(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          (old) => {
-            if (!old) return old;
-            return optimisticUpdateQuestion(old, questionId, res.question);
-          },
-        );
-      }
-    },
     errorMsg: "Failed to update question",
   });
 
