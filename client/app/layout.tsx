@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { Analytics } from "@vercel/analytics/next";
 
 const robotolab = Roboto_Slab({
   variable: "--font-robotolab",
@@ -32,6 +33,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );
