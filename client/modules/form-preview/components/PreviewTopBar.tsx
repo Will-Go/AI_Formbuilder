@@ -105,7 +105,6 @@ export function PreviewTopBar({
             formId={formId}
             formStatus={formStatus}
             formTitle={formTitle}
-            isCopy={true}
           />
         </Box>
       </Toolbar>

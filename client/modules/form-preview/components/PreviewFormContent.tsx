@@ -283,9 +283,8 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
                     noValidate
                   >
                     <Stack spacing={2}>
-                      {currentSectionIndex === 0 ? (
-                        <FormHeader form={form} />
-                      ) : currentSection.divider ? (
+                      {currentSectionIndex === 0 && <FormHeader form={form} />}
+                      {currentSection.divider && (
                         <Paper
                           variant="outlined"
                           sx={{
@@ -307,7 +306,7 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
                             </Box>
                           )}
                         </Paper>
-                      ) : null}
+                      )}
 
                       {currentSection.questions.map((q) => (
                         <QuestionRenderer key={q.id} question={q} />

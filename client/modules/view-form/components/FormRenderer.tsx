@@ -198,9 +198,8 @@ export function FormRenderer({ form }: { form: Form }) {
           }}
         >
           <Stack spacing={2} sx={{ flexGrow: 1 }}>
-            {currentSectionIndex === 0 ? (
-              <FormHeader form={form} />
-            ) : currentSection.divider ? (
+            {currentSectionIndex === 0 && <FormHeader form={form} />}
+            {currentSection.divider && (
               <Paper
                 variant="outlined"
                 sx={{
@@ -222,7 +221,7 @@ export function FormRenderer({ form }: { form: Form }) {
                   </Box>
                 )}
               </Paper>
-            ) : null}
+            )}
 
             {currentSection.questions.map((question) => (
               <QuestionRenderer key={question.id} question={question} />
