@@ -45,6 +45,13 @@ npm run lint         # Run ESLint
 - Use toast notifications for user-facing errors
 - Return null or early guard clauses for component errors
 
+## Loading States
+
+- Always add loading states to improve perceived performance and user experience
+- Use MUI `Skeleton` components for content-heavy UI (cards, lists, tables)
+- If the UI is too complex for Skeletons, use MUI `CircularProgress` component
+- Import from `@mui/material` (e.g., `import { Skeleton, CircularProgress } from "@mui/material"`)
+
 ## Database
 
 Database schema and migrations are in `database/` directory. Supabase hooks are in `database/supabase/hooks/`.
