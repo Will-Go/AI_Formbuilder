@@ -29,6 +29,8 @@ import FormList from "../components/FormList";
 import DashboardTopBar from "../components/DashboardTopBar";
 import TemplatesRow from "../components/TemplatesRow";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import FormGridSkeleton from "../components/FormGridSkeleton";
+import FormListSkeleton from "../components/FormListSkeleton";
 
 export const FORMS_QUERY_KEY = ["dashboard", "forms"];
 
@@ -243,9 +245,11 @@ export default function FormDashboardPage() {
             </Stack>
           </Stack>
           {isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-              <CircularProgress />
-            </Box>
+            viewMode === "grid" ? (
+              <FormGridSkeleton />
+            ) : (
+              <FormListSkeleton />
+            )
           ) : viewMode === "grid" ? (
             <FormGrid {...commonProps} />
           ) : (
