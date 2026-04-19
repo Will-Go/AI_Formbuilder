@@ -6,14 +6,17 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import CircularProgress from "@mui/material/CircularProgress";
+import Chip from "@mui/material/Chip";
 import { BarChart, PieChart } from "@mui/x-charts";
 import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { apiRequest } from "@/shared/utils/apiRequest";
-import type { Form } from "@/shared/types/forms";
+import type { Form, QuestionType } from "@/shared/types/forms";
+import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
 import type {
   ResponseSummaryResult,
   QuestionSummaryData,
 } from "@/shared/daos/responsesDao";
+import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
 
 interface SummaryViewProps {
   form: Form;
@@ -81,11 +84,36 @@ function QuestionSummary({ summary }: { summary: QuestionSummaryData }) {
     0,
   );
 
+  const questionTypeStr = summary.type as QuestionType;
+  const questionMeta = questionTypeStr
+    ? QUESTION_TYPE_META.find((meta) => meta.type === questionTypeStr)
+    : undefined;
+  const Icon = questionMeta?.icon;
+
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: "medium", mb: 0.5 }}>
-        {summary.label}
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          mb: 0.5,
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: "medium" }}>
+          {summary.label}
+        </Typography>
+        {questionMeta && (
+          <Chip
+            icon={Icon ? <Icon fontSize="small" /> : undefined}
+            label={questionMeta.label}
+            size="small"
+            variant="outlined"
+            color="default"
+            sx={{ ml: 2, flexShrink: 0 }}
+          />
+        )}
+      </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {responseCount}{" "}
         {summary.chart_type === "text" ? "words analyzed" : "responses"}
@@ -160,10 +188,15 @@ function renderChart(summary: QuestionSummaryData) {
       );
     }
 
-    // Rating, linear_scale, number
-    const sortedData = [...summary.data].sort(
-      (a, b) => Number(a.label) - Number(b.label),
-    );
+    // Rating, linear_scale, number, date
+    const sortedData = [...summary.data].sort((a, b) => {
+      if (summary.type === "date") {
+        return (
+          new Date(a.label || "").getTime() - new Date(b.label || "").getTime()
+        );
+      }
+      return Number(a.label) - Number(b.label);
+    });
     const xAxisData = sortedData.map((item) => String(item.label));
     const seriesData = sortedData.map((item) => item.count);
 

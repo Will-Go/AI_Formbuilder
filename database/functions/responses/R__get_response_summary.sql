@@ -53,14 +53,14 @@ BEGIN
       qd."order",
       CASE
         WHEN qd.type IN ('multiple_choice', 'dropdown', 'yes_no') THEN 'pie'
-        WHEN qd.type IN ('checkbox', 'rating', 'linear_scale', 'number') THEN 'bar'
+        WHEN qd.type IN ('checkbox', 'rating', 'linear_scale', 'number', 'date') THEN 'bar'
         ELSE 'text'
       END AS chart_type,
       qd.type as q_type,
       qd.option_map,
       -- Aggregate answers based on type
       CASE
-        WHEN qd.type IN ('multiple_choice', 'dropdown', 'yes_no', 'rating', 'linear_scale', 'number') THEN
+        WHEN qd.type IN ('multiple_choice', 'dropdown', 'yes_no', 'rating', 'linear_scale', 'number', 'date') THEN
           (
             SELECT COALESCE(jsonb_agg(jsonb_build_object(
               'label', COALESCE(qd.option_map->>a.val, a.val),
@@ -92,8 +92,27 @@ BEGIN
               ORDER BY count_val DESC
             ) a
           )
+        WHEN qd.type IN ('email', 'phone', 'short_text') THEN
+          -- Exact match counting for fields that shouldn't be word-split
+          (
+            SELECT COALESCE(jsonb_agg(jsonb_build_object(
+              'word', a.val,
+              'count', a.count_val
+            )), '[]'::jsonb)
+            FROM (
+              SELECT ans.value_json#>>'{}' as val, count(*) as count_val
+              FROM public.answers ans
+              JOIN public.responses res ON res.id = ans.response_id
+              WHERE ans.question_id = qd.question_id AND res.form_id = p_form_id
+                AND ans.value_json#>>'{}' IS NOT NULL
+              GROUP BY val
+              ORDER BY count_val DESC
+              LIMIT 20
+            ) a
+            WHERE a.val != ''
+          )
         ELSE
-          -- Text types: word frequency (basic)
+          -- Text types: word frequency (basic) for long text
           (
             SELECT COALESCE(jsonb_agg(jsonb_build_object(
               'word', a.word,
