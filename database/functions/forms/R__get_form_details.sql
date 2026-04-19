@@ -26,6 +26,7 @@ BEGIN
     'author_name', u.raw_user_meta_data ->> 'name',
     'created_at', f.created_at,
     'updated_at', f.updated_at,
+    'response_count', (SELECT count(*) FROM public.responses r WHERE r.form_id = f.id),
     'theme', f.theme,
     'settings', f.settings,
     'questions', (

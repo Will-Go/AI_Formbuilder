@@ -97,7 +97,22 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
     updateFormMetaMutation.mutate(updates);
   };
 
-  const submitResponse = useResponsesStore((s) => s.submitResponse);
+  const submitResponseMutation = useAppMutation<
+    { ok: boolean; responseId: string },
+    Error,
+    { answers: { question_id: string; value: unknown }[] }
+  >({
+    mutationFn: async (data) => {
+      return apiRequest({
+        method: "post",
+        url: `/form/${formId}/responses`,
+        data,
+      });
+    },
+    successMsg: "Response submitted successfully!",
+    errorMsg: "Failed to submit response",
+  });
+
   const [submitted, setSubmitted] = React.useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = React.useState(0);
   const [publishDecisionDialogOpen, setPublishDecisionDialogOpen] =
@@ -177,16 +192,21 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const onSubmit = (data: Record<string, unknown>) => {
+  const onSubmit = async (data: Record<string, unknown>) => {
     if (currentSectionIndex < totalSections - 1) {
       handleNext();
       return;
     }
     const answers = toAnswers(ordered, data);
-    submitResponse(formId, answers);
-    methods.reset(built.defaultValues);
-    setCurrentSectionIndex(0);
-    setSubmitted(true);
+
+    try {
+      await submitResponseMutation.mutateAsync({ answers });
+      methods.reset(built.defaultValues);
+      setCurrentSectionIndex(0);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Submission error", error);
+    }
   };
 
   const onInvalid = () => {

@@ -129,6 +129,89 @@ mutation.mutate(newUser);
 3. Use `translateKey` for i18n error messages
 4. Use `invalidate()` to refetch after mutations
 
+## API Architecture Pattern
+
+This project uses a layered API architecture: **Route → DAO → Supabase**.
+
+### Flow
+
+```
+Frontend (useAppQuery/useAppMutation)
+    ↓ apiRequest
+API Route (route.ts)
+    ↓ calls
+DAO (formsDao.ts)
+    ↓ calls
+Supabase (RPC / Client)
+```
+
+### Layers
+
+1. **API Routes** (`app/api/`)
+   - Handle HTTP methods (GET, POST, PATCH, DELETE)
+   - Authentication via `withAuth` wrapper
+   - Input validation (query params, body)
+   - Return JSON responses
+
+2. **DAOs** (`shared/daos/`)
+   - Data Access Objects contain business logic
+   - Call Supabase RPC functions or client queries
+   - Return typed data to routes
+   - Named with `*Dao.ts` suffix
+
+3. **Supabase**
+   - RPC functions for complex queries
+   - Client for simple CRUD operations
+
+### Example: Forms API
+
+```typescript
+// 1. API Route handles HTTP
+// app/api/form/route.ts
+export const GET = withAuth(async (request: Request) => {
+  const result = await getForms({ ownerId: user.id, search, limit, pageNumber });
+  return NextResponse.json({ forms: result.forms, pagination: result.pagination });
+});
+
+// 2. DAO handles data access
+// shared/daos/formsDao.ts
+export async function getForms(options: GetFormsOptions): Promise<FormsDaoResult> {
+  const { data } = await supabase.rpc("get_forms", { p_limit, p_page_number, ... });
+  return { forms: data.forms.map(mapRpcFormToForm), pagination: data.pagination };
+}
+```
+
+### Best Practices
+
+1. Put business logic in DAOs, not routes
+2. Use RPC for complex queries, client for simple CRUD
+3. Always authenticate routes with `withAuth`
+4. Validate input in routes (query params, body) using Zod schemas
+5. Return typed responses from DAOs
+
+### Input Validation with Zod
+
+Always validate request body and query params using Zod schemas in routes:
+
+```typescript
+// shared/schemas/formDetails.ts
+import { z } from "zod";
+
+export const CreateFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  sourceFormId: z.string().uuid().optional(),
+});
+
+// In route.ts
+export const POST = withAuth(async (request: Request) => {
+  const body = await request.json();
+  const validated = CreateFormSchema.parse(body); // Throws if invalid
+  // Use validated data...
+});
+```
+
+Zod schemas are defined in `shared/schemas/` and should be used for both input validation and response validation.
+
 ## Important Notes
 
 - This is NOT the Next.js you know - check breaking changes in `node_modules/next/dist/docs/`

@@ -12,6 +12,7 @@ import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import type { Form } from "@/shared/types/forms";
 import { useQueryClient, useIsMutating } from "@tanstack/react-query";
+import { subscribeToFormResponses } from "@/shared/services/supabase/client";
 
 export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
 
@@ -19,6 +20,7 @@ export default function Page() {
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const {
     queryParams: { tab },
@@ -47,6 +49,36 @@ export default function Page() {
       setForm(form);
     }
   }, [form, setForm]);
+
+  useEffect(() => {
+    if (!formId) return;
+
+    // Listen for new responses and update the form details cache
+    const subscription = subscribeToFormResponses(formId, () => {
+      queryClient.setQueryData<Form>(
+        [...FORM_DETAILS_QUERY_KEY, formId],
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            response_count: (oldData.response_count || 0) + 1,
+          };
+        },
+      );
+
+      // Optionally invalidate responses summary/list queries
+      queryClient.invalidateQueries({
+        queryKey: ["responses", formId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["form", formId, "summary"],
+      });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [formId, queryClient]);
 
   const currentView = useMemo(() => {
     const views = {

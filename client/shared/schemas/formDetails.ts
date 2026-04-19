@@ -28,6 +28,7 @@ export const FormDetailsSchema = z.object({
   status: z.enum(["draft", "published", "private", "closed"]),
   created_at: z.string(),
   updated_at: z.string(),
+  response_count: z.number().int().optional(),
   theme: z.record(z.string(), z.any()).default({}),
   settings: z.record(z.string(), z.any()).default({}),
   questions: z.array(QuestionSchema),

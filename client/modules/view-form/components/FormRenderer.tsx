@@ -2,7 +2,12 @@
 
 import React, { useMemo } from "react";
 import { Form, Question } from "@/shared/types/forms";
-import { Container, Stack, LinearProgress } from "@mui/material";
+import {
+  Container,
+  Stack,
+  LinearProgress,
+  CircularProgress,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
@@ -15,6 +20,9 @@ import {
   FormHeader,
 } from "@/shared/components/QuestionRenderer";
 import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
+import { useAppMutation } from "@/shared/hooks/useAppMutation";
+import { apiRequest } from "@/shared/utils/apiRequest";
+import { toAnswers } from "@/modules/form-preview/components/toAnswers";
 
 export function FormRenderer({ form }: { form: Form }) {
   const [submitted, setSubmitted] = React.useState(false);
@@ -26,6 +34,22 @@ export function FormRenderer({ form }: { form: Form }) {
     defaultValues: built.defaultValues,
     mode: "onChange",
     shouldFocusError: false, // We handle focusing and scrolling manually
+  });
+
+  const submitResponseMutation = useAppMutation<
+    { ok: boolean; responseId: string },
+    Error,
+    { answers: { question_id: string; value: unknown }[] }
+  >({
+    mutationFn: async (data) => {
+      return apiRequest({
+        method: "post",
+        url: `/form/${form.id}/responses`,
+        data,
+      });
+    },
+    successMsg: "Response submitted successfully!",
+    errorMsg: "Failed to submit response",
   });
 
   // Group questions by section dividers
@@ -107,14 +131,24 @@ export function FormRenderer({ form }: { form: Form }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const onSubmit = (data: Record<string, unknown>) => {
+  const onSubmit = async (data: Record<string, unknown>) => {
     if (currentSectionIndex < totalSections - 1) {
       // If user presses enter on a non-final step, just go to next step
       handleNext();
       return;
     }
-    console.log("Form submitted:", data);
-    setSubmitted(true);
+
+    const ordered = form.questions.slice().sort((a, b) => a.order - b.order);
+    const answers = toAnswers(ordered, data);
+
+    try {
+      await submitResponseMutation.mutateAsync({ answers });
+      methods.reset(built.defaultValues);
+      setCurrentSectionIndex(0);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Submission error:", error);
+    }
   };
 
   const onInvalid = () => {
@@ -260,15 +294,27 @@ export function FormRenderer({ form }: { form: Form }) {
                   )}
                   {currentSectionIndex < totalSections - 1 ? (
                     <Button
+                      key="next"
                       variant="contained"
                       onClick={handleNext}
                       sx={{ px: 4 }}
+                      disabled={submitResponseMutation.isPending}
                     >
                       Next
                     </Button>
                   ) : (
-                    <Button type="submit" variant="contained" sx={{ px: 4 }}>
-                      Submit
+                    <Button
+                      key="submit"
+                      type="submit"
+                      variant="contained"
+                      sx={{ px: 4 }}
+                      disabled={submitResponseMutation.isPending}
+                    >
+                      {submitResponseMutation.isPending ? (
+                        <CircularProgress size={24} />
+                      ) : (
+                        "Submit"
+                      )}
                     </Button>
                   )}
                 </Box>

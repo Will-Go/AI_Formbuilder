@@ -371,7 +371,19 @@ export default function BuilderTopBar({
           />
           <Tab
             value="responses"
-            label="Responses"
+            label={
+              <span>
+                Responses{" "}
+                {form?.response_count && (
+                  <Chip
+                    label={form?.response_count}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+              </span>
+            }
             onClick={() => router.push(`/forms/${formId}?tab=responses`)}
           />
           <Tab

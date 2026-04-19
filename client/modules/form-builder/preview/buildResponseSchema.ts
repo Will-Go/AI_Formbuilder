@@ -68,14 +68,24 @@ export function buildResponseSchema(form: Form) {
   for (const q of ordered) {
     if (q.type === "section_divider" || q.type === "paragraph") continue;
 
-    defaults[q.id] =
-      q.type === "checkbox"
-        ? (("defaultValue" in q && Array.isArray(q.defaultValue)
-            ? q.defaultValue
-            : []) as string[])
-        : "defaultValue" in q
-          ? (q.defaultValue ?? "")
-          : "";
+    let defaultVal: unknown = "";
+
+    if (q.type === "checkbox") {
+      defaultVal =
+        "defaultValue" in q && Array.isArray(q.defaultValue)
+          ? q.defaultValue
+          : [];
+    } else if (q.type === "rating") {
+      defaultVal = "defaultValue" in q ? (q.defaultValue ?? 1) : 1;
+    } else if (q.type === "number" || q.type === "linear_scale") {
+      defaultVal = "defaultValue" in q ? (q.defaultValue ?? 0) : 0;
+    } else if (q.type === "yes_no") {
+      defaultVal = "defaultValue" in q ? (q.defaultValue ?? "yes") : "yes";
+    } else if ("defaultValue" in q) {
+      defaultVal = q.defaultValue ?? "";
+    }
+
+    defaults[q.id] = defaultVal;
 
     shape[q.id] = schemaForQuestion(q);
   }
