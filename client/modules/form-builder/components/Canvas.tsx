@@ -7,7 +7,6 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import { useDroppable } from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
 
@@ -20,19 +19,10 @@ import type {
 } from "@/shared/types/aiChat";
 import QuestionCard from "./QuestionCard";
 import { useAiChatStore } from "../store/aiChatStore";
-import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { useQueryClient } from "@tanstack/react-query";
-
-function getQuestionContainerSx(question: Question) {
-  return {
-    py: question.type === "section_divider" ? 1.5 : 0,
-    px: question.type === "section_divider" ? 0.5 : 0,
-    borderTop: question.type === "section_divider" ? "1px solid" : "none",
-    borderBottom: question.type === "section_divider" ? "1px solid" : "none",
-    borderColor:
-      question.type === "section_divider" ? "divider" : "transparent",
-  };
-}
+import CanvasDropSlot from "./CanvasDropSlot";
+import CanvasPreviewSlot from "./CanvasPreviewSlot";
+import SortableQuestionItem from "./SortableQuestionItem";
 
 function getPreviewContainerSx(question: Question) {
   return {
@@ -42,122 +32,6 @@ function getPreviewContainerSx(question: Question) {
     borderBottom: question.type === "section_divider" ? "1px dashed" : "none",
     borderColor: "primary.light",
   };
-}
-
-interface SortableQuestionItemProps {
-  question: Question;
-  formId: string;
-  index: number;
-  selected: boolean;
-  onSelect: () => void;
-  isDeletable?: boolean;
-  aiDiffState?: "add" | "update" | "delete";
-  aiMessageId?: string;
-  aiChangeId?: string;
-  aiPendingPayload?: Partial<Question>;
-}
-
-function SortableQuestionItem({
-  question,
-  formId,
-  index,
-  selected,
-  onSelect,
-  isDeletable = true,
-  aiDiffState,
-  aiMessageId,
-  aiChangeId,
-  aiPendingPayload,
-}: SortableQuestionItemProps) {
-  const [element, setElement] = React.useState<Element | null>(null);
-  const handleRef = React.useRef<HTMLButtonElement | null>(null);
-  const { isDragging } = useSortable({
-    id: question.id,
-    index,
-    element,
-    handle: handleRef,
-    data: {
-      source: "canvas-question",
-      questionId: question.id,
-      index,
-    },
-  });
-
-  return (
-    <Box
-      ref={setElement}
-      sx={getQuestionContainerSx(question)}
-      data-shadow={isDragging || undefined}
-    >
-      <QuestionCard
-        question={question}
-        formId={formId}
-        selected={selected}
-        onSelect={onSelect}
-        isDragging={isDragging}
-        dragHandleRef={handleRef}
-        isDeletable={isDeletable}
-        aiDiffState={aiDiffState}
-        aiMessageId={aiMessageId}
-        aiChangeId={aiChangeId}
-        readonly={aiDiffState === "add"}
-        aiPendingPayload={aiPendingPayload}
-      />
-    </Box>
-  );
-}
-
-function CanvasDropSlot({
-  index,
-  active,
-  highlighted,
-}: {
-  index: number;
-  active: boolean;
-  highlighted: boolean;
-}) {
-  const { ref, isDropTarget } = useDroppable({
-    id: `canvas-slot:${index}`,
-
-    data: {
-      dropType: "canvas-slot",
-      index,
-    },
-  });
-
-  return (
-    <Box
-      ref={ref}
-      aria-hidden
-      sx={{
-        height: active ? 10 : 0,
-        my: active ? 0.5 : 0,
-        borderRadius: 999,
-        bgcolor: isDropTarget || highlighted ? "primary.main" : "transparent",
-        opacity: active ? 1 : 0,
-        transition: "all 120ms ease",
-        pointerEvents: active ? "auto" : "none",
-      }}
-    />
-  );
-}
-
-function CanvasPreviewSlot({
-  index,
-  children,
-}: {
-  index: number;
-  children: React.ReactNode;
-}) {
-  const { ref } = useDroppable({
-    id: `preview-slot:${index}`,
-    data: {
-      dropType: "preview-slot",
-      index,
-    },
-  });
-
-  return <Box ref={ref}>{children}</Box>;
 }
 
 interface CanvasProps {
