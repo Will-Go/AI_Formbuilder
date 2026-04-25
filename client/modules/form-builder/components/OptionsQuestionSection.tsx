@@ -25,13 +25,16 @@ export interface OptionsQuestionSectionProps {
   questionId: string;
   initialOptions?: Option[];
   isPreview?: boolean;
+  readonly?: boolean;
 }
 
 export function OptionsQuestionSection({
   questionId,
   initialOptions = [],
   isPreview,
+  readonly = false,
 }: OptionsQuestionSectionProps) {
+  const isReadOnly = isPreview || readonly;
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
   const queryClient = useQueryClient();
@@ -99,7 +102,7 @@ export function OptionsQuestionSection({
 
   useEffect(() => {
     if (debouncedOptions === null) return;
-    if (isPreview) return;
+    if (isReadOnly) return;
 
     // Ensure all options have strictly sequential order values before sending to the backend
     // This prevents PostgreSQL unique constraint violations on options_question_id_order_key
@@ -110,13 +113,13 @@ export function OptionsQuestionSection({
 
     mutateUpdateOptions({ options: orderedOptions });
     // Note: Do not synchronously clear pendingOptions here to avoid cascading renders
-  }, [debouncedOptions, mutateUpdateOptions, isPreview]);
+  }, [debouncedOptions, mutateUpdateOptions, isReadOnly]);
 
   // We can safely clear pendingOptions when the mutation successfully resolves
   // to return control to the parent's initialOptions
 
   const handleAddOption = () => {
-    if (isPreview) return;
+    if (isReadOnly) return;
     const nextOpt: Option = {
       id: uuidv4(),
       label: `Option ${displayOptions.length + 1}`,
@@ -129,7 +132,7 @@ export function OptionsQuestionSection({
   };
 
   const handleUpdateOption = (optId: string, label: string) => {
-    if (isPreview) return;
+    if (isReadOnly) return;
     const newOptions = displayOptions.map((o) =>
       o.id === optId ? { ...o, label } : o,
     );
@@ -138,7 +141,7 @@ export function OptionsQuestionSection({
   };
 
   const handleDeleteOption = (optId: string) => {
-    if (isPreview) return;
+    if (isReadOnly) return;
     const newOptions = displayOptions
       .filter((o) => o.id !== optId)
       .map((o, index) => ({ ...o, order: index })); // Reorder remaining options
@@ -186,14 +189,14 @@ export function OptionsQuestionSection({
               value={o.label}
               onChange={(e) => handleUpdateOption(o.id, e.target.value)}
               fullWidth
-              InputProps={{ readOnly: isPreview || isRollingBack }}
+              InputProps={{ readOnly: isReadOnly || isRollingBack }}
             />
 
             <Tooltip title="Delete option" placement="top">
               <IconButton
                 aria-label="Delete option"
                 onClick={() => handleDeleteOption(o.id)}
-                disabled={isPreview || isRollingBack}
+                disabled={isReadOnly || isRollingBack}
               >
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -206,7 +209,7 @@ export function OptionsQuestionSection({
             size="small"
             startIcon={<AddIcon fontSize="small" />}
             onClick={handleAddOption}
-            disabled={isPreview || isRollingBack}
+            disabled={isReadOnly || isRollingBack}
           >
             <Typography
               component="span"

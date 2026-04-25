@@ -16,6 +16,7 @@ export function optimisticAddQuestion(
   type: QuestionType,
   id: string,
   index?: number,
+  payload?: Partial<Question>,
 ): Form {
   const sorted = sortQuestions(form.questions);
   const insertionIndex =
@@ -26,10 +27,11 @@ export function optimisticAddQuestion(
   const baseQuestion = {
     id,
     type,
-    label: "",
-    description: "",
-    required: false,
+    label: payload?.label ?? "",
+    description: payload?.description ?? "",
+    required: payload?.required ?? false,
     order: insertionIndex + 1,
+    ...payload,
   } as Question;
 
   const question = isOptionBasedType(type)

@@ -23,6 +23,7 @@ interface RichTextEditorProps {
   allowLists?: boolean;
   fontSize?: number;
   fontWeight?: number;
+  readOnly?: boolean;
 }
 
 export default function RichTextEditor({
@@ -32,11 +33,13 @@ export default function RichTextEditor({
   allowLists = true,
   fontSize = 14,
   fontWeight = 400,
+  readOnly = false,
 }: RichTextEditorProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   const editor = useEditor({
     immediatelyRender: false,
+    editable: !readOnly,
     extensions: [
       StarterKit.configure({
         bulletList: allowLists ? {} : false,
@@ -146,7 +149,7 @@ export default function RichTextEditor({
         <EditorContent editor={editor} />
       </Box>
 
-      {isFocused && (
+      {isFocused && !readOnly && (
         <Box
           sx={{
             display: "flex",

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { FormStatus, type Form } from "@/shared/types/forms";
+import { FormStatus, type Form, type Question } from "@/shared/types/forms";
 
 type FormsState = {
   selectedQuestionIdByForm: Record<string, string | null>;
@@ -14,6 +14,7 @@ type FormsState = {
   setForm: (form: Form) => void;
   isSaving: boolean;
   setIsSaving: (isSaving: boolean) => void;
+  getQuestions: () => Question[];
 };
 
 export const useFormsStore = create<FormsState>()(
@@ -32,6 +33,7 @@ export const useFormsStore = create<FormsState>()(
         }));
       },
       setIsSaving: (isSaving) => set({ isSaving }),
+      getQuestions: () => get().form?.questions ?? [],
     }),
     {
       name: "formai:forms_store:v1",

@@ -3,7 +3,12 @@
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import EditIcon from "@mui/icons-material/Edit";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -16,6 +21,8 @@ import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import React from "react";
 import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
 import { createQuestionByType } from "@/shared/constants/defaults";
@@ -35,6 +42,16 @@ import {
 } from "../utils/formOptimisticUpdates";
 import { isOptionsQuestion, hasRequiredQuestion } from "../utils/questionUtils";
 import { OptionsQuestionSection } from "./OptionsQuestionSection";
+import { useAiChatContext } from "../context/AiChatContext";
+import {
+  buildQuestionDiffFields,
+  diffText,
+  type DiffToken,
+  type QuestionDiffSnapshot,
+} from "./questionDiff";
+import Button from "@mui/material/Button";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
 function preserveCommonFields(prev: Question, next: Question): Question {
   return {
@@ -48,6 +65,49 @@ function preserveCommonFields(prev: Question, next: Question): Question {
   };
 }
 
+function getTokenSx(kind: DiffToken["kind"]) {
+  if (kind === "added") {
+    return {
+      bgcolor: "success.100",
+      color: "success.dark",
+    };
+  }
+  if (kind === "removed") {
+    return {
+      bgcolor: "error.100",
+      color: "error.dark",
+      textDecoration: "line-through",
+    };
+  }
+  return {};
+}
+
+function renderDiffText(tokens: DiffToken[]) {
+  if (tokens.length === 0) {
+    return (
+      <Typography component="span" sx={{ color: "text.disabled" }}>
+        Empty
+      </Typography>
+    );
+  }
+
+  return tokens.map((token, idx) => (
+    <Box
+      component="span"
+      key={`${token.kind}-${idx}-${token.value.slice(0, 8)}`}
+      sx={{
+        ...getTokenSx(token.kind),
+        borderRadius: 0.5,
+        px: token.kind === "unchanged" ? 0 : 0.25,
+        py: token.kind === "unchanged" ? 0 : 0.15,
+      }}
+      aria-label={`${token.kind} text`}
+    >
+      {token.value}
+    </Box>
+  ));
+}
+
 interface QuestionCardProps {
   question: Question;
   formId: string;
@@ -57,6 +117,17 @@ interface QuestionCardProps {
   isDragging?: boolean;
   dragHandleRef?: React.Ref<HTMLButtonElement>;
   isDeletable?: boolean;
+  aiDiffState?: "add" | "update" | "delete";
+  aiMessageId?: string;
+  aiChangeId?: string;
+  aiPendingPayload?: Partial<Question>;
+  readonly?: boolean;
+}
+
+export function ReadOnlyQuestionCard(
+  props: Omit<QuestionCardProps, "readonly">,
+) {
+  return <QuestionCard {...props} readonly />;
 }
 
 export default function QuestionCard({
@@ -68,9 +139,17 @@ export default function QuestionCard({
   isDragging,
   dragHandleRef,
   isDeletable = true,
+  aiDiffState,
+  aiMessageId,
+  aiChangeId,
+  aiPendingPayload,
+  readonly = false,
 }: QuestionCardProps) {
+  const isReadOnly = isPreview || readonly;
   const queryClient = useQueryClient();
   const setForm = useFormsStore((s) => s.setForm);
+
+  const { handleAcceptChange, handleRejectChange } = useAiChatContext();
 
   const { mutate: mutateUpdateQuestion } = useAppMutation<
     { ok: boolean; question: Question },
@@ -229,17 +308,25 @@ export default function QuestionCard({
 
   const queueQuestionUpdate = React.useCallback(
     (updates: Record<string, unknown>) => {
-      if (isPreview) return;
+      if (isReadOnly) return;
       setPendingUpdates((prev) => ({
         ...prev,
         ...updates,
       }));
     },
-    [isPreview],
+    [isReadOnly],
   );
 
   // Merge pending updates into the question to ensure controlled inputs update instantly
-  const displayQuestion = { ...question, ...pendingUpdates } as Question;
+  const displayQuestion = React.useMemo(
+    () =>
+      ({
+        ...question,
+        ...aiPendingPayload,
+        ...pendingUpdates,
+      }) as Question,
+    [aiPendingPayload, pendingUpdates, question],
+  );
 
   const isOptionQuestion = isOptionsQuestion(displayQuestion);
 
@@ -255,11 +342,64 @@ export default function QuestionCard({
   const isRichTextEditable =
     displayQuestion.type === "section_divider" ||
     displayQuestion.type === "paragraph";
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const isDiffMode = aiDiffState !== "add";
+  const [isDiffOpen, setIsDiffOpen] = React.useState(isDiffMode);
+
+  React.useEffect(() => {
+    setIsDiffOpen(isDiffMode);
+  }, [isDiffMode]);
+
+  const originalSnapshot = React.useMemo<QuestionDiffSnapshot>(() => {
+    if (!aiDiffState) return {};
+    if (aiDiffState === "add") {
+      return {
+        label: "",
+        description: "",
+        placeholder: "",
+        text: "",
+      };
+    }
+    return {
+      label: question.label ?? "",
+      description: question.description ?? "",
+      placeholder:
+        "placeholder" in question ? (question.placeholder ?? "") : "",
+      text: "text" in question ? (question.text ?? "") : "",
+    };
+  }, [aiDiffState, question]);
+
+  const modifiedSnapshot = React.useMemo<QuestionDiffSnapshot>(() => {
+    if (!aiDiffState) return {};
+    if (aiDiffState === "delete") {
+      return {
+        label: "",
+        description: "",
+        placeholder: "",
+        text: "",
+      };
+    }
+    return {
+      label: displayQuestion.label ?? "",
+      description: displayQuestion.description ?? "",
+      placeholder:
+        "placeholder" in displayQuestion
+          ? (displayQuestion.placeholder ?? "")
+          : "",
+      text: "text" in displayQuestion ? (displayQuestion.text ?? "") : "",
+    };
+  }, [aiDiffState, displayQuestion]);
+
+  const diffFields = React.useMemo(
+    () => buildQuestionDiffFields(originalSnapshot, modifiedSnapshot),
+    [modifiedSnapshot, originalSnapshot],
+  );
 
   return (
     <Paper
       variant="outlined"
-      onClick={isPreview ? undefined : onSelect}
+      onClick={isReadOnly ? undefined : onSelect}
       sx={{
         p: isSectionDivider ? 3 : 2.5,
         position: "relative",
@@ -288,12 +428,285 @@ export default function QuestionCard({
           opacity: 0.6,
           pointerEvents: "none",
         }),
+        ...(aiDiffState === "add" && {
+          borderStyle: "dashed",
+          borderWidth: 2,
+          borderColor: "success.main",
+          bgcolor: "success.50",
+        }),
+        ...(aiDiffState === "update" && {
+          borderStyle: "dashed",
+          borderWidth: 2,
+          borderColor: "warning.main",
+          bgcolor: "warning.50",
+        }),
+        ...(aiDiffState === "delete" && {
+          borderStyle: "dashed",
+          borderWidth: 2,
+          borderColor: "error.main",
+          bgcolor: "error.50",
+          opacity: isReadOnly ? 0.4 : 0.6,
+        }),
         ...(isDragging && {
           opacity: 0.3,
         }),
       }}
       data-shadow={isDragging || undefined}
     >
+      {aiDiffState && aiMessageId && aiChangeId && (
+        <>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              rowGap: 1,
+              bgcolor:
+                aiDiffState === "add"
+                  ? "success.100"
+                  : aiDiffState === "update"
+                    ? "warning.100"
+                    : "error.100",
+              px: 2,
+              py: 1,
+              mb: 1.25,
+              mx: -2.5,
+              mt: -2.5,
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              transition: "background-color 180ms ease",
+            }}
+            role="region"
+            aria-label="AI diff controls"
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {aiDiffState === "add" ? (
+                <PlaylistAddIcon fontSize="small" color="success" />
+              ) : aiDiffState === "delete" ? (
+                <RemoveCircleOutlineIcon fontSize="small" color="error" />
+              ) : (
+                <EditIcon fontSize="small" color="warning" />
+              )}
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color:
+                    aiDiffState === "add"
+                      ? "success.dark"
+                      : aiDiffState === "update"
+                        ? "warning.dark"
+                        : "error.dark",
+                }}
+              >
+                AI {aiDiffState} diff preview
+              </Typography>
+              <Chip
+                size="small"
+                label={isDesktop ? "Side-by-side" : "Inline"}
+                sx={{ fontWeight: 600 }}
+                aria-label={`Diff layout ${isDesktop ? "side by side" : "inline"}`}
+              />
+            </Box>
+            {!isReadOnly ||
+              (aiDiffState && (
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  {isDiffMode && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      color="inherit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDiffOpen((prev) => !prev);
+                      }}
+                      aria-expanded={isDiffOpen}
+                      aria-label={
+                        isDiffOpen ? "Hide diff details" : "Show diff details"
+                      }
+                      sx={{ textTransform: "none" }}
+                    >
+                      {isDiffOpen ? "Hide Diff" : "Show Diff"}
+                    </Button>
+                  )}
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color={"success"}
+                    startIcon={<CheckIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAcceptChange(aiMessageId, aiChangeId);
+                    }}
+                    sx={{ textTransform: "none", boxShadow: "none" }}
+                    aria-label="Accept AI change"
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color={"error"}
+                    startIcon={<CloseIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRejectChange(aiMessageId, aiChangeId);
+                    }}
+                    sx={{ textTransform: "none", bgcolor: "background.paper" }}
+                    aria-label="Reject AI change"
+                  >
+                    Reject
+                  </Button>
+                </Box>
+              ))}
+          </Box>
+          <Collapse
+            in={isDiffOpen}
+            timeout={220}
+            unmountOnExit
+            aria-label="Question diff details"
+          >
+            <Stack
+              spacing={1}
+              sx={{ mb: 2 }}
+              role="region"
+              aria-label="Question change details"
+            >
+              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+                {aiDiffState === "add" && (
+                  <Chip
+                    size="small"
+                    color="success"
+                    label="Addition"
+                    aria-label="Addition highlight legend"
+                  />
+                )}
+                {aiDiffState === "delete" && (
+                  <Chip
+                    size="small"
+                    color="error"
+                    label="Deletion"
+                    aria-label="Deletion highlight legend"
+                  />
+                )}
+                {aiDiffState === "update" && (
+                  <Chip
+                    size="small"
+                    color="warning"
+                    label="Modification"
+                    aria-label="Modification highlight legend"
+                  />
+                )}
+              </Box>
+              {diffFields.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No text differences detected.
+                </Typography>
+              ) : isDesktop ? (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 1.25,
+                    alignItems: "start",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 1.25,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 1.5,
+                    }}
+                    aria-label="Original question values"
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{ fontWeight: 700, color: "text.secondary" }}
+                    >
+                      Current
+                    </Typography>
+                    <Stack spacing={1} sx={{ mt: 0.75 }}>
+                      {diffFields.map((field) => (
+                        <Box key={`original-${field.key}`}>
+                          <Typography variant="caption" color="text.secondary">
+                            {field.label}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                          >
+                            {renderDiffText(field.originalTokens)}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                  <Box
+                    sx={{
+                      p: 1.25,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 1.5,
+                    }}
+                    aria-label="AI proposed question values"
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{ fontWeight: 700, color: "text.secondary" }}
+                    >
+                      AI Update
+                    </Typography>
+                    <Stack spacing={1} sx={{ mt: 0.75 }}>
+                      {diffFields.map((field) => (
+                        <Box key={`modified-${field.key}`}>
+                          <Typography variant="caption" color="text.secondary">
+                            {field.label}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                          >
+                            {renderDiffText(field.modifiedTokens)}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                </Box>
+              ) : (
+                <Stack spacing={1}>
+                  {diffFields.map((field) => (
+                    <Box
+                      key={`inline-${field.key}`}
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1.5,
+                        p: 1.25,
+                      }}
+                      aria-label={`${field.label} inline diff`}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        {field.label}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                      >
+                        {renderDiffText(
+                          diffText(field.original, field.modified),
+                        )}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Collapse>
+        </>
+      )}
       <Box
         sx={{
           display: "flex",
@@ -311,7 +724,8 @@ export default function QuestionCard({
               e.preventDefault();
               e.stopPropagation();
             }}
-            sx={{ cursor: dragHandleRef ? "grab" : "default" }}
+            sx={{ cursor: dragHandleRef && !isReadOnly ? "grab" : "default" }}
+            disabled={isReadOnly}
           >
             <DragIndicatorIcon
               sx={{ color: "text.disabled" }}
@@ -353,7 +767,7 @@ export default function QuestionCard({
               });
             }}
             sx={{ minWidth: 180 }}
-            disabled={isPreview}
+            disabled={isReadOnly}
             renderValue={(selected) => {
               const meta = QUESTION_TYPE_META.find((m) => m.type === selected);
               const Icon = meta?.icon;
@@ -400,6 +814,7 @@ export default function QuestionCard({
             allowLists={false}
             fontSize={isSectionDivider ? 22 : 18}
             fontWeight={isSectionDivider ? 700 : 650}
+            readOnly={isReadOnly}
           />
         ) : (
           <TextField
@@ -409,7 +824,7 @@ export default function QuestionCard({
             placeholder="Question"
             InputProps={{
               sx: { fontSize: 18, fontWeight: 650 },
-              readOnly: isPreview,
+              readOnly: isReadOnly,
             }}
           />
         )}
@@ -424,6 +839,7 @@ export default function QuestionCard({
             }
             allowLists={true}
             fontSize={13}
+            readOnly={isReadOnly}
           />
         ) : (
           <TextField
@@ -434,7 +850,7 @@ export default function QuestionCard({
             }
             placeholder="Description (optional)"
             multiline
-            InputProps={{ sx: { fontSize: 13 }, readOnly: isPreview }}
+            InputProps={{ sx: { fontSize: 13 }, readOnly: isReadOnly }}
           />
         )}
 
@@ -447,7 +863,7 @@ export default function QuestionCard({
               queueQuestionUpdate({ placeholder: e.target.value })
             }
             placeholder="Placeholder"
-            InputProps={{ readOnly: isPreview }}
+            InputProps={{ readOnly: isReadOnly }}
           />
         ) : null}
 
@@ -455,7 +871,7 @@ export default function QuestionCard({
           <OptionsQuestionSection
             questionId={displayQuestion.id}
             initialOptions={optionLabel}
-            isPreview={isPreview}
+            readonly={isReadOnly}
           />
         )}
 
@@ -466,6 +882,7 @@ export default function QuestionCard({
             placeholder="Text"
             allowLists={true}
             fontSize={14}
+            readOnly={isReadOnly}
           />
         ) : null}
 
@@ -474,7 +891,7 @@ export default function QuestionCard({
             size="small"
             variant="outlined"
             type="number"
-            inputProps={{ min: 2, max: 10, readOnly: isPreview }}
+            inputProps={{ min: 2, max: 10, readOnly: isReadOnly }}
             value={displayQuestion.max}
             onChange={(e) => {
               const max = Number(e.target.value);
@@ -495,7 +912,7 @@ export default function QuestionCard({
               variant="outlined"
               type="number"
               value={displayQuestion.min}
-              inputProps={{ min: 0, max: 9, readOnly: isPreview }}
+              inputProps={{ min: 0, max: 9, readOnly: isReadOnly }}
               onChange={(e) => {
                 const min = Number(e.target.value);
                 if (Number.isFinite(min)) {
@@ -512,7 +929,7 @@ export default function QuestionCard({
               variant="outlined"
               type="number"
               value={displayQuestion.max}
-              inputProps={{ min: 1, max: 10, readOnly: isPreview }}
+              inputProps={{ min: 1, max: 10, readOnly: isReadOnly }}
               onChange={(e) => {
                 const max = Number(e.target.value);
                 if (Number.isFinite(max)) {
@@ -538,7 +955,7 @@ export default function QuestionCard({
               }
               label="Yes label"
               fullWidth
-              InputProps={{ readOnly: isPreview }}
+              InputProps={{ readOnly: isReadOnly }}
             />
             <TextField
               size="small"
@@ -547,73 +964,78 @@ export default function QuestionCard({
               onChange={(e) => queueQuestionUpdate({ noLabel: e.target.value })}
               label="No label"
               fullWidth
-              InputProps={{ readOnly: isPreview }}
+              InputProps={{ readOnly: isReadOnly }}
             />
           </Box>
         ) : null}
       </Stack>
 
-      <Divider
-        sx={{
-          my: 2,
-          borderColor: isSectionDivider ? "primary.light" : "divider",
-        }}
-      />
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 1,
-          bgcolor: isSectionDivider
-            ? "rgba(25, 118, 210, 0.04)"
-            : "transparent",
-          borderRadius: 1.5,
-          px: isSectionDivider ? 1 : 0,
-          py: isSectionDivider ? 0.5 : 0,
-        }}
-      >
-        <Tooltip title="Duplicate question" placement="top">
-          <IconButton
-            aria-label="Duplicate"
-            onClick={() => duplicateQuestionMutation.mutate(displayQuestion.id)}
-            disabled={isPreview}
+      {!isReadOnly && (
+        <>
+          <Divider
+            sx={{
+              my: 2,
+              borderColor: isSectionDivider ? "primary.light" : "divider",
+            }}
+          />
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 1,
+              bgcolor: isSectionDivider
+                ? "rgba(25, 118, 210, 0.04)"
+                : "transparent",
+              borderRadius: 1.5,
+              px: isSectionDivider ? 1 : 0,
+              py: isSectionDivider ? 0.5 : 0,
+            }}
           >
-            <ContentCopyIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        {isDeletable && (
-          <Tooltip title="Delete question" placement="top">
-            <IconButton
-              aria-label="Delete"
-              onClick={() => deleteQuestionMutation.mutate(displayQuestion.id)}
-              disabled={isPreview}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {hasRequiredQuestion(displayQuestion) && (
-          <>
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={displayQuestion.required}
-                  onChange={(e) =>
-                    mutateUpdateQuestion({
-                      questionId: displayQuestion.id,
-                      updates: { required: e.target.checked },
-                    })
+            <Tooltip title="Duplicate question" placement="top">
+              <IconButton
+                aria-label="Duplicate"
+                onClick={() =>
+                  duplicateQuestionMutation.mutate(displayQuestion.id)
+                }
+              >
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            {isDeletable && (
+              <Tooltip title="Delete question" placement="top">
+                <IconButton
+                  aria-label="Delete"
+                  onClick={() =>
+                    deleteQuestionMutation.mutate(displayQuestion.id)
                   }
-                  disabled={isPreview}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {hasRequiredQuestion(displayQuestion) && (
+              <>
+                <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={displayQuestion.required}
+                      onChange={(e) =>
+                        mutateUpdateQuestion({
+                          questionId: displayQuestion.id,
+                          updates: { required: e.target.checked },
+                        })
+                      }
+                    />
+                  }
+                  label="Required"
                 />
-              }
-              label="Required"
-            />
-          </>
-        )}
-      </Box>
+              </>
+            )}
+          </Box>
+        </>
+      )}
     </Paper>
   );
 }

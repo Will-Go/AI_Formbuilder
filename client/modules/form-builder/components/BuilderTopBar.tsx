@@ -386,11 +386,12 @@ export default function BuilderTopBar({
             }
             onClick={() => router.push(`/forms/${formId}?tab=responses`)}
           />
-          <Tab
+          {/* NOTE: this setting page is not created */}
+          {/* <Tab
             value="settings"
             label="Settings"
             onClick={() => router.push(`/forms/${formId}?tab=settings`)}
-          />
+          /> */}
         </Tabs>
       </Box>
 

@@ -13,7 +13,15 @@ import React from "react";
 
 import { createQuestionByType } from "@/shared/constants/defaults";
 import type { Question, QuestionType, Form } from "@/shared/types/forms";
+import type {
+  ChatMessage,
+  GetMessagesResponse,
+  StagedChange,
+} from "@/shared/types/aiChat";
 import QuestionCard from "./QuestionCard";
+import { useAiChatStore } from "../store/aiChatStore";
+import { useAppQuery } from "@/shared/hooks/useAppQuery";
+import { useQueryClient } from "@tanstack/react-query";
 
 function getQuestionContainerSx(question: Question) {
   return {
@@ -43,6 +51,10 @@ interface SortableQuestionItemProps {
   selected: boolean;
   onSelect: () => void;
   isDeletable?: boolean;
+  aiDiffState?: "add" | "update" | "delete";
+  aiMessageId?: string;
+  aiChangeId?: string;
+  aiPendingPayload?: Partial<Question>;
 }
 
 function SortableQuestionItem({
@@ -52,6 +64,10 @@ function SortableQuestionItem({
   selected,
   onSelect,
   isDeletable = true,
+  aiDiffState,
+  aiMessageId,
+  aiChangeId,
+  aiPendingPayload,
 }: SortableQuestionItemProps) {
   const [element, setElement] = React.useState<Element | null>(null);
   const handleRef = React.useRef<HTMLButtonElement | null>(null);
@@ -81,6 +97,11 @@ function SortableQuestionItem({
         isDragging={isDragging}
         dragHandleRef={handleRef}
         isDeletable={isDeletable}
+        aiDiffState={aiDiffState}
+        aiMessageId={aiMessageId}
+        aiChangeId={aiChangeId}
+        readonly={aiDiffState === "add"}
+        aiPendingPayload={aiPendingPayload}
       />
     </Box>
   );
@@ -176,9 +197,49 @@ export default function Canvas({
     return null;
   }, [paletteDragType, dropIndex, isInvalidDrop]);
 
+  const queryClient = useQueryClient();
+
+  const session = useAiChatStore((s) => s.session);
+  const _messagesQuery = queryClient.getQueryState<GetMessagesResponse>([
+    "ai-chat-messages",
+    session?.id,
+  ]);
+  const messages = React.useMemo(
+    () => _messagesQuery?.data?.messages ?? [],
+    [_messagesQuery?.data?.messages],
+  );
+  const pendingChanges = React.useMemo(() => {
+    return messages.flatMap((m: ChatMessage) =>
+      (m.stagedChanges || [])
+        .filter((c: StagedChange) => c.accepted === null)
+        .map((c: StagedChange) => ({ ...c, messageId: m.id })),
+    );
+  }, [messages]);
+
   if (!form) return null;
 
   const ordered = form.questions.slice().sort((a, b) => a.order - b.order);
+
+  // Generate fake question payloads for pending additions
+  const pendingAdds = pendingChanges.filter((c) => c.type === "add");
+  const pendingUpdates = pendingChanges.filter((c) => c.type === "update");
+  const pendingDeletes = pendingChanges.filter((c) => c.type === "delete");
+
+  const addQuestions = pendingAdds.map((c, i) => {
+    const payload = c.payload as Partial<Question> & { type?: QuestionType };
+    const maxOrder = ordered.length > 0 ? ordered[ordered.length - 1].order : 0;
+    const base = createQuestionByType(
+      payload.type || "short_text",
+      maxOrder + i + 1,
+    );
+    return {
+      ...base,
+      ...payload,
+      id: c.id,
+    } as Question;
+  });
+
+  const allQuestions = [...ordered, ...addQuestions];
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -239,52 +300,89 @@ export default function Canvas({
                 </motion.div>
               ) : null}
 
-              {ordered.map((q, idx) => (
-                <React.Fragment key={q.id}>
-                  <SortableQuestionItem
-                    question={q}
-                    formId={formId}
-                    index={idx}
-                    selected={q.id === selectedQuestionId}
-                    onSelect={() => onSelectQuestion(q.id)}
-                    isDeletable={idx > 0}
-                  />
-                  <CanvasDropSlot
-                    index={idx + 1}
-                    active={paletteDragType !== null}
-                    highlighted={dropIndex === idx + 1 && !previewQuestion}
-                  />
-                  {dropIndex === idx + 1 && previewQuestion ? (
-                    <motion.div
-                      key={`preview-${idx + 1}`}
-                      layout
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{
-                        opacity: 0,
-                        scale: 0.95,
-                        height: 0,
-                        marginTop: 0,
-                        marginBottom: 0,
-                        overflow: "hidden",
-                      }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Box sx={getPreviewContainerSx(previewQuestion)}>
-                        <CanvasPreviewSlot index={idx + 1}>
-                          <QuestionCard
-                            question={previewQuestion}
-                            formId={formId}
-                            selected={false}
-                            onSelect={() => {}}
-                            isPreview
-                          />
-                        </CanvasPreviewSlot>
-                      </Box>
-                    </motion.div>
-                  ) : null}
-                </React.Fragment>
-              ))}
+              {allQuestions.map((q, idx) => {
+                const pendingAdd = pendingAdds.find((c) => c.id === q.id);
+                const pendingUpdate = pendingUpdates.find(
+                  (c) => c.questionId === q.id,
+                );
+                const pendingDelete = pendingDeletes.find(
+                  (c) => c.questionId === q.id,
+                );
+
+                let aiDiffState: "add" | "update" | "delete" | undefined;
+                let aiMessageId: string | undefined;
+                let aiChangeId: string | undefined;
+                let aiPendingPayload: Partial<Question> | undefined;
+
+                if (pendingAdd) {
+                  aiDiffState = "add";
+                  aiMessageId = pendingAdd.messageId;
+                  aiChangeId = pendingAdd.id;
+                  aiPendingPayload = pendingAdd.payload as Partial<Question>;
+                } else if (pendingUpdate) {
+                  aiDiffState = "update";
+                  aiMessageId = pendingUpdate.messageId;
+                  aiChangeId = pendingUpdate.id;
+                  aiPendingPayload = pendingUpdate.payload as Partial<Question>;
+                } else if (pendingDelete) {
+                  aiDiffState = "delete";
+                  aiMessageId = pendingDelete.messageId;
+                  aiChangeId = pendingDelete.id;
+                }
+
+                return (
+                  <React.Fragment key={`${q.id}-${aiDiffState || "normal"}`}>
+                    <SortableQuestionItem
+                      question={q}
+                      formId={formId}
+                      index={idx}
+                      selected={q.id === selectedQuestionId}
+                      onSelect={() => onSelectQuestion(q.id)}
+                      isDeletable={
+                        (idx > 0 && !pendingAdd) || aiDiffState !== undefined
+                      }
+                      aiDiffState={aiDiffState}
+                      aiMessageId={aiMessageId}
+                      aiChangeId={aiChangeId}
+                      aiPendingPayload={aiPendingPayload}
+                    />
+                    <CanvasDropSlot
+                      index={idx + 1}
+                      active={paletteDragType !== null}
+                      highlighted={dropIndex === idx + 1 && !previewQuestion}
+                    />
+                    {dropIndex === idx + 1 && previewQuestion ? (
+                      <motion.div
+                        key={`preview-${idx + 1}`}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{
+                          opacity: 0,
+                          scale: 0.95,
+                          height: 0,
+                          marginTop: 0,
+                          marginBottom: 0,
+                          overflow: "hidden",
+                        }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Box sx={getPreviewContainerSx(previewQuestion)}>
+                          <CanvasPreviewSlot index={idx + 1}>
+                            <QuestionCard
+                              question={previewQuestion}
+                              formId={formId}
+                              selected={false}
+                              onSelect={() => {}}
+                              isPreview
+                            />
+                          </CanvasPreviewSlot>
+                        </Box>
+                      </motion.div>
+                    ) : null}
+                  </React.Fragment>
+                );
+              })}
             </AnimatePresence>
           </Stack>
           {paletteDragType !== null ? (

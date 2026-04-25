@@ -24,6 +24,7 @@
     "@mui/material": "^7.3.9",
     "@mui/material-nextjs": "^7.3.9",
     "@mui/x-charts": "^9.0.2",
+    "@openrouter/sdk": "^0.12.15",
     "@supabase/ssr": "^0.10.0",
     "@tanstack/react-query": "^5.96.1",
     "@tanstack/react-query-persist-client": "^5.96.1",
@@ -37,6 +38,7 @@
     "axios": "^1.14.0",
     "dayjs": "^1.11.20",
     "dompurify": "^3.3.3",
+    "eventemitter3": "^5.0.4",
     "framer-motion": "^12.38.0",
     "idb-keyval": "^6.2.2",
     "lodash": "^4.18.1",
@@ -62,6 +64,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "jsdom": "^29.0.2",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

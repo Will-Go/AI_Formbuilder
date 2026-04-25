@@ -124,6 +124,21 @@ npx vitest modules/form-builder/dnd/paletteDragLogic.test.ts
    import Box from "@mui/material/Box";
    ```
 
+### AI Diff Color Mapping
+
+Use the following color mapping consistently for AI staged change states in the form builder:
+
+1. **Add**:
+   - Border: `success.main`
+   - Background: `success.50`
+2. **Update**:
+   - Border: `warning.main`
+   - Background: `warning.50`
+3. **Delete**:
+   - Border: `error.main`
+   - Background: `error.50`
+   - Additional visual treatment: reduced opacity (`0.6`)
+
 ### State Management (Zustand)
 
 1. **Define store in a dedicated file** (e.g., `formsStore.ts`)
