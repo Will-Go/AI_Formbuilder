@@ -15,7 +15,6 @@ import React, { useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
-import { useResponsesStore } from "@/modules/form-responses/store/responsesStore";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import type { Form, Question } from "@/shared/types/forms";
@@ -28,7 +27,6 @@ import {
   QuestionRenderer,
   FormHeader,
 } from "@/shared/components/QuestionRenderer";
-import { toAnswers } from "./toAnswers";
 import { PreviewTopBar } from "./PreviewTopBar";
 import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
 
@@ -97,21 +95,6 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
     updateFormMetaMutation.mutate(updates);
   };
 
-  const submitResponseMutation = useAppMutation<
-    { ok: boolean; responseId: string },
-    Error,
-    { answers: { question_id: string; value: unknown }[] }
-  >({
-    mutationFn: async (data) => {
-      return apiRequest({
-        method: "post",
-        url: `/form/${formId}/responses`,
-        data,
-      });
-    },
-    successMsg: "Response submitted successfully!",
-    errorMsg: "Failed to submit response",
-  });
 
   const [submitted, setSubmitted] = React.useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = React.useState(0);
@@ -153,8 +136,6 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
   const totalSections = sections.length;
   const currentSection = sections[currentSectionIndex];
 
-  const ordered = form.questions.slice().sort((a, b) => a.order - b.order);
-
   const handleNext = async () => {
     const currentQuestionIds = currentSection.questions
       .filter((q) => q.type !== "paragraph")
@@ -192,21 +173,16 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const onSubmit = async (data: Record<string, unknown>) => {
+  const onSubmit = async () => {
     if (currentSectionIndex < totalSections - 1) {
       handleNext();
       return;
     }
-    const answers = toAnswers(ordered, data);
 
-    try {
-      await submitResponseMutation.mutateAsync({ answers });
-      methods.reset(built.defaultValues);
-      setCurrentSectionIndex(0);
-      setSubmitted(true);
-    } catch (error) {
-      console.error("Submission error", error);
-    }
+    // In preview mode, we don't actually submit to the server
+    methods.reset(built.defaultValues);
+    setCurrentSectionIndex(0);
+    setSubmitted(true);
   };
 
   const onInvalid = () => {
@@ -372,6 +348,7 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
                             )}
                             {currentSectionIndex < totalSections - 1 ? (
                               <Button
+                                key={"next"}
                                 variant="contained"
                                 onClick={handleNext}
                                 sx={{ px: 4 }}
@@ -380,6 +357,7 @@ export function PreviewFormContent({ formId, form }: PreviewFormContentProps) {
                               </Button>
                             ) : (
                               <Button
+                                key={"submit"}
                                 type="submit"
                                 variant="contained"
                                 sx={{ px: 4 }}
