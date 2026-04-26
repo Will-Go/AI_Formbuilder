@@ -36,7 +36,7 @@ payload: { "title": "<string>", "description": "<string>" } (include only change
   "type": "<QuestionType>",
   "label": "<string>",
   "required": <boolean>,
-  "index": <integer — 0-based position to insert at. Omit to append at the end>,
+  "order": <integer — 0-based position to insert at. Omit to append at the end>,
   "description": "<optional string>",
   "placeholder": "<optional — for text types>",
   "options": [{ "id": "PLACEHOLDER", "label": "<string>", "value": "<string>", "order": <int> }],

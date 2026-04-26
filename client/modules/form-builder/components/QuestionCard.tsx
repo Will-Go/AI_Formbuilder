@@ -341,6 +341,7 @@ export default function QuestionCard({
     displayQuestion.type === "paragraph";
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isDiffMode = aiDiffState !== "add";
   const [isDiffOpen, setIsDiffOpen] = React.useState(isDiffMode);
 
@@ -398,7 +399,7 @@ export default function QuestionCard({
       variant="outlined"
       onClick={isReadOnly ? undefined : onSelect}
       sx={{
-        p: isSectionDivider ? 3 : 2.5,
+        p: isSectionDivider ? (isMobile ? 2 : 3) : (isMobile ? 1.5 : 2.5),
         position: "relative",
         borderLeft: isSectionDivider ? 6 : selected ? 5 : 1,
         borderLeftColor: isSectionDivider
@@ -719,9 +720,10 @@ export default function QuestionCard({
       <Box
         sx={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           gap: 1,
-          mb: isSectionDivider ? 2.5 : 2,
+          mb: isSectionDivider ? (isMobile ? 1.5 : 2.5) : (isMobile ? 1 : 2),
         }}
       >
         <Tooltip title="Drag to reorder" placement="top">
@@ -775,7 +777,7 @@ export default function QuestionCard({
                 updates: preserveCommonFields(displayQuestion, next),
               });
             }}
-            sx={{ minWidth: 180 }}
+            sx={{ minWidth: isMobile ? 120 : 180 }}
             disabled={isReadOnly}
             renderValue={(selected) => {
               const meta = QUESTION_TYPE_META.find((m) => m.type === selected);
@@ -990,9 +992,10 @@ export default function QuestionCard({
           <Box
             sx={{
               display: "flex",
+              flexWrap: "wrap",
               alignItems: "center",
               justifyContent: "flex-end",
-              gap: 1,
+              gap: isMobile ? 0.5 : 1,
               bgcolor: isSectionDivider
                 ? "rgba(25, 118, 210, 0.04)"
                 : "transparent",

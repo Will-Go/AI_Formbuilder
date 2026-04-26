@@ -96,16 +96,17 @@ export default function Canvas({
 
   if (!form) return null;
 
-  const ordered = form.questions.slice().sort((a, b) => a.order - b.order);
-
   // Generate fake question payloads for pending additions
   const pendingAdds = pendingChanges.filter((c) => c.type === "add");
   const pendingUpdates = pendingChanges.filter((c) => c.type === "update");
   const pendingDeletes = pendingChanges.filter((c) => c.type === "delete");
+  console.log("pendingAdds", pendingAdds);
+  const { questions } = form;
 
   const addQuestions = pendingAdds.map((c, i) => {
     const payload = c.payload as Partial<Question> & { type?: QuestionType };
-    const maxOrder = ordered.length > 0 ? ordered[ordered.length - 1].order : 0;
+    const maxOrder =
+      questions.length > 0 ? questions[questions.length - 1].order : 0;
     const base = createQuestionByType(
       payload.type || "short_text",
       maxOrder + i + 1,
@@ -117,7 +118,9 @@ export default function Canvas({
     } as Question;
   });
 
-  const allQuestions = [...ordered, ...addQuestions];
+  const allQuestions = [...questions, ...addQuestions].sort(
+    (a, b) => a.order - b.order,
+  );
 
   return (
     <Box sx={{ position: "relative" }}>

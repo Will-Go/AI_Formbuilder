@@ -9,6 +9,7 @@ import Skeleton from "@mui/material/Skeleton";
 import Divider from "@mui/material/Divider";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import SendIcon from "@mui/icons-material/Send";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
@@ -84,12 +85,14 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       }),
     enabled: !!session?.id,
     showErrorToast: true,
+    staleTime: 1000 * 60, // 1 minute
   });
 
   const messages = React.useMemo(
     () => _messagesQuery.data?.messages ?? [],
     [_messagesQuery.data?.messages],
   );
+  console.log("message", messages);
 
   // ── realtime subscription ──────────────────────────────────────────────────
   React.useEffect(() => {
@@ -307,6 +310,20 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                 aria-label="Collapse AI Assistant"
               >
                 <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Reset conversation">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  _messagesQuery.reset();
+                  setMessages([]);
+                }}
+                id="ai-chat-reset-btn"
+                aria-label="Reset conversation"
+                sx={{ ml: 0.5 }}
+              >
+                <RefreshIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           </Box>
