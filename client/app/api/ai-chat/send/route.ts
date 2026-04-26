@@ -65,8 +65,6 @@ export const POST = withAuth(async (req: NextRequest) => {
         );
         const { reply, stagedChanges } = await sendWithContext(message, form);
 
-        console.log("reply: ", reply, "stagedChanges: ", stagedChanges);
-
         await saveMessage(
           session.id,
           "assistant",

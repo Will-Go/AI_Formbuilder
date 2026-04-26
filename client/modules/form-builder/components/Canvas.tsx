@@ -9,7 +9,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { useDroppable } from "@dnd-kit/react";
 import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
-
+import { useAppQuery } from "@/shared/hooks/useAppQuery";
 import { createQuestionByType } from "@/shared/constants/defaults";
 import type { Question, QuestionType, Form } from "@/shared/types/forms";
 import type {
@@ -70,14 +70,18 @@ export default function Canvas({
     }
     return null;
   }, [paletteDragType, dropIndex, isInvalidDrop]);
-
   const queryClient = useQueryClient();
-
   const session = useAiChatStore((s) => s.session);
-  const _messagesQuery = queryClient.getQueryState<GetMessagesResponse>([
-    "ai-chat-messages",
-    session?.id,
-  ]);
+  const _messagesQuery = useAppQuery<GetMessagesResponse>({
+    queryKey: ["ai-chat-messages", session?.id],
+    queryFn: () =>
+      (queryClient.getQueryData([
+        "ai-chat-messages",
+        session?.id,
+      ]) as GetMessagesResponse) || [],
+    enabled: !!session?.id,
+  });
+
   const messages = React.useMemo(
     () => _messagesQuery?.data?.messages ?? [],
     [_messagesQuery?.data?.messages],

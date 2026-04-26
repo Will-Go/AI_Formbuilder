@@ -93,7 +93,7 @@ export default function TextHTMLDisplayer({
     <div className={cn("relative", className)}>
       <div
         ref={contentRef}
-        className={cn("break-words whitespace-normal", textClassName)}
+        className={cn("break-words whitespace-normal ", textClassName)}
         style={{
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",

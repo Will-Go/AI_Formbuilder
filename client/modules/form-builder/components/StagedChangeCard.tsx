@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
@@ -16,6 +16,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import type { StagedChange } from "@/shared/types/aiChat";
 import type { Option } from "@/shared/types/forms";
 import { useFormsStore } from "../../form-dashboard/store/formsStore";
+import { stripHtml } from "@/shared/utils/html";
 
 interface StagedChangeCardProps {
   change: StagedChange;
@@ -54,12 +55,11 @@ export default function StagedChangeCard({
   onAccept,
   onReject,
 }: StagedChangeCardProps) {
-  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const questions = useFormsStore((s) => s.getQuestions());
   const originalQuestion = questions.find((q) => q.id === change.questionId);
-  const past = React.useMemo(
-    () => (change.past ? tryParseJson(change.past) : originalQuestion),
-    [change.past, originalQuestion],
+  const [past] = useState(
+    change.past ? tryParseJson(change.past) : originalQuestion,
   );
 
   const cfg = TYPE_CONFIG[change.type];
@@ -111,7 +111,7 @@ export default function StagedChangeCard({
         >
           {fieldsToRender.map((field) => {
             const fieldKey = field.toString();
-
+            //FOR QUESTIONS THAT HAVE OPTIONS
             if (fieldKey === "options" && isExpanded) {
               const oldVal = (past as Record<string, unknown>)?.options || past;
               const newVal = payload.options;
@@ -248,7 +248,7 @@ export default function StagedChangeCard({
                 <Typography
                   variant="body2"
                   sx={{
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: 400,
                     color: "text.secondary",
                     textDecoration: "line-through",
@@ -259,7 +259,7 @@ export default function StagedChangeCard({
                   }}
                   title={oldVal}
                 >
-                  {oldVal}
+                  {stripHtml(oldVal)}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -270,7 +270,7 @@ export default function StagedChangeCard({
                 <Typography
                   variant="body2"
                   sx={{
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: 600,
                     color: "text.primary",
                     overflow: isExpanded ? "visible" : "hidden",
@@ -280,7 +280,7 @@ export default function StagedChangeCard({
                   }}
                   title={newVal}
                 >
-                  {newVal}
+                  {stripHtml(newVal)}
                 </Typography>
               </Box>
             );
@@ -309,7 +309,7 @@ export default function StagedChangeCard({
         }}
         title={labelToDisplay}
       >
-        {labelToDisplay}
+        {stripHtml(labelToDisplay)}
       </Typography>
     );
   };

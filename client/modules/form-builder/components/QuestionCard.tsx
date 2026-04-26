@@ -52,6 +52,7 @@ import {
 import Button from "@mui/material/Button";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
 
 function preserveCommonFields(prev: Question, next: Question): Question {
   return {
@@ -84,11 +85,7 @@ function getTokenSx(kind: DiffToken["kind"]) {
 
 function renderDiffText(tokens: DiffToken[]) {
   if (tokens.length === 0) {
-    return (
-      <Typography component="span" sx={{ color: "text.disabled" }}>
-        Empty
-      </Typography>
-    );
+    return <TextHTMLDisplayer html="Empty" className="text-gray-500!" />;
   }
 
   return tokens.map((token, idx) => (
@@ -103,7 +100,7 @@ function renderDiffText(tokens: DiffToken[]) {
       }}
       aria-label={`${token.kind} text`}
     >
-      {token.value}
+      <TextHTMLDisplayer html={token.value} />
     </Box>
   ));
 }
@@ -509,57 +506,56 @@ export default function QuestionCard({
                 aria-label={`Diff layout ${isDesktop ? "side by side" : "inline"}`}
               />
             </Box>
-            {!isReadOnly ||
-              (aiDiffState && (
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {isDiffMode && (
-                    <Button
-                      size="small"
-                      variant="text"
-                      color="inherit"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsDiffOpen((prev) => !prev);
-                      }}
-                      aria-expanded={isDiffOpen}
-                      aria-label={
-                        isDiffOpen ? "Hide diff details" : "Show diff details"
-                      }
-                      sx={{ textTransform: "none" }}
-                    >
-                      {isDiffOpen ? "Hide Diff" : "Show Diff"}
-                    </Button>
-                  )}
+            {aiDiffState && (
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {isDiffMode && (
                   <Button
                     size="small"
-                    variant="contained"
-                    color={"success"}
-                    startIcon={<CheckIcon />}
+                    variant="text"
+                    color="inherit"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleAcceptChange(aiMessageId, aiChangeId);
+                      setIsDiffOpen((prev) => !prev);
                     }}
-                    sx={{ textTransform: "none", boxShadow: "none" }}
-                    aria-label="Accept AI change"
+                    aria-expanded={isDiffOpen}
+                    aria-label={
+                      isDiffOpen ? "Hide diff details" : "Show diff details"
+                    }
+                    sx={{ textTransform: "none" }}
                   >
-                    Accept
+                    {isDiffOpen ? "Hide Diff" : "Show Diff"}
                   </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color={"error"}
-                    startIcon={<CloseIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRejectChange(aiMessageId, aiChangeId);
-                    }}
-                    sx={{ textTransform: "none", bgcolor: "background.paper" }}
-                    aria-label="Reject AI change"
-                  >
-                    Reject
-                  </Button>
-                </Box>
-              ))}
+                )}
+                <Button
+                  size="small"
+                  variant="contained"
+                  color={"success"}
+                  startIcon={<CheckIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAcceptChange(aiMessageId, aiChangeId);
+                  }}
+                  sx={{ textTransform: "none", boxShadow: "none" }}
+                  aria-label="Accept AI change"
+                >
+                  Accept
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color={"error"}
+                  startIcon={<CloseIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRejectChange(aiMessageId, aiChangeId);
+                  }}
+                  sx={{ textTransform: "none", bgcolor: "background.paper" }}
+                  aria-label="Reject AI change"
+                >
+                  Reject
+                </Button>
+              </Box>
+            )}
           </Box>
           <Collapse
             in={isDiffOpen}
@@ -633,12 +629,11 @@ export default function QuestionCard({
                           <Typography variant="caption" color="text.secondary">
                             {field.label}
                           </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
-                          >
-                            {renderDiffText(field.originalTokens)}
-                          </Typography>
+
+                          <TextHTMLDisplayer
+                            html={field.original}
+                            className="text-gray-500 line-through"
+                          />
                         </Box>
                       ))}
                     </Stack>
@@ -664,12 +659,10 @@ export default function QuestionCard({
                           <Typography variant="caption" color="text.secondary">
                             {field.label}
                           </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
-                          >
-                            {renderDiffText(field.modifiedTokens)}
-                          </Typography>
+                          <TextHTMLDisplayer
+                            html={field.modified}
+                            className="text-green-600"
+                          />
                         </Box>
                       ))}
                     </Stack>

@@ -6,7 +6,7 @@ import type { AiDiffResponse, StagedChange } from "@/shared/types/aiChat";
 /** Server-side only. Key must NOT be NEXT_PUBLIC_ prefixed. */
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-const AI_MODEL = "google/gemma-4-31b-it:free";
+const AI_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
 
 const openRouter = new OpenRouter({ apiKey: OPENROUTER_API_KEY });
 
