@@ -19,12 +19,16 @@ You must output a VALID JSON object and NOTHING else — no markdown fences, no 
   "reply": "<short human-readable summary of what you did>",
   "changes": [
     {
-      "type": "add" | "update" | "delete",
+      "type": "add" | "update" | "delete" | "update_form",
       "questionId": "<existing question id — only for update/delete>",
-      "payload": { <full or partial Question object — see schema below> }
+      "payload": { <full or partial Question object OR form metadata object> }
     }
   ]
 }
+
+## Form Metadata Update (type: "update_form")
+Use this type to change the form title or description.
+payload: { "title": "<string>", "description": "<string>" } (include only changed fields)
 
 ## Question Schema (for "add" payload — all fields)
 {
@@ -64,6 +68,7 @@ export async function sendWithContext(
     {
       id: form.id,
       title: form.title,
+      description: form.description,
       questions: form.questions
         .slice()
         .sort((a, b) => a.order - b.order)

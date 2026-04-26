@@ -6,7 +6,7 @@ import { useFormsStore } from "../../form-dashboard/store/formsStore";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import { v4 as uuidv4 } from "uuid";
-import type { QuestionType, Question } from "@/shared/types/forms";
+import type { QuestionType, Question, Form } from "@/shared/types/forms";
 import type { ChatMessage, GetMessagesResponse, StagedChange } from "@/shared/types/aiChat";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -43,6 +43,7 @@ interface AiChatProviderProps {
     updates: Partial<Question>,
   ) => Promise<unknown>;
   onDeleteQuestion: (questionId: string) => Promise<unknown>;
+  onUpdateForm: (updates: Partial<Form>) => Promise<unknown>;
 }
 
 export const AiChatProvider = ({
@@ -50,6 +51,7 @@ export const AiChatProvider = ({
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
+  onUpdateForm,
 }: AiChatProviderProps) => {
   const queryClient = useQueryClient();
   const session = useAiChatStore((s) => s.session);
@@ -71,6 +73,7 @@ export const AiChatProvider = ({
   );
 
   const getQuestions = useFormsStore((s) => s.getQuestions);
+  const getForm = () => useFormsStore.getState().form;
 
   const persistStagesMutation = useAppMutation<
     unknown,
@@ -138,15 +141,32 @@ export const AiChatProvider = ({
         if (change.questionId) {
           return onDeleteQuestion(change.questionId);
         }
+      } else if (change.type === "update_form") {
+        return onUpdateForm(payload);
       }
       return Promise.resolve();
     },
-    [onAddQuestion, onUpdateQuestion, onDeleteQuestion],
+    [onAddQuestion, onUpdateQuestion, onDeleteQuestion, onUpdateForm],
   );
 
   const getPastValue = useCallback(
     (change: StagedChange): string | undefined => {
       if (change.type === "add") return undefined;
+
+      if (change.type === "update_form") {
+        const form = getForm();
+        if (!form) return undefined;
+        const payload = (change.payload as Record<string, unknown>) || {};
+        const fields = Object.keys(payload);
+        const pastValues: Record<string, unknown> = {};
+        fields.forEach((field) => {
+          const val = (form as Record<string, unknown>)?.[field];
+          if (val !== undefined) {
+            pastValues[field] = val;
+          }
+        });
+        return JSON.stringify(pastValues);
+      }
 
       const questions = getQuestions();
       const originalQuestion = questions.find(

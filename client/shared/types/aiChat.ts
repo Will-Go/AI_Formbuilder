@@ -9,13 +9,13 @@ export type ChatRole = 'user' | 'assistant';
 export type StagedChange = {
   /** Unique change ID (client-generated UUID) */
   id: string;
-  type: 'add' | 'update' | 'delete';
+  type: 'add' | 'update' | 'delete' | 'update_form';
   /** Existing question ID targeted by update/delete operations */
   questionId?: string;
   /** New question type for add operations – helps UI preview */
   questionType?: QuestionType;
-  /** Full or partial question payload */
-  payload: Partial<Question>;
+  /** Full or partial question payload, or form metadata */
+  payload: Partial<Question> | { title?: string; description?: string };
   /** null = pending, true = accepted, false = rejected */
   accepted: boolean | null;
   /** Stores the previous state (e.g. label/description) if accepted */
@@ -73,8 +73,8 @@ export type UpdateStagesResponse = {
 export type AiDiffResponse = {
   reply: string;
   changes: Array<{
-    type: 'add' | 'update' | 'delete';
+    type: 'add' | 'update' | 'delete' | 'update_form';
     questionId?: string;
-    payload: Partial<Question>;
+    payload: Partial<Question> | { title?: string; description?: string };
   }>;
 };

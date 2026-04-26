@@ -15,16 +15,12 @@ import {
 } from "@dnd-kit/react";
 import { move } from "@dnd-kit/helpers";
 import { useParams } from "next/navigation";
-import { v4 as uuidv4 } from "uuid";
-import React, { useCallback } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { Tooltip } from "@mui/material";
 import { QUESTION_TYPE_META } from "@/shared/constants/question-types";
-import { useQueryClient, useIsMutating } from "@tanstack/react-query";
-import { useAppMutation } from "@/shared/hooks/useAppMutation";
-import { apiRequest } from "@/shared/utils/apiRequest";
 import { useFormsStore } from "@/modules/form-dashboard/store/formsStore";
-import type { Form, Question, QuestionType } from "@/shared/types/forms";
+import type { Question, QuestionType } from "@/shared/types/forms";
 import { useDndSensors } from "../dnd/sortable";
 import {
   canDropPaletteItem,
@@ -33,220 +29,27 @@ import {
 } from "../dnd/paletteDragLogic";
 import FieldPalette from "../components/FieldPalette";
 import Canvas from "../components/Canvas";
-import { notifyWarning, notifyError } from "@/shared/utils/toastNotify";
-import {
-  optimisticAddQuestion,
-  optimisticDeleteQuestion,
-  optimisticReorderQuestions,
-  optimisticUpdateQuestion,
-} from "../utils/formOptimisticUpdates";
+import { notifyWarning } from "@/shared/utils/toastNotify";
 import AiChatSidebar from "../components/AiChatSidebar";
-import { AiChatProvider } from "../context/AiChatContext";
-import { useAiChatStore } from "../store/aiChatStore";
 
 export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
 
-export default function FormBuilderPage() {
+interface FormBuilderPageProps {
+  onAddQuestion: (type: QuestionType, index?: number, payload?: Partial<Question>) => Promise<unknown>;
+  onUpdateQuestion: (questionId: string, updates: Partial<Question>) => Promise<unknown>;
+  onDeleteQuestion: (questionId: string) => Promise<unknown>;
+  onReorderQuestions: (questionIds: string[]) => void;
+  isSaving: boolean;
+}
+
+export default function FormBuilderPage({
+  onAddQuestion,
+  onReorderQuestions,
+}: FormBuilderPageProps) {
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
 
   const form = useFormsStore((s) => s.form);
-  const setForm = useFormsStore((s) => s.setForm);
-
-  const queryClient = useQueryClient();
-
-  const setIsSaving = useFormsStore((s) => s.setIsSaving);
-
-  const { mutateAsync: addQuestionMutate, isPending: isAddingQuestionPending } =
-    useAppMutation<
-      { ok: boolean; question: Question },
-      Error,
-      {
-        type: QuestionType;
-        index?: number;
-        id: string;
-        payload?: Partial<Question>;
-      },
-      { previousForm?: Form }
-    >({
-      mutationFn: async ({ type, index, id, payload }) => {
-        return apiRequest({
-          method: "post",
-          url: `/form/${formId}/questions`,
-          data: { type, index, id, ...payload },
-        });
-      },
-      onMutate: async (variables) => {
-        const currentForm = useFormsStore.getState().form;
-        if (!currentForm) {
-          return { previousForm: undefined };
-        }
-        const nextForm = optimisticAddQuestion(
-          currentForm,
-          variables.type,
-          variables.id,
-          variables.index,
-          variables.payload,
-        );
-        setForm(nextForm);
-        queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
-        return { previousForm: currentForm };
-      },
-      onError: (_error, _variables, context) => {
-        if (context?.previousForm) {
-          setForm(context.previousForm);
-          queryClient.setQueryData(
-            [...FORM_DETAILS_QUERY_KEY, formId],
-            context.previousForm,
-          );
-        }
-      },
-      onSuccess: (res, variables) => {
-        if (res.ok && res.question) {
-          queryClient.setQueryData<Form>(
-            [...FORM_DETAILS_QUERY_KEY, formId],
-            (old) => {
-              if (!old) return old;
-              return optimisticUpdateQuestion(old, variables.id, res.question);
-            },
-          );
-        }
-      },
-      errorMsg: "Failed to add question",
-    });
-
-  const reorderQuestionsMutation = useAppMutation<
-    unknown,
-    Error,
-    string[],
-    { previousForm?: Form }
-  >({
-    mutationFn: async (questionIds) => {
-      return apiRequest({
-        method: "put",
-        url: `/form/${formId}/questions`,
-        data: { questionIds },
-      });
-    },
-    onMutate: async (questionIds) => {
-      const currentForm = useFormsStore.getState().form;
-      if (!currentForm) {
-        return { previousForm: undefined };
-      }
-      const nextForm = optimisticReorderQuestions(currentForm, questionIds);
-      setForm(nextForm);
-      queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
-      return { previousForm: currentForm };
-    },
-    onError: (_error, _variables, context) => {
-      if (context?.previousForm) {
-        setForm(context.previousForm);
-        queryClient.setQueryData(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          context.previousForm,
-        );
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
-      });
-    },
-    errorMsg: "Failed to reorder questions",
-  });
-
-  const updateQuestionMutation = useAppMutation<
-    { ok: boolean; question: Question },
-    Error,
-    { questionId: string; updates: Partial<Question> },
-    { previousForm?: Form }
-  >({
-    mutationFn: async ({ questionId, updates }) => {
-      return apiRequest({
-        method: "patch",
-        url: `/form/${formId}/questions/${questionId}`,
-        data: updates,
-      });
-    },
-    onMutate: async ({ questionId, updates }) => {
-      const currentForm = useFormsStore.getState().form;
-      if (!currentForm) return { previousForm: undefined };
-
-      const nextForm = optimisticUpdateQuestion(
-        currentForm,
-        questionId,
-        updates,
-      );
-      setForm(nextForm);
-      queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
-      return { previousForm: currentForm };
-    },
-    onError: (_error, _variables, context) => {
-      if (context?.previousForm) {
-        setForm(context.previousForm);
-        queryClient.setQueryData(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          context.previousForm,
-        );
-      }
-    },
-    errorMsg: "Failed to update question",
-  });
-
-  const deleteQuestionMutation = useAppMutation<
-    unknown,
-    Error,
-    string,
-    { previousForm?: Form }
-  >({
-    mutationFn: async (questionId) => {
-      return apiRequest({
-        method: "delete",
-        url: `/form/${formId}/questions/${questionId}`,
-      });
-    },
-    onMutate: async (questionId) => {
-      const currentForm = useFormsStore.getState().form;
-      if (!currentForm) return { previousForm: undefined };
-
-      const nextForm = optimisticDeleteQuestion(currentForm, questionId);
-      setForm(nextForm);
-      queryClient.setQueryData([...FORM_DETAILS_QUERY_KEY, formId], nextForm);
-      return { previousForm: currentForm };
-    },
-    onError: (err, _questionId, context) => {
-      notifyError(`Failed to delete question: ${err.message}`);
-      if (context?.previousForm) {
-        setForm(context.previousForm);
-        queryClient.setQueryData(
-          [...FORM_DETAILS_QUERY_KEY, formId],
-          context.previousForm,
-        );
-      }
-    },
-    errorMsg: "Failed to delete question",
-  });
-
-  const handleAddQuestion = useCallback(
-    (type: QuestionType, index?: number, payload?: Partial<Question>) => {
-      return addQuestionMutate({ type, index, id: uuidv4(), payload });
-    },
-    [addQuestionMutate],
-  );
-
-  const handleUpdateQuestion = useCallback(
-    (questionId: string, updates: Partial<Question>) => {
-      return updateQuestionMutation.mutateAsync({ questionId, updates });
-    },
-    [updateQuestionMutation],
-  );
-
-  const handleDeleteQuestion = useCallback(
-    (questionId: string) => {
-      return deleteQuestionMutation.mutateAsync(questionId);
-    },
-    [deleteQuestionMutation],
-  );
 
   const handleSelectQuestion = (questionId: string) => {
     setSelectedQuestionId((prev) => (prev === questionId ? null : questionId));
@@ -333,7 +136,7 @@ export default function FormBuilderPage() {
           resetPaletteDragState();
           return;
         }
-        handleAddQuestion(paletteDragType, dropIndex);
+        onAddQuestion(paletteDragType, dropIndex);
         resetPaletteDragState();
         return;
       }
@@ -345,7 +148,7 @@ export default function FormBuilderPage() {
         );
 
         if (hasOrderChanged) {
-          reorderQuestionsMutation.mutate(
+          onReorderQuestions(
             nextQuestions.map((question) => question.id),
           );
         }
@@ -353,12 +156,12 @@ export default function FormBuilderPage() {
       resetPaletteDragState();
     },
     [
-      handleAddQuestion,
+      onAddQuestion,
       dropIndex,
       form,
       orderedQuestions,
       paletteDragType,
-      reorderQuestionsMutation,
+      onReorderQuestions,
       resetPaletteDragState,
     ],
   );
@@ -367,17 +170,6 @@ export default function FormBuilderPage() {
     () => QUESTION_TYPE_META.find((m) => m.type === paletteDragType) ?? null,
     [paletteDragType],
   );
-
-  const anyMutating = useIsMutating({ mutationKey: ["form-builder"] }) > 0;
-  const anyPending =
-    isAddingQuestionPending ||
-    reorderQuestionsMutation.isPending ||
-    anyMutating;
-
-  React.useEffect(() => {
-    setIsSaving(anyPending);
-    return () => setIsSaving(false);
-  }, [anyPending, setIsSaving]);
 
   if (!form) return null;
 
@@ -388,138 +180,131 @@ export default function FormBuilderPage() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <AiChatProvider
-        formId={formId}
-        onAddQuestion={handleAddQuestion}
-        onUpdateQuestion={handleUpdateQuestion}
-        onDeleteQuestion={handleDeleteQuestion}
+      {/* 3-column layout: [FieldPalette] | [Canvas] | [AiChatSidebar] */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          gap: 2,
+          px: { xs: 1.5, sm: 3 },
+          py: 2,
+          alignItems: "flex-start",
+          position: "relative",
+        }}
       >
-        {/* 3-column layout: [FieldPalette] | [Canvas] | [AiChatSidebar] */}
+        {/* ── Left: Field Palette ── */}
         <Box
+          component={motion.div}
+          initial={false}
+          animate={{
+            width: isPaletteOpen ? 260 : 0,
+            marginRight: isPaletteOpen ? 0 : -16,
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 2,
-            px: { xs: 1.5, sm: 3 },
-            py: 2,
-            alignItems: "flex-start",
-            position: "relative",
+            display: { xs: "none", md: "block" },
+            position: "sticky",
+            top: "112px",
+            alignSelf: "start",
+            flexShrink: 0,
+            overflow: "visible",
+            zIndex: 10,
           }}
         >
-          {/* ── Left: Field Palette ── */}
           <Box
             component={motion.div}
             initial={false}
             animate={{
-              width: isPaletteOpen ? 260 : 0,
-              marginRight: isPaletteOpen ? 0 : -16,
+              opacity: isPaletteOpen ? 1 : 0,
+              transitionEnd: { display: isPaletteOpen ? "block" : "none" },
             }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            sx={{
-              display: { xs: "none", md: "block" },
-              position: "sticky",
-              top: "112px",
-              alignSelf: "start",
-              flexShrink: 0,
-              overflow: "visible",
-              zIndex: 10,
-            }}
+            transition={{ duration: 0.2 }}
+            sx={{ width: 260, overflow: "hidden" }}
+            aria-hidden={!isPaletteOpen}
           >
-            <Box
-              component={motion.div}
-              initial={false}
-              animate={{
-                opacity: isPaletteOpen ? 1 : 0,
-                transitionEnd: { display: isPaletteOpen ? "block" : "none" },
-              }}
-              transition={{ duration: 0.2 }}
-              sx={{ width: 260, overflow: "hidden" }}
-              aria-hidden={!isPaletteOpen}
-            >
-              <FieldPalette
-                activeDragType={paletteDragType}
-                onAddQuestion={handleAddQuestion}
-              />
-            </Box>
-            <Box
-              sx={{
-                position: "absolute",
-                top: 16,
-                right: -16,
-                zIndex: 20,
-                display: { xs: "none", md: "flex" },
-              }}
-            >
-              <Tooltip
-                placement="right"
-                title={
-                  isPaletteOpen ? "Hide field palette" : "Show field palette"
-                }
-              >
-                <IconButton
-                  onClick={togglePalette}
-                  size="small"
-                  sx={{
-                    bgcolor: "background.paper",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-                    "&:hover": { bgcolor: "grey.50" },
-                    border: "1px solid",
-                    borderColor: "divider",
-                    width: 32,
-                    height: 32,
-                  }}
-                  aria-label={
-                    isPaletteOpen ? "Hide field palette" : "Show field palette"
-                  }
-                  aria-expanded={isPaletteOpen}
-                  aria-controls="field-palette"
-                >
-                  {isPaletteOpen ? (
-                    <ChevronLeftIcon fontSize="small" />
-                  ) : (
-                    <ChevronRightIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-
-          {/* ── Center: Canvas ── */}
-          <Box
-            sx={{
-              flexGrow: 1,
-              minWidth: 0,
-              width: { xs: "100%", md: "auto" },
-            }}
-          >
-            <Canvas
-              form={form}
-              formId={formId}
-              selectedQuestionId={selectedQuestionId}
-              paletteDragType={paletteDragType}
-              dropIndex={dropIndex}
-              isCanvasOver={isCanvasOver}
-              isInvalidDrop={isInvalidDrop}
-              onAddQuestion={handleAddQuestion}
-              onSelectQuestion={handleSelectQuestion}
+            <FieldPalette
+              activeDragType={paletteDragType}
+              onAddQuestion={onAddQuestion}
             />
           </Box>
-
-          {/* ── Right: AI Chat Sidebar ── */}
           <Box
             sx={{
-              display: { xs: "none", md: "block" },
-              flexShrink: 0,
-              position: "sticky",
-              top: "112px",
-              alignSelf: "start",
-              height: "calc(100vh - 128px)",
+              position: "absolute",
+              top: 16,
+              right: -16,
+              zIndex: 20,
+              display: { xs: "none", md: "flex" },
             }}
           >
-            {form && <AiChatSidebar form={form} formId={formId} />}
+            <Tooltip
+              placement="right"
+              title={
+                isPaletteOpen ? "Hide field palette" : "Show field palette"
+              }
+            >
+              <IconButton
+                onClick={togglePalette}
+                size="small"
+                sx={{
+                  bgcolor: "background.paper",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+                  "&:hover": { bgcolor: "grey.50" },
+                  border: "1px solid",
+                  borderColor: "divider",
+                  width: 32,
+                  height: 32,
+                }}
+                aria-label={
+                  isPaletteOpen ? "Hide field palette" : "Show field palette"
+                }
+                aria-expanded={isPaletteOpen}
+                aria-controls="field-palette"
+              >
+                {isPaletteOpen ? (
+                  <ChevronLeftIcon fontSize="small" />
+                ) : (
+                  <ChevronRightIcon fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
-      </AiChatProvider>
+
+        {/* ── Center: Canvas ── */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
+          <Canvas
+            form={form}
+            formId={formId}
+            selectedQuestionId={selectedQuestionId}
+            paletteDragType={paletteDragType}
+            dropIndex={dropIndex}
+            isCanvasOver={isCanvasOver}
+            isInvalidDrop={isInvalidDrop}
+            onAddQuestion={onAddQuestion}
+            onSelectQuestion={handleSelectQuestion}
+          />
+        </Box>
+
+        {/* ── Right: AI Chat Sidebar ── */}
+        <Box
+          sx={{
+            display: { xs: "none", md: "block" },
+            flexShrink: 0,
+            position: "sticky",
+            top: "112px",
+            alignSelf: "start",
+            height: "calc(100vh - 128px)",
+          }}
+        >
+          {form && <AiChatSidebar form={form} formId={formId} />}
+        </Box>
+      </Box>
 
       <DragOverlay
         dropAnimation={{

@@ -49,8 +49,6 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const setSession = useAiChatStore((s) => s.setSession);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-
-
   const [inputValue, setInputValue] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -161,6 +159,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       _messagesQuery.refetch();
     },
     onError: (_err, text, context) => {
+      console.log("error when sending message`", _err);
       const optimisticId = (context as { optimisticId: string })?.optimisticId;
       if (optimisticId) {
         setMessages((prev) =>

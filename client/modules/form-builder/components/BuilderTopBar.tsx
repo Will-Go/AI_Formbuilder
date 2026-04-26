@@ -39,14 +39,30 @@ import { apiRequest } from "@/shared/utils/apiRequest";
 import { FORM_DETAILS_QUERY_KEY } from "../pages/FormBuilderPage";
 import { FORMS_QUERY_KEY } from "@/modules/form-dashboard/pages/FormDashboardPage";
 import { Tooltip } from "@mui/material";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import EditIcon from "@mui/icons-material/Edit";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import { useAiChatContext } from "../context/AiChatContext";
+
+interface BuilderTopBarProps {
+  form: Form;
+  isSaving?: boolean;
+  aiDiffState?: "add" | "update" | "delete";
+  aiMessageId?: string;
+  aiChangeId?: string;
+  aiPendingPayload?: Partial<Form>;
+}
 
 export default function BuilderTopBar({
   form,
   isSaving = false,
-}: {
-  form: Form;
-  isSaving?: boolean;
-}) {
+  aiDiffState,
+  aiMessageId,
+  aiChangeId,
+  aiPendingPayload,
+}: BuilderTopBarProps) {
   const { queryParams } = useQueryParams(["tab"]);
   const tab = queryParams?.tab || "builder";
 
@@ -62,14 +78,14 @@ export default function BuilderTopBar({
     { previousForm?: Form }
   >({
     mutationKey: ["form-builder", "update-form-meta", formId],
-    mutationFn: async (updates) => {
+    mutationFn: async (updates: Partial<Form>) => {
       return apiRequest({
         method: "patch",
         url: `/form/${formId}`,
         data: updates,
       });
     },
-    onMutate: async (updates) => {
+    onMutate: async (updates: Partial<Form>) => {
       await queryClient.cancelQueries({
         queryKey: [...FORM_DETAILS_QUERY_KEY, formId],
       });
@@ -88,7 +104,7 @@ export default function BuilderTopBar({
 
       return { previousForm };
     },
-    onError: (err, variables, context) => {
+    onError: (_err: Error, _variables: Partial<Form>, context) => {
       if (context?.previousForm) {
         queryClient.setQueryData(
           [...FORM_DETAILS_QUERY_KEY, formId],
@@ -150,6 +166,8 @@ export default function BuilderTopBar({
     }
   };
 
+  const { handleAcceptChange, handleRejectChange } = useAiChatContext();
+
   return (
     <AppBar
       position="sticky"
@@ -159,10 +177,92 @@ export default function BuilderTopBar({
         borderBottom: "1px solid",
         borderColor: "divider",
         backdropFilter: "blur(10px)",
-        height: 112,
-        maxHeight: 112,
+        height: "auto",
+        minHeight: 112,
       }}
     >
+      {aiDiffState && aiMessageId && aiChangeId && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            bgcolor:
+              aiDiffState === "update"
+                ? "warning.100"
+                : aiDiffState === "add"
+                  ? "success.100"
+                  : "error.100",
+            px: 3,
+            py: 1,
+            borderBottom: "1px solid",
+            borderColor:
+              aiDiffState === "update"
+                ? "warning.200"
+                : aiDiffState === "add"
+                  ? "success.200"
+                  : "error.200",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            {aiDiffState === "add" ? (
+              <PlaylistAddIcon fontSize="small" color="success" />
+            ) : aiDiffState === "delete" ? (
+              <RemoveCircleOutlineIcon fontSize="small" color="error" />
+            ) : (
+              <EditIcon fontSize="small" color="warning" />
+            )}
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                color:
+                  aiDiffState === "update"
+                    ? "warning.dark"
+                    : aiDiffState === "add"
+                      ? "success.dark"
+                      : "error.dark",
+              }}
+            >
+              AI proposed form updates
+            </Typography>
+            {aiPendingPayload?.title && (
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                &bull; Proposed Title: &quot;{aiPendingPayload.title}&quot;
+              </Typography>
+            )}
+            {aiPendingPayload?.description && (
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                &bull; Proposed Description: &quot;
+                {aiPendingPayload.description}
+                &quot;
+              </Typography>
+            )}
+          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              startIcon={<CheckIcon />}
+              onClick={() => handleAcceptChange(aiMessageId, aiChangeId)}
+              sx={{ textTransform: "none", boxShadow: "none" }}
+            >
+              Accept
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={<CloseIcon />}
+              onClick={() => handleRejectChange(aiMessageId, aiChangeId)}
+              sx={{ textTransform: "none", bgcolor: "background.paper" }}
+            >
+              Reject
+            </Button>
+          </Box>
+        </Box>
+      )}
       <Toolbar sx={{ gap: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 } }}>
         <IconButton
           aria-label="Back"

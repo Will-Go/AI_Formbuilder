@@ -28,6 +28,7 @@ const TYPE_CONFIG = {
   add: { label: "Add", color: "#22c55e", Icon: AddCircleOutlineIcon },
   update: { label: "Update", color: "#f59e0b", Icon: EditOutlinedIcon },
   delete: { label: "Delete", color: "#ef4444", Icon: DeleteOutlineIcon },
+  update_form: { label: "Form", color: "#6366f1", Icon: EditOutlinedIcon },
 } as const;
 
 function getBorderColor(accepted: boolean | null) {
@@ -56,10 +57,15 @@ export default function StagedChangeCard({
   onReject,
 }: StagedChangeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const form = useFormsStore((s) => s.form);
   const questions = useFormsStore((s) => s.getQuestions());
   const originalQuestion = questions.find((q) => q.id === change.questionId);
   const [past] = useState(
-    change.past ? tryParseJson(change.past) : originalQuestion,
+    change.past
+      ? tryParseJson(change.past)
+      : change.type === "update_form"
+        ? form
+        : originalQuestion,
   );
 
   const cfg = TYPE_CONFIG[change.type];
@@ -87,9 +93,10 @@ export default function StagedChangeCard({
   const renderLabel = () => {
     const payload = (change.payload as Record<string, unknown>) || {};
 
-    if (change.type === "update") {
+    if (change.type === "update" || change.type === "update_form") {
       const knownFields = [
         "label",
+        "title",
         "description",
         "placeholder",
         "required",
