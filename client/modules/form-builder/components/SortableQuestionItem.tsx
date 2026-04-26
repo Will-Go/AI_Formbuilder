@@ -59,6 +59,7 @@ export default function SortableQuestionItem({
   return (
     <Box
       ref={setElement}
+      id={`question-${question.id}`}
       sx={getQuestionContainerSx(question)}
       data-shadow={isDragging || undefined}
     >

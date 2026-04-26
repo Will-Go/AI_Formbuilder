@@ -321,8 +321,20 @@ export default function StagedChangeCard({
     );
   };
 
+  const handleScrollToQuestion = () => {
+    const targetId =
+      change.type === "update_form"
+        ? "builder-form-header"
+        : `question-${change.questionId || change.id}`;
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   return (
     <Box
+      onClick={handleScrollToQuestion}
       sx={{
         borderRadius: 1.5,
         border: "1px solid",
@@ -334,6 +346,11 @@ export default function StagedChangeCard({
         alignItems: "center",
         gap: 1,
         transition: "all 0.2s ease",
+        cursor: "pointer",
+        "&:hover": {
+          borderColor: "primary.main",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+        },
       }}
     >
       {/* Type icon */}
@@ -379,7 +396,10 @@ export default function StagedChangeCard({
           </Box>
           <IconButton
             size="small"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
             sx={{ width: 20, height: 20, p: 0 }}
           >
             {isExpanded ? (
@@ -414,7 +434,10 @@ export default function StagedChangeCard({
           <Tooltip title="Accept">
             <IconButton
               size="small"
-              onClick={onAccept}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAccept();
+              }}
               sx={{
                 bgcolor: "success.main",
                 color: "#fff",
@@ -430,7 +453,10 @@ export default function StagedChangeCard({
           <Tooltip title="Reject">
             <IconButton
               size="small"
-              onClick={onReject}
+              onClick={(e) => {
+                e.stopPropagation();
+                onReject();
+              }}
               sx={{
                 bgcolor: "error.main",
                 color: "#fff",

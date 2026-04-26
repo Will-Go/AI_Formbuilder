@@ -442,7 +442,6 @@ export default function QuestionCard({
           borderWidth: 2,
           borderColor: "error.main",
           bgcolor: "error.50",
-          opacity: isReadOnly ? 0.4 : 0.6,
         }),
         ...(isDragging && {
           opacity: 0.3,
@@ -508,7 +507,7 @@ export default function QuestionCard({
             </Box>
             {aiDiffState && (
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                {isDiffMode && (
+                {aiDiffState === "update" && (
                   <Button
                     size="small"
                     variant="text"
@@ -557,149 +556,166 @@ export default function QuestionCard({
               </Box>
             )}
           </Box>
-          <Collapse
-            in={isDiffOpen}
-            timeout={220}
-            unmountOnExit
-            aria-label="Question diff details"
-          >
-            <Stack
-              spacing={1}
-              sx={{ mb: 2 }}
-              role="region"
-              aria-label="Question change details"
+          <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+            {aiDiffState === "add" && (
+              <Chip
+                size="small"
+                color="success"
+                label="Addition"
+                aria-label="Addition highlight legend"
+              />
+            )}
+            {aiDiffState === "delete" && (
+              <Chip
+                size="small"
+                color="error"
+                label="Deletion"
+                aria-label="Deletion highlight legend"
+              />
+            )}
+            {aiDiffState === "update" && (
+              <Chip
+                size="small"
+                color="warning"
+                label="Modification"
+                aria-label="Modification highlight legend"
+              />
+            )}
+          </Box>
+          {aiDiffState === "update" && (
+            <Collapse
+              in={isDiffOpen}
+              timeout={220}
+              unmountOnExit
+              aria-label="Question diff details"
             >
-              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
-                {aiDiffState === "add" && (
-                  <Chip
-                    size="small"
-                    color="success"
-                    label="Addition"
-                    aria-label="Addition highlight legend"
-                  />
-                )}
-                {aiDiffState === "delete" && (
-                  <Chip
-                    size="small"
-                    color="error"
-                    label="Deletion"
-                    aria-label="Deletion highlight legend"
-                  />
-                )}
-                {aiDiffState === "update" && (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    label="Modification"
-                    aria-label="Modification highlight legend"
-                  />
-                )}
-              </Box>
-              {diffFields.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  No text differences detected.
-                </Typography>
-              ) : isDesktop ? (
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 1.25,
-                    alignItems: "start",
-                  }}
-                >
+              <Stack
+                spacing={1}
+                sx={{ mb: 2 }}
+                role="region"
+                aria-label="Question change details"
+              >
+                {diffFields.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    No text differences detected.
+                  </Typography>
+                ) : isDesktop ? (
                   <Box
                     sx={{
-                      p: 1.25,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 1.5,
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 1.25,
+                      alignItems: "start",
                     }}
-                    aria-label="Original question values"
                   >
-                    <Typography
-                      variant="caption"
-                      sx={{ fontWeight: 700, color: "text.secondary" }}
-                    >
-                      Current
-                    </Typography>
-                    <Stack spacing={1} sx={{ mt: 0.75 }}>
-                      {diffFields.map((field) => (
-                        <Box key={`original-${field.key}`}>
-                          <Typography variant="caption" color="text.secondary">
-                            {field.label}
-                          </Typography>
-
-                          <TextHTMLDisplayer
-                            html={field.original}
-                            className="text-gray-500 line-through"
-                          />
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Box>
-                  <Box
-                    sx={{
-                      p: 1.25,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 1.5,
-                    }}
-                    aria-label="AI proposed question values"
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{ fontWeight: 700, color: "text.secondary" }}
-                    >
-                      AI Update
-                    </Typography>
-                    <Stack spacing={1} sx={{ mt: 0.75 }}>
-                      {diffFields.map((field) => (
-                        <Box key={`modified-${field.key}`}>
-                          <Typography variant="caption" color="text.secondary">
-                            {field.label}
-                          </Typography>
-                          <TextHTMLDisplayer
-                            html={field.modified}
-                            className="text-green-600"
-                          />
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Box>
-                </Box>
-              ) : (
-                <Stack spacing={1}>
-                  {diffFields.map((field) => (
                     <Box
-                      key={`inline-${field.key}`}
                       sx={{
+                        p: 1.25,
                         border: "1px solid",
                         borderColor: "divider",
                         borderRadius: 1.5,
-                        p: 1.25,
                       }}
-                      aria-label={`${field.label} inline diff`}
+                      aria-label="Original question values"
                     >
-                      <Typography variant="caption" color="text.secondary">
-                        {field.label}
-                      </Typography>
                       <Typography
-                        variant="body2"
-                        sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                        variant="caption"
+                        sx={{ fontWeight: 700, color: "text.secondary" }}
                       >
-                        {renderDiffText(
-                          diffText(field.original, field.modified),
-                        )}
+                        Current
                       </Typography>
+                      <Stack spacing={1} sx={{ mt: 0.75 }}>
+                        {diffFields.map((field) => (
+                          <Box key={`original-${field.key}`}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {field.label}
+                            </Typography>
+
+                            <TextHTMLDisplayer
+                              html={field.original}
+                              className="text-gray-500 line-through"
+                            />
+                          </Box>
+                        ))}
+                      </Stack>
                     </Box>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          </Collapse>
+                    <Box
+                      sx={{
+                        p: 1.25,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1.5,
+                      }}
+                      aria-label="AI proposed question values"
+                    >
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 700, color: "text.secondary" }}
+                      >
+                        AI Update
+                      </Typography>
+                      <Stack spacing={1} sx={{ mt: 0.75 }}>
+                        {diffFields.map((field) => (
+                          <Box key={`modified-${field.key}`}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {field.label}
+                            </Typography>
+                            <TextHTMLDisplayer
+                              html={field.modified}
+                              className="text-green-600"
+                            />
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Stack spacing={1}>
+                    {diffFields.map((field) => (
+                      <Box
+                        key={`inline-${field.key}`}
+                        sx={{
+                          border: "1px solid",
+                          borderColor: "divider",
+                          borderRadius: 1.5,
+                          p: 1.25,
+                        }}
+                        aria-label={`${field.label} inline diff`}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          {field.label}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                        >
+                          {renderDiffText(
+                            diffText(field.original, field.modified),
+                          )}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
+            </Collapse>
+          )}
         </>
       )}
+
+      {/* Wrap everything below in a Box to apply opacity for deletions without affecting AI controls */}
+      <Box
+        sx={{
+          opacity:
+            aiDiffState === "delete" ? (isReadOnly ? 0.4 : 0.6) : 1,
+          pointerEvents: aiDiffState === "delete" ? "none" : "auto",
+        }}
+      >
       <Box
         sx={{
           display: "flex",
@@ -1029,6 +1045,7 @@ export default function QuestionCard({
           </Box>
         </>
       )}
+      </Box>
     </Paper>
   );
 }

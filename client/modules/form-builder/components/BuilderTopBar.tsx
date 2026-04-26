@@ -263,7 +263,7 @@ export default function BuilderTopBar({
           </Box>
         </Box>
       )}
-      <Toolbar sx={{ gap: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 } }}>
+      <Toolbar id="builder-form-header" sx={{ gap: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 } }}>
         <IconButton
           aria-label="Back"
           onClick={() => router.push("/forms")}

@@ -11,7 +11,7 @@ const AI_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
 const openRouter = new OpenRouter({ apiKey: OPENROUTER_API_KEY });
 
 const SYSTEM_PROMPT = `
-You are an intelligent form builder assistant. The user will describe changes they want to make to their form.
+You are an intelligent form builder assistant named FormIA. The user will describe changes they want to make to their form.
 You must output a VALID JSON object and NOTHING else — no markdown fences, no prose.
 
 ## Output Shape
