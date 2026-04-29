@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CloseIcon from "@mui/icons-material/Close";
+import CircularProgress from "@mui/material/CircularProgress";
 import dayjs from "dayjs";
 
 import type { ChatMessage, StagedChange } from "@/shared/types/aiChat";
@@ -29,7 +30,9 @@ interface MessageBubbleProps {
   onRejectChange: (msgId: string, changeId: string) => void;
   onAcceptAll: (msgId: string) => void;
   onRejectAll: (msgId: string) => void;
-  acceptingChangeId?: string | null;
+  acceptingChangeIds?: string[];
+  isAcceptingAll?: boolean;
+  isRejectingAll?: boolean;
 }
 
 const MessageBubble = memo(
@@ -39,7 +42,9 @@ const MessageBubble = memo(
     onRejectChange,
     onAcceptAll,
     onRejectAll,
-    acceptingChangeId,
+    acceptingChangeIds = [],
+    isAcceptingAll,
+    isRejectingAll,
   }: MessageBubbleProps) => {
     const isUser = message.role === "user";
     const hasPending = hasPendingChanges(message.stagedChanges);
@@ -122,8 +127,15 @@ const MessageBubble = memo(
                 <Box sx={{ display: "flex", gap: 0.5 }}>
                   <Button
                     size="small"
-                    startIcon={<DoneAllIcon sx={{ fontSize: 12 }} />}
+                    startIcon={
+                      isAcceptingAll ? (
+                        <CircularProgress size={12} color="inherit" />
+                      ) : (
+                        <DoneAllIcon sx={{ fontSize: 12 }} />
+                      )
+                    }
                     onClick={() => onAcceptAll(message.id)}
+                    disabled={isAcceptingAll || isRejectingAll}
                     sx={{
                       py: 0.25,
                       px: 1,
@@ -139,8 +151,15 @@ const MessageBubble = memo(
                   </Button>
                   <Button
                     size="small"
-                    startIcon={<CloseIcon sx={{ fontSize: 12 }} />}
+                    startIcon={
+                      isRejectingAll ? (
+                        <CircularProgress size={12} color="inherit" />
+                      ) : (
+                        <CloseIcon sx={{ fontSize: 12 }} />
+                      )
+                    }
                     onClick={() => onRejectAll(message.id)}
+                    disabled={isAcceptingAll || isRejectingAll}
                     sx={{
                       py: 0.25,
                       px: 1,
@@ -163,7 +182,7 @@ const MessageBubble = memo(
               <StagedChangeCard
                 key={change.id}
                 change={change}
-                isAccepting={acceptingChangeId === change.id}
+                isAccepting={acceptingChangeIds.includes(change.id)}
                 onAccept={() => onAcceptChange(message.id, change.id)}
                 onReject={() => onRejectChange(message.id, change.id)}
               />

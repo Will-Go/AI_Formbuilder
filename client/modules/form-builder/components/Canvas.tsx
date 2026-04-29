@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import CanvasDropSlot from "./CanvasDropSlot";
 import CanvasPreviewSlot from "./CanvasPreviewSlot";
 import SortableQuestionItem from "./SortableQuestionItem";
+import { useAiChatContext } from "../context/AiChatContext";
 
 function getPreviewContainerSx(question: Question) {
   return {
@@ -63,6 +64,8 @@ export default function Canvas({
       dropType: "canvas-container",
     },
   });
+
+  const { acceptingChangeIds } = useAiChatContext();
 
   const previewQuestion = React.useMemo(() => {
     if (paletteDragType && dropIndex !== null && !isInvalidDrop) {
@@ -228,6 +231,9 @@ export default function Canvas({
                       aiMessageId={aiMessageId}
                       aiChangeId={aiChangeId}
                       aiPendingPayload={aiPendingPayload}
+                      isAiApplying={
+                        aiChangeId ? acceptingChangeIds.includes(aiChangeId) : false
+                      }
                     />
                     <CanvasDropSlot
                       index={idx + 1}

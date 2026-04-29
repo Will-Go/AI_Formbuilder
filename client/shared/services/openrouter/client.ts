@@ -49,6 +49,9 @@ Valid QuestionTypes: short_text, long_text, multiple_choice, checkbox, dropdown,
 ## Special Question Type: section_divider
 Questions with type "section_divider" are a special type that defines separations between questions. They act as visual dividers or section headers to organize form content. They do not collect user input but provide structure to the form. They use the same "order" system as regular questions.
 
+## Special Question Type: paragraph
+Questions with type "paragraph" are a special type that displays instructional text or explanatory content to guide the user. They do not collect any user input — they serve as helper text or instructions within the form. Use them to provide context, examples, or guidance for the following questions. They use the same "order" system as regular questions.
+
 ## Understanding Order and Question/Section Placement
 
 The form context provides the CURRENT state of the form with ALL questions and section_dividers sorted by their "order" value (0-based index). Use this to determine where to place new content.

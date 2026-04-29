@@ -28,6 +28,7 @@ interface SortableQuestionItemProps {
   aiMessageId?: string;
   aiChangeId?: string;
   aiPendingPayload?: Partial<Question>;
+  isAiApplying?: boolean;
 }
 
 export default function SortableQuestionItem({
@@ -41,6 +42,7 @@ export default function SortableQuestionItem({
   aiMessageId,
   aiChangeId,
   aiPendingPayload,
+  isAiApplying,
 }: SortableQuestionItemProps) {
   const [element, setElement] = React.useState<Element | null>(null);
   const handleRef = React.useRef<HTMLButtonElement | null>(null);
@@ -76,6 +78,7 @@ export default function SortableQuestionItem({
         aiChangeId={aiChangeId}
         readonly={aiDiffState === "add"}
         aiPendingPayload={aiPendingPayload}
+        isAiApplying={isAiApplying}
       />
     </Box>
   );

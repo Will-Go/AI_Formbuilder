@@ -67,9 +67,6 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const session = useAiChatStore((s) => s.session);
   const setSession = useAiChatStore((s) => s.setSession);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [acceptingChangeId, setAcceptingChangeId] = useState<string | null>(
-    null,
-  );
   const [sidebarWidth, setSidebarWidth] = React.useState(DEFAULT_SIDEBAR_WIDTH);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isResizeHandleHovered, setIsResizeHandleHovered] =
@@ -95,6 +92,9 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     handleAcceptAll,
     handleRejectAll,
     setMessages,
+    acceptingAllMessageId,
+    rejectingAllMessageId,
+    acceptingChangeIds,
   } = useAiChatContext();
 
   // ── fetch active session ───────────────────────────────────────────────────
@@ -217,14 +217,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
 
   const handleAcceptChangeWithLoading = React.useCallback(
     async (messageId: string, changeId: string) => {
-      setAcceptingChangeId(changeId);
-      try {
-        await handleAcceptChange(messageId, changeId);
-      } finally {
-        setAcceptingChangeId((current) =>
-          current === changeId ? null : current,
-        );
-      }
+      await handleAcceptChange(messageId, changeId);
     },
     [handleAcceptChange],
   );
@@ -578,7 +571,9 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                     onRejectChange={handleRejectChange}
                     onAcceptAll={handleAcceptAll}
                     onRejectAll={handleRejectAll}
-                    acceptingChangeId={acceptingChangeId}
+                    acceptingChangeIds={acceptingChangeIds}
+                    isAcceptingAll={acceptingAllMessageId === msg.id}
+                    isRejectingAll={rejectingAllMessageId === msg.id}
                   />
                 </motion.div>
               ))}

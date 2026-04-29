@@ -30,6 +30,9 @@ interface AiChatContextValue {
   setMessages: (
     updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[]),
   ) => void;
+  acceptingAllMessageId: string | null;
+  rejectingAllMessageId: string | null;
+  acceptingChangeIds: string[];
 }
 
 const AiChatContext = createContext<AiChatContextValue | null>(null);
@@ -67,6 +70,15 @@ export const AiChatProvider = ({
 }: AiChatProviderProps) => {
   const queryClient = useQueryClient();
   const session = useAiChatStore((s) => s.session);
+  const [acceptingAllMessageId, setAcceptingAllMessageId] = React.useState<
+    string | null
+  >(null);
+  const [rejectingAllMessageId, setRejectingAllMessageId] = React.useState<
+    string | null
+  >(null);
+  const [acceptingChangeIds, setAcceptingChangeIds] = React.useState<string[]>(
+    [],
+  );
 
   const setMessages = useCallback(
     (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
@@ -145,7 +157,10 @@ export const AiChatProvider = ({
             payload.options = payload.options.map(
               (opt: { id?: string; [key: string]: unknown }) => ({
                 ...opt,
-                id: opt.id === "PLACEHOLDER" || !opt.id ? uuidv4() : opt.id,
+                id:
+                  opt.id?.startsWith("PLACEHOLDER") || !opt.id
+                    ? uuidv4()
+                    : opt.id,
               }),
             );
           }
@@ -231,12 +246,15 @@ export const AiChatProvider = ({
       const msg = currentMessages.find((m) => m.id === messageId);
       const change = msg?.stagedChanges?.find((c) => c.id === changeId);
       if (change) {
+        setAcceptingChangeIds((prev) => [...prev, changeId]);
         const past = getPastValue(change);
         try {
           await applyChange(change);
           updateMessageChanges(messageId, changeId, true, past);
         } catch (error) {
           console.error("Failed to accept change:", error);
+        } finally {
+          setAcceptingChangeIds((prev) => prev.filter((id) => id !== changeId));
         }
       }
     },
@@ -260,7 +278,9 @@ export const AiChatProvider = ({
 
   const handleAcceptAll = useCallback(
     async (messageId: string) => {
-      const cache = queryClient.getQueryData<GetMessagesResponse>([
+      setAcceptingAllMessageId(messageId);
+      try {
+        const cache = queryClient.getQueryData<GetMessagesResponse>([
         "ai-chat-messages",
         session?.id,
       ]);
@@ -272,12 +292,17 @@ export const AiChatProvider = ({
       for (let i = 0; i < updatedChanges.length; i++) {
         const change = updatedChanges[i];
         if (change.accepted === null) {
+          setAcceptingChangeIds((prev) => [...prev, change.id]);
           const past = getPastValue(change);
           try {
             await applyChange(change);
             updatedChanges[i] = { ...change, accepted: true as const, past };
           } catch (error) {
             console.error("Failed to apply staged change:", error);
+          } finally {
+            setAcceptingChangeIds((prev) =>
+              prev.filter((id) => id !== change.id),
+            );
           }
         }
       }
@@ -289,7 +314,10 @@ export const AiChatProvider = ({
       );
 
       persistStagesMutation.mutate({ messageId, updatedChanges });
-    },
+    } finally {
+      setAcceptingAllMessageId(null);
+    }
+  },
     [
       getPastValue,
       applyChange,
@@ -301,8 +329,10 @@ export const AiChatProvider = ({
   );
 
   const handleRejectAll = useCallback(
-    (messageId: string) => {
-      const cache = queryClient.getQueryData<GetMessagesResponse>([
+    async (messageId: string) => {
+      setRejectingAllMessageId(messageId);
+      try {
+        const cache = queryClient.getQueryData<GetMessagesResponse>([
         "ai-chat-messages",
         session?.id,
       ]);
@@ -324,7 +354,10 @@ export const AiChatProvider = ({
         ),
       );
       persistStagesMutation.mutate({ messageId, updatedChanges: updated });
-    },
+    } finally {
+      setRejectingAllMessageId(null);
+    }
+  },
     [getPastValue, setMessages, persistStagesMutation, queryClient, session],
   );
 
@@ -335,6 +368,9 @@ export const AiChatProvider = ({
       handleAcceptAll,
       handleRejectAll,
       setMessages,
+      acceptingAllMessageId,
+      rejectingAllMessageId,
+      acceptingChangeIds,
     }),
     [
       handleAcceptChange,
@@ -342,6 +378,9 @@ export const AiChatProvider = ({
       handleAcceptAll,
       handleRejectAll,
       setMessages,
+      acceptingAllMessageId,
+      rejectingAllMessageId,
+      acceptingChangeIds,
     ],
   );
 
