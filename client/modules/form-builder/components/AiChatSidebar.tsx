@@ -6,6 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import Skeleton from "@mui/material/Skeleton";
+import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
@@ -75,6 +76,13 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
 
   const [inputValue, setInputValue] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+
+  // Reset hasMoreMessages when session changes
+  React.useEffect(() => {
+    setHasMoreMessages(true);
+  }, [session?.id]);
   const sidebarWidthMotion = useMotionValue(DEFAULT_SIDEBAR_WIDTH);
   const animatedSidebarWidth = useSpring(sidebarWidthMotion, {
     stiffness: 420,
@@ -120,6 +128,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
         url: `/ai-chat/sessions/${session!.id}/messages`,
       }),
     enabled: !!session?.id,
+    onSuccess: (data) => setHasMoreMessages(data.hasMore),
     showErrorToast: true,
     staleTime: 1000 * 60, // 1 minute
   });
@@ -129,6 +138,28 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     [_messagesQuery.data?.messages],
   );
 
+  const fetchMoreMessages = React.useCallback(async () => {
+    if (!session?.id || isLoadingMore || !hasMoreMessages) return;
+
+    const oldestMessage = messages[0];
+    if (!oldestMessage) return;
+
+    setIsLoadingMore(true);
+    try {
+      const result = await apiRequest<GetMessagesResponse>({
+        method: "get",
+        url: `/ai-chat/sessions/${session.id}/messages`,
+        params: { cursor: oldestMessage.createdAt },
+      });
+
+      if (result.messages.length > 0) {
+        setMessages([...result.messages, ...messages]);
+      }
+      setHasMoreMessages(result.hasMore);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [session?.id, isLoadingMore, hasMoreMessages, messages, setMessages]);
 
   // ── realtime subscription ──────────────────────────────────────────────────
   React.useEffect(() => {
@@ -148,7 +179,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
         () => {
           setIsAiLoading(false);
           // Whenever a new message arrives for this session, refetch messages perfectly
-          _messagesQuery.refetch();
+          _messagesQuery.invalidate();
         },
       )
       .subscribe();
@@ -193,11 +224,15 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     onSuccess: (res, _variables, context) => {
       setSession(res.session);
       const optimisticId = (context as { optimisticId: string }).optimisticId;
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== optimisticId),
-        res.userMessage,
-      ]);
-      _messagesQuery.refetch();
+      setMessages((prev) => {
+        const filtered = prev.filter(
+          (m) => m.id !== optimisticId && m.id !== res.userMessage.id,
+        );
+        return [...filtered, res.userMessage];
+      });
+    },
+    onSettled: () => {
+      _messagesQuery.invalidate();
     },
     onError: (_err, text, context) => {
       console.log("error when sending message`", _err);
@@ -213,7 +248,6 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       }
     },
   });
-
 
   const handleAcceptChangeWithLoading = React.useCallback(
     async (messageId: string, changeId: string) => {
@@ -304,11 +338,30 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   }, []);
 
   // ── auto-scroll on new messages ────────────────────────────────────────────
+  const prevMessagesLengthRef = React.useRef(messages.length);
+
   React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!scrollRef.current) return;
+
+    // If new messages were added (user sent a message), scroll to bottom
+    if (messages.length > prevMessagesLengthRef.current) {
+      if (!isLoadingMore) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }
-  }, [messages, sendMessageMutation.isPending]);
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, sendMessageMutation.isPending, isLoadingMore]);
+
+  // ── scroll handler for infinite scroll ──────────────────────────────────
+  const handleScroll = React.useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      const target = event.currentTarget;
+      if (target.scrollTop === 0 && hasMoreMessages && !isLoadingMore) {
+        fetchMoreMessages();
+      }
+    },
+    [fetchMoreMessages, hasMoreMessages, isLoadingMore],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !sendMessageMutation.isPending) {
@@ -317,7 +370,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     }
   };
 
-  const isLoading = _activeSessionQuery.isLoading || _messagesQuery.isLoading;
+  const isLoading = _activeSessionQuery.isLoading || _messagesQuery.isLoading || _messagesQuery?.isFetching;
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -487,6 +540,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
           {/* ── Message list ── */}
           <Box
             ref={scrollRef}
+            onScroll={handleScroll}
             sx={{
               flex: 1,
               overflowY: "auto",
@@ -528,6 +582,13 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                   sx={{ borderRadius: 2 }}
                 />
               </>
+            )}
+
+            {/* Load more loading indicator */}
+            {isLoadingMore && (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
+                <CircularProgress size={20} />
+              </Box>
             )}
 
             {/* Empty state */}

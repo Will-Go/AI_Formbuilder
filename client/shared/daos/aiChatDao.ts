@@ -5,6 +5,18 @@ import type {
   StagedChange,
 } from '@/shared/types/aiChat';
 
+export interface GetSessionMessagesOptions {
+  sessionId: string;
+  userId: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface GetSessionMessagesResult {
+  messages: ChatMessage[];
+  hasMore: boolean;
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function mapDbSession(row: Record<string, unknown>): ChatSession {
@@ -232,31 +244,45 @@ export async function getSessionMessageCount(
 }
 
 /**
- * Retrieve all messages for a session ordered by creation time.
+ * Retrieve messages for a session with cursor-based pagination.
+ * Returns newest messages first (descending order).
  */
 export async function getSessionMessages(
   sessionId: string,
   userId: string,
-  limit = 100,
-): Promise<ChatMessage[]> {
+  limit = 25,
+  cursor?: string,
+): Promise<{ messages: ChatMessage[]; hasMore: boolean }> {
   await getActiveChatSession(sessionId, userId);
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('ai_chat_messages')
     .select('*')
     .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
-    .limit(limit);
+    .order('created_at', { ascending: false })
+    .limit(limit + 1);
+
+  if (cursor) {
+    query = query.lt('created_at', cursor);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to fetch messages: ${error.message}`);
   }
 
-  return (data ?? []).map((row) =>
-    mapDbMessage(row as Record<string, unknown>),
-  );
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+
+  const messages = rows
+    .slice(0, limit)
+    .map((row) => mapDbMessage(row as Record<string, unknown>))
+    .reverse();
+
+  return { messages, hasMore };
 }
 
 /**

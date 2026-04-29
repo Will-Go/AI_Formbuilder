@@ -144,9 +144,28 @@ API Route (route.ts)
 Schema (shared/schemas/)
     ↓ calls
 Feature DAO (shared/daos/formsDao.ts, questionsDao.ts, etc.)
-    ↓ calls Supabase RPC
+    ↓ calls Supabase RPC or Server Supabase Client
 Database Function (database/functions/<feature>/R__*.sql)
+    OR
+Supabase Server Client (supabase.from().select().eq()...)
 ```
+
+### Data Access Options
+
+DAOs can use either approach:
+
+1. **Database Functions (RPC)** - For complex queries, multi-step writes, and business logic that benefits from PostgreSQL advantages:
+   - Atomic transactions
+   - Row-level security enforcement
+   - Complex filtering/aggregation
+   - Bulk operations
+
+2. **Server Supabase Client** - For simple CRUD operations where database functions add overhead:
+   - Simple selects with filters
+   - Basic inserts/updates/deletes
+   - Straightforward queries that don't need PostgreSQL logic
+
+Choose based on complexity and security needs.
 
 ### Layers
 
@@ -163,11 +182,12 @@ Database Function (database/functions/<feature>/R__*.sql)
    - Export inferred TypeScript types for DAO inputs
 
 3. **Feature DAOs** (`shared/daos/`)
-   - Named after the feature being developed, for example `formsDao.ts` or `questionsDao.ts`
-   - Call Supabase RPC functions
-   - Return typed data to routes
-   - Named with `*Dao.ts` suffix
-   - Translate database/RPC errors into route-friendly errors when needed
+    - Named after the feature being developed, for example `formsDao.ts` or `questionsDao.ts`
+    - Call Supabase RPC functions or use Server Supabase Client directly
+    - Return typed data to routes
+    - Named with `*Dao.ts` suffix
+    - Translate database/RPC errors into route-friendly errors when needed
+    - Choose the data access method based on complexity and security needs
 
 4. **Database Functions** (`database/functions/`)
    - Put CRUD and endpoint business logic in SQL functions grouped by feature folder

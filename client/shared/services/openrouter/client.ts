@@ -91,7 +91,7 @@ The form context provides the CURRENT state of the form with ALL questions and s
 `.trim();
 
 const SESSION_NAME_PROMPT = `
-You name FormIA AI chat sessions.
+You name FormIA AI.
 Return only a concise title, no quotes, no markdown, no punctuation at the end.
 Use 3 to 6 words when possible.
 The title should describe the user's first request in the context of the form.

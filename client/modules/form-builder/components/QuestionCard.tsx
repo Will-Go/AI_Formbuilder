@@ -581,7 +581,14 @@ export default function QuestionCard({
                 </Box>
               )}
             </Box>
-            <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 0.75,
+                flexWrap: "wrap",
+                marginBottom: 1,
+              }}
+            >
               {aiDiffState === "add" && (
                 <Chip
                   size="small"

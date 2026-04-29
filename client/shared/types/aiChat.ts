@@ -73,6 +73,7 @@ export type DeleteSessionResponse = {
 
 export type GetMessagesResponse = {
   messages: ChatMessage[];
+  hasMore: boolean;
 };
 
 export type SendMessageRequest = {

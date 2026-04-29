@@ -90,11 +90,21 @@ export const AiChatProvider = ({
           const newMessages =
             typeof updater === "function" ? updater(currentMessages) : updater;
 
-          if (!prev || Array.isArray(prev)) {
-            return { messages: newMessages };
+          const seen = new Set<string>();
+          const deduplicatedMessages: ChatMessage[] = [];
+          for (let i = newMessages.length - 1; i >= 0; i--) {
+            const m = newMessages[i];
+            if (!seen.has(m.id)) {
+              seen.add(m.id);
+              deduplicatedMessages.unshift(m);
+            }
           }
 
-          return { ...prev, messages: newMessages };
+          if (!prev || Array.isArray(prev)) {
+            return { messages: deduplicatedMessages, hasMore: false };
+          }
+
+          return { ...prev, messages: deduplicatedMessages };
         },
       );
     },
