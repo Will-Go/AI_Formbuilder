@@ -8,6 +8,7 @@ import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CloseIcon from "@mui/icons-material/Close";
 import CircularProgress from "@mui/material/CircularProgress";
 import dayjs from "dayjs";
+import { cn } from "@/shared/utils/cn";
 
 import type { ChatMessage, StagedChange } from "@/shared/types/aiChat";
 import StagedChangeCard from "./StagedChangeCard";
@@ -61,15 +62,14 @@ const MessageBubble = memo(
         {/* Bubble */}
         <Box
           sx={{
-            maxWidth: "85%",
-            px: 1.75,
-            py: 1.25,
-            borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-            bgcolor: isUser ? "primary.main" : "background.paper",
-            color: isUser ? "primary.contrastText" : "text.primary",
-            border: isUser ? "none" : "1px solid",
-            borderColor: "divider",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
+            maxWidth: isUser ? "85%" : "100%",
+            px: isUser ? 1.75 : 0,
+            py: isUser ? 1.25 : 0.5,
+            borderRadius: isUser ? 2 : 0,
+            bgcolor: isUser ? "primary.main" : "transparent",
+            color: isUser ? "common.white" : "text.primary",
+            border: "none",
+            boxShadow: "none",
           }}
         >
           <Typography
@@ -81,27 +81,29 @@ const MessageBubble = memo(
         </Box>
 
         {/* Timestamp */}
-        <Typography
-          variant="caption"
-          sx={{ color: "text.disabled", px: 0.5, fontSize: 10 }}
-        >
-          {formatTime(message.createdAt)}
-        </Typography>
+        {isUser && (
+          <Typography
+            variant="caption"
+            sx={{ color: "text.disabled", px: 0.5, fontSize: 10 }}
+          >
+            {formatTime(message.createdAt)}
+          </Typography>
+        )}
 
         {/* Staged changes */}
         {message.stagedChanges && message.stagedChanges.length > 0 && (
           <Box
             sx={{
               width: "100%",
-              mt: 0.5,
-              p: 1.25,
-              borderRadius: 2,
+              mt: 1,
+              borderRadius: 1,
               border: "1px solid",
-              borderColor: hasPending ? "warning.light" : "divider",
-              bgcolor: hasPending ? "warning.50" : "background.default",
+              borderColor: "rgba(0,0,0,0.15)",
+              bgcolor: "#f8faff",
+              color: "grey.900",
               display: "flex",
               flexDirection: "column",
-              gap: 0.75,
+              overflow: "hidden",
             }}
           >
             {/* Staged changes header */}
@@ -110,14 +112,19 @@ const MessageBubble = memo(
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                px: 2,
+                py: 1.5,
+                bgcolor: "rgba(0,0,0,0.03)",
+                borderBottom: "1px solid",
+                borderColor: "divider",
               }}
             >
               <Typography
                 variant="caption"
                 sx={{
-                  fontWeight: 700,
-                  color: "text.secondary",
-                  letterSpacing: 0.4,
+                  fontWeight: 600,
+                  color: "grey.600",
+                  letterSpacing: 0.2,
                 }}
               >
                 {message.stagedChanges.length} suggested change
@@ -178,13 +185,19 @@ const MessageBubble = memo(
             </Box>
 
             {/* Per-change cards */}
-            {message.stagedChanges.map((change) => (
+            {message.stagedChanges?.map((change, index) => (
               <StagedChangeCard
                 key={change.id}
                 change={change}
                 isAccepting={acceptingChangeIds.includes(change.id)}
                 onAccept={() => onAcceptChange(message.id, change.id)}
                 onReject={() => onRejectChange(message.id, change.id)}
+                className={cn(
+                  "border-black/15 border-t",
+                  index === (message.stagedChanges?.length ?? 0) - 1
+                    ? "border-b rounded-b-xl!"
+                    : "",
+                )}
               />
             ))}
           </Box>

@@ -87,31 +87,42 @@ const isoStringToDateWithTime = (
 
 const timeAgo = (
   isoDate: string,
-  t: (key: string, values?: Record<string, string | number | Date>) => string,
+  t?: (key: string, values?: Record<string, string | number | Date>) => string,
 ): string => {
   const date = dayjs(isoDate);
   const now = dayjs();
   const diffInSeconds = now.diff(date, "second");
 
-  if (diffInSeconds <= 0) return t("justNow");
+  const translate = t ?? ((key: string) => {
+    const defaults: Record<string, string> = {
+      justNow: "Just now",
+      secondsAgo: "{count}s ago",
+      minutesAgo: "{count}m ago",
+      hoursAgo: "{count}h ago",
+      daysAgo: "{count}d ago",
+    };
+    return defaults[key] ?? key;
+  });
+
+  if (diffInSeconds <= 0) return translate("justNow");
 
   if (diffInSeconds < 60) {
-    return t("secondsAgo", { count: diffInSeconds });
+    return translate("secondsAgo", { count: diffInSeconds });
   }
 
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
-    return t("minutesAgo", { count: diffInMinutes });
+    return translate("minutesAgo", { count: diffInMinutes });
   }
 
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
-    return t("hoursAgo", { count: diffInHours });
+    return translate("hoursAgo", { count: diffInHours });
   }
 
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) {
-    return t("daysAgo", { count: diffInDays });
+    return translate("daysAgo", { count: diffInDays });
   }
 
   // If more than 7 days, format the full date

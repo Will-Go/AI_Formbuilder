@@ -24,6 +24,7 @@ interface StagedChangeCardProps {
   onAccept: () => void;
   onReject: () => void;
   isAccepting?: boolean;
+  className?: string;
 }
 
 const TYPE_CONFIG = {
@@ -42,7 +43,7 @@ function getBorderColor(accepted: boolean | null) {
 function getBgColor(accepted: boolean | null) {
   if (accepted === true) return "success.50";
   if (accepted === false) return "error.50";
-  return "background.default";
+  return "background.paper";
 }
 
 const tryParseJson = (str: string) => {
@@ -58,6 +59,7 @@ export default function StagedChangeCard({
   onAccept,
   onReject,
   isAccepting = false,
+  className,
 }: StagedChangeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const form = useFormsStore((s) => s.form);
@@ -338,21 +340,21 @@ export default function StagedChangeCard({
   return (
     <Box
       onClick={handleScrollToQuestion}
+      className={className}
       sx={{
-        borderRadius: 1.5,
-        border: "1px solid",
+        borderRadius: 0,
+        borderLeft: isAccepted || isRejected ? "4px solid" : "none",
         borderColor: getBorderColor(change.accepted),
         bgcolor: getBgColor(change.accepted),
-        px: 1.5,
-        py: 1,
+        px: 2,
+        py: 1.5,
         display: "flex",
         alignItems: "center",
         gap: 1,
         transition: "all 0.2s ease",
         cursor: "pointer",
         "&:hover": {
-          borderColor: "primary.main",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+          bgcolor: "rgba(0,0,0,0.02)",
         },
       }}
     >
@@ -403,7 +405,7 @@ export default function StagedChangeCard({
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            sx={{ width: 20, height: 20, p: 0 }}
+            sx={{ width: 20, height: 20, p: 0, color: "text.secondary" }}
           >
             {isExpanded ? (
               <ExpandLessIcon sx={{ fontSize: 16 }} />

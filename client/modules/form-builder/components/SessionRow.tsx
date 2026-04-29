@@ -15,7 +15,14 @@ import { alpha } from "@mui/material/styles";
 import dayjs from "dayjs";
 
 import Dialog from "@/shared/components/Dialog";
+import { timeAgo, formatDatetime } from "@/shared/utils/dateFormatter";
 import type { ChatSession } from "@/shared/types/aiChat";
+
+const isRecent = (isoDate: string): boolean => {
+  const date = dayjs(isoDate);
+  const diffInDays = dayjs().diff(date, "day");
+  return diffInDays < 7;
+};
 
 type SessionRowProps = {
   session: ChatSession;
@@ -102,7 +109,9 @@ export default function SessionRow({
             }
             secondary={
               <Typography variant="caption" color="text.secondary">
-                {dayjs(session.lastUsedAt).format("h:mm A")}
+                {isRecent(session.lastUsedAt)
+                  ? timeAgo(session.lastUsedAt)
+                  : formatDatetime(session.lastUsedAt)}
               </Typography>
             }
             sx={{ my: 0 }}
