@@ -131,7 +131,8 @@ mutation.mutate(newUser);
 
 ## API Architecture Pattern
 
-This project uses a layered API architecture: **Route → DAO → Supabase**.
+This project uses a layered API architecture for all CRUD and endpoint work:
+**Route -> Zod schema -> feature DAO -> database function**.
 
 ### Flow
 
@@ -139,10 +140,12 @@ This project uses a layered API architecture: **Route → DAO → Supabase**.
 Frontend (useAppQuery/useAppMutation)
     ↓ apiRequest
 API Route (route.ts)
+    ↓ validates request with Zod schema
+Schema (shared/schemas/)
     ↓ calls
-DAO (formsDao.ts)
-    ↓ calls
-Supabase (RPC / Client)
+Feature DAO (shared/daos/formsDao.ts, questionsDao.ts, etc.)
+    ↓ calls Supabase RPC
+Database Function (database/functions/<feature>/R__*.sql)
 ```
 
 ### Layers
@@ -150,18 +153,26 @@ Supabase (RPC / Client)
 1. **API Routes** (`app/api/`)
    - Handle HTTP methods (GET, POST, PATCH, DELETE)
    - Authentication via `withAuth` wrapper
-   - Input validation (query params, body)
+   - Validate query params and request bodies with Zod before calling the DAO
    - Return JSON responses
+   - Keep route logic thin; do not put database business logic in routes
 
-2. **DAOs** (`shared/daos/`)
-   - Data Access Objects contain business logic
-   - Call Supabase RPC functions or client queries
+2. **Zod Schemas** (`shared/schemas/`)
+   - Define what each endpoint accepts before data reaches the database
+   - Use `safeParse` in routes and return `400` for invalid payloads
+   - Export inferred TypeScript types for DAO inputs
+
+3. **Feature DAOs** (`shared/daos/`)
+   - Named after the feature being developed, for example `formsDao.ts` or `questionsDao.ts`
+   - Call Supabase RPC functions
    - Return typed data to routes
    - Named with `*Dao.ts` suffix
+   - Translate database/RPC errors into route-friendly errors when needed
 
-3. **Supabase**
-   - RPC functions for complex queries
-   - Client for simple CRUD operations
+4. **Database Functions** (`database/functions/`)
+   - Put CRUD and endpoint business logic in SQL functions grouped by feature folder
+   - Use Supabase RPC from DAOs instead of direct table writes for endpoint workflows
+   - Enforce ownership, authorization-sensitive checks, ordering, and multi-step writes atomically
 
 ### Example: Forms API
 
@@ -169,11 +180,15 @@ Supabase (RPC / Client)
 // 1. API Route handles HTTP
 // app/api/form/route.ts
 export const GET = withAuth(async (request: Request) => {
+  const parsed = GetFormsSchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
   const result = await getForms({ ownerId: user.id, search, limit, pageNumber });
   return NextResponse.json({ forms: result.forms, pagination: result.pagination });
 });
 
-// 2. DAO handles data access
+// 2. Feature DAO calls the database function
 // shared/daos/formsDao.ts
 export async function getForms(options: GetFormsOptions): Promise<FormsDaoResult> {
   const { data } = await supabase.rpc("get_forms", { p_limit, p_page_number, ... });
@@ -183,11 +198,12 @@ export async function getForms(options: GetFormsOptions): Promise<FormsDaoResult
 
 ### Best Practices
 
-1. Put business logic in DAOs, not routes
-2. Use RPC for complex queries, client for simple CRUD
-3. Always authenticate routes with `withAuth`
-4. Validate input in routes (query params, body) using Zod schemas
-5. Return typed responses from DAOs
+1. For CRUD/endpoints, follow Route -> Zod schema -> feature DAO -> database function
+2. Put business rules and multi-step writes in database functions, not routes
+3. Use DAOs as the only route-facing data access layer
+4. Always authenticate routes with `withAuth`
+5. Validate input in routes (query params, body) using Zod schemas
+6. Return typed responses from DAOs and validate RPC payloads when useful
 
 ### Input Validation with Zod
 

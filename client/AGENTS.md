@@ -212,6 +212,53 @@ Use the following color mapping consistently for AI staged change states in the 
    </FormHelperText>
    ```
 
+### API Endpoint Architecture
+
+For CRUD features and API endpoints, use this layered pattern:
+
+```
+API Route -> Zod schema -> feature DAO -> database function
+```
+
+1. **Route (`app/api/**/route.ts`)**
+   - Handle HTTP method concerns, auth wrappers, request parsing, and response status codes.
+   - Validate request bodies and query params with Zod before calling the DAO.
+   - Keep routes thin; do not put database business logic, ordering logic, or multi-step writes in route handlers.
+
+2. **Schema (`shared/schemas/`)**
+   - Define the endpoint input contract with Zod.
+   - Use `safeParse` in routes and return `400` for invalid input.
+   - Export inferred types for DAO inputs.
+
+3. **Feature DAO (`shared/daos/`)**
+   - Name DAOs after the feature being developed, for example `formsDao.ts` or `questionsDao.ts`.
+   - Call Supabase RPC functions from the DAO.
+   - Return typed data to the route and translate RPC errors into route-friendly errors when needed.
+
+4. **Database function (`database/functions/<feature>/R__*.sql`)**
+   - Put CRUD business logic, ownership checks, ordering, and multi-step writes in PostgreSQL functions.
+   - Keep related functions grouped by feature folder.
+   - Return JSON payloads that the DAO can parse into typed responses.
+
+Example route shape:
+
+```typescript
+export const POST = withAuth(async (request: Request, { params }) => {
+  const body = await request.json();
+  const parsed = CreateQuestionSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid payload", details: parsed.error.message },
+      { status: 400 },
+    );
+  }
+
+  const result = await createQuestion(params.id, parsed.data);
+  return NextResponse.json(result, { status: 201 });
+});
+```
+
 ### Error Handling
 
 1. **Use toast notifications** for user-facing errors:

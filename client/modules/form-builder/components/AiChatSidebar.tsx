@@ -93,7 +93,6 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     () => _messagesQuery.data?.messages ?? [],
     [_messagesQuery.data?.messages],
   );
-  console.log("message", messages);
 
   // ── realtime subscription ──────────────────────────────────────────────────
   React.useEffect(() => {
