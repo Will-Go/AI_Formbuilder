@@ -75,10 +75,12 @@ export default function Canvas({
   const _messagesQuery = useAppQuery<GetMessagesResponse>({
     queryKey: ["ai-chat-messages", session?.id],
     queryFn: () =>
-      (queryClient.getQueryData([
-        "ai-chat-messages",
-        session?.id,
-      ]) as GetMessagesResponse) || [],
+      Promise.resolve(
+        queryClient.getQueryData<GetMessagesResponse>([
+          "ai-chat-messages",
+          session?.id,
+        ]) ?? { messages: [] },
+      ),
     enabled: !!session?.id,
   });
 

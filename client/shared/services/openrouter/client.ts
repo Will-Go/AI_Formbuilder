@@ -45,15 +45,45 @@ payload: { "title": "<string>", "description": "<string>" } (include only change
 
 Valid QuestionTypes: short_text, long_text, multiple_choice, checkbox, dropdown, email, phone, number, date, rating, linear_scale, yes_no, section_divider, paragraph
 
+## Special Question Type: section_divider
+Questions with type "section_divider" are a special type that defines separations between questions. They act as visual dividers or section headers to organize form content. They do not collect user input but provide structure to the form. They use the same "order" system as regular questions.
+
+## Understanding Order and Question/Section Placement
+
+The form context provides the CURRENT state of the form with ALL questions and section_dividers sorted by their "order" value (0-based index). Use this to determine where to place new content.
+
+### How Order Works:
+- Each question and section_divider has an "order" value representing its 0-based position in the form
+- Order determines display sequence: lower orders appear first
+- Both regular questions and section_dividers share the same order system
+- Example: If you have orders [0, 1, 2], adding at order 1 inserts between positions 0 and 2
+
+### Placing New Questions Based on User Request:
+- "Add at the beginning" → use order: 0 (shifts all existing items up)
+- "Add at the end" → omit order (appends after highest order)
+- "Add after [question X]" → use order of X + 1
+- "Add before [question X]" → use order of X
+- "Add to [section name]" → find the section_divider's order and add after it
+
+### Common Placement Patterns:
+- "Add a new question at the start" → order: 0
+- "Add a question after the contact info" → find contact section_divider or last contact question order, use order + 1
+- "Add a new section" → use section_divider type with appropriate order
+- "Add between questions 2 and 3" → order: 2 (inserts before the item currently at order 2)
+
+### Important:
+- ALWAYS include "order" in "add" payloads when the user specifies a position
+- Use the form context to check existing orders before deciding where to place new content
+- For section_dividers, apply the same order logic as regular questions
+
 ## Rules
 1. Only include fields relevant to the question type.
 2. For "update" operations provide only the changed fields in payload.
 3. For "delete" operations the payload can be empty ({}).
 4. If no form changes are needed (e.g. user is asking a question), return "changes": [].
-5. Use "index" for precise placement of new questions. Omit it to append to the end.
+5. Use "order" for precise placement of new questions — check the form context to determine the correct order value.
 6. Use "PLACEHOLDER" for all IDs (question id, option id, etc.). The system will generate valid UUIDs.
-7. NEVER include "order" in the payload for "add" or "update" operations. The system handles ordering automatically.
-8. Output ONLY the JSON object. No extra text.
+7. Output ONLY the JSON object. No extra text.
 `.trim();
 
 /**
@@ -64,24 +94,20 @@ export async function sendWithContext(
   message: string,
   form: Form,
 ): Promise<{ reply: string; stagedChanges: StagedChange[] }> {
-  const formContext = JSON.stringify(
-    {
-      id: form.id,
-      title: form.title,
-      description: form.description,
-      questions: form.questions
-        .slice()
-        .sort((a, b) => a.order - b.order)
-        .map((q) => ({
-          id: q.id,
-          type: q.type,
-          label: q.label,
-          order: q.order,
-        })),
-    },
-    null,
-    2,
-  );
+  const formContext = JSON.stringify({
+    id: form.id,
+    title: form.title,
+    description: form.description,
+    questions: form.questions
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((q) => ({
+        id: q.id,
+        type: q.type,
+        label: q.label,
+        order: q.order,
+      })),
+  });
 
   const response = await openRouter.chat.send({
     chatRequest: {

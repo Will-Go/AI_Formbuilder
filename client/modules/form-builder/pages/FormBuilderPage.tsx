@@ -35,8 +35,15 @@ import AiChatSidebar from "../components/AiChatSidebar";
 export const FORM_DETAILS_QUERY_KEY = ["form-builder", "form-details"];
 
 interface FormBuilderPageProps {
-  onAddQuestion: (type: QuestionType, index?: number, payload?: Partial<Question>) => Promise<unknown>;
-  onUpdateQuestion: (questionId: string, updates: Partial<Question>) => Promise<unknown>;
+  onAddQuestion: (
+    type: QuestionType,
+    index?: number,
+    payload?: Partial<Question>,
+  ) => Promise<unknown>;
+  onUpdateQuestion: (
+    questionId: string,
+    updates: Partial<Question>,
+  ) => Promise<unknown>;
   onDeleteQuestion: (questionId: string) => Promise<unknown>;
   onReorderQuestions: (questionIds: string[]) => void;
   isSaving: boolean;
@@ -59,8 +66,8 @@ export default function FormBuilderPage({
     string | null
   >(null);
 
-  const [isPaletteOpen, setIsPaletteOpen] = React.useState(true);
-  const togglePalette = () => setIsPaletteOpen((prev) => !prev);
+  const isPaletteOpen = useFormsStore((s) => s.isPaletteOpen);
+  const togglePaletteOpen = useFormsStore((s) => s.togglePaletteOpen);
 
   const sensors = useDndSensors();
   const [paletteDragType, setPaletteDragType] =
@@ -148,9 +155,7 @@ export default function FormBuilderPage({
         );
 
         if (hasOrderChanged) {
-          onReorderQuestions(
-            nextQuestions.map((question) => question.id),
-          );
+          onReorderQuestions(nextQuestions.map((question) => question.id));
         }
       }
       resetPaletteDragState();
@@ -243,7 +248,7 @@ export default function FormBuilderPage({
               }
             >
               <IconButton
-                onClick={togglePalette}
+                onClick={togglePaletteOpen}
                 size="small"
                 sx={{
                   bgcolor: "background.paper",

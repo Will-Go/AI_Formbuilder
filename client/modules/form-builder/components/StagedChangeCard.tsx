@@ -6,6 +6,7 @@ import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
+import CircularProgress from "@mui/material/CircularProgress";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
@@ -22,6 +23,7 @@ interface StagedChangeCardProps {
   change: StagedChange;
   onAccept: () => void;
   onReject: () => void;
+  isAccepting?: boolean;
 }
 
 const TYPE_CONFIG = {
@@ -55,6 +57,7 @@ export default function StagedChangeCard({
   change,
   onAccept,
   onReject,
+  isAccepting = false,
 }: StagedChangeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const form = useFormsStore((s) => s.form);
@@ -429,7 +432,22 @@ export default function StagedChangeCard({
           Rejected
         </Typography>
       )}
-      {isPending && (
+      {isAccepting ? (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.75,
+            color: "text.secondary",
+            flexShrink: 0,
+          }}
+        >
+          <CircularProgress size={14} thickness={5} />
+          <Typography variant="caption" sx={{ fontWeight: 600 }}>
+            Applying
+          </Typography>
+        </Box>
+      ) : isPending ? (
         <Box sx={{ display: "flex", gap: 0.25 }}>
           <Tooltip title="Accept">
             <IconButton
@@ -470,7 +488,7 @@ export default function StagedChangeCard({
             </IconButton>
           </Tooltip>
         </Box>
-      )}
+      ) : null}
     </Box>
   );
 }

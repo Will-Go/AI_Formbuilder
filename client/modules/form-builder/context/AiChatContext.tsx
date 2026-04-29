@@ -7,8 +7,20 @@ import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
 import { v4 as uuidv4 } from "uuid";
 import type { QuestionType, Question, Form } from "@/shared/types/forms";
-import type { ChatMessage, GetMessagesResponse, StagedChange } from "@/shared/types/aiChat";
+import type {
+  ChatMessage,
+  GetMessagesResponse,
+  StagedChange,
+} from "@/shared/types/aiChat";
 import { useQueryClient } from "@tanstack/react-query";
+
+function getMessagesFromCache(
+  data?: GetMessagesResponse | ChatMessage[],
+): ChatMessage[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data.messages) ? data.messages : [];
+}
 
 interface AiChatContextValue {
   handleAcceptChange: (messageId: string, changeId: string) => Promise<void>;
@@ -62,9 +74,14 @@ export const AiChatProvider = ({
       queryClient.setQueryData<GetMessagesResponse>(
         ["ai-chat-messages", session.id],
         (prev) => {
-          if (!prev) return prev;
+          const currentMessages = getMessagesFromCache(prev);
           const newMessages =
-            typeof updater === "function" ? updater(prev.messages) : updater;
+            typeof updater === "function" ? updater(currentMessages) : updater;
+
+          if (!prev || Array.isArray(prev)) {
+            return { messages: newMessages };
+          }
+
           return { ...prev, messages: newMessages };
         },
       );
@@ -101,7 +118,6 @@ export const AiChatProvider = ({
 
       if (change.type === "add") {
         delete payload.id;
-        delete payload.order;
         delete payload.questionId;
 
         if (Array.isArray(payload.options)) {
@@ -117,14 +133,13 @@ export const AiChatProvider = ({
         if (type) {
           return onAddQuestion(
             type,
-            payload.index !== undefined ? payload.index : undefined,
+            payload.order !== undefined ? payload.order : undefined,
             payload,
           );
         }
       } else if (change.type === "update") {
         if (change.questionId) {
           delete payload.id;
-          delete payload.order;
 
           if (Array.isArray(payload.options)) {
             payload.options = payload.options.map(

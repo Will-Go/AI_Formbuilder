@@ -29,6 +29,7 @@ interface MessageBubbleProps {
   onRejectChange: (msgId: string, changeId: string) => void;
   onAcceptAll: (msgId: string) => void;
   onRejectAll: (msgId: string) => void;
+  acceptingChangeId?: string | null;
 }
 
 const MessageBubble = memo(
@@ -38,6 +39,7 @@ const MessageBubble = memo(
     onRejectChange,
     onAcceptAll,
     onRejectAll,
+    acceptingChangeId,
   }: MessageBubbleProps) => {
     const isUser = message.role === "user";
     const hasPending = hasPendingChanges(message.stagedChanges);
@@ -161,6 +163,7 @@ const MessageBubble = memo(
               <StagedChangeCard
                 key={change.id}
                 change={change}
+                isAccepting={acceptingChangeId === change.id}
                 onAccept={() => onAcceptChange(message.id, change.id)}
                 onReject={() => onRejectChange(message.id, change.id)}
               />

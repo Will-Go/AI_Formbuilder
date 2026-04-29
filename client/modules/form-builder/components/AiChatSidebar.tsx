@@ -25,8 +25,6 @@ import { useAiChatStore } from "../store/aiChatStore";
 import type { Form } from "@/shared/types/forms";
 import type {
   ChatMessage,
-  ChatSession,
-  StagedChange,
   GetOrCreateSessionResponse,
   GetMessagesResponse,
   SendMessageResponse,
@@ -49,6 +47,9 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const session = useAiChatStore((s) => s.session);
   const setSession = useAiChatStore((s) => s.setSession);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [acceptingChangeId, setAcceptingChangeId] = useState<string | null>(
+    null,
+  );
 
   const [inputValue, setInputValue] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -176,24 +177,22 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     },
   });
 
-  // const persistStagesMutation = useAppMutation<
-  //   void,
-  //   Error,
-  //   { messageId: string; updatedChanges: StagedChange[] }
-  // >({
-  //   mutationFn: async ({ messageId, updatedChanges }) => {
-  //     if (!session) return;
-  //     await apiRequest({
-  //       method: "patch",
-  //       url: `/ai-chat/sessions/${session.id}/messages/${messageId}/stage`,
-  //       data: { stagedChanges: updatedChanges },
-  //     });
-  //   },
-  // });
+  const handleAcceptChangeWithLoading = React.useCallback(
+    async (messageId: string, changeId: string) => {
+      setAcceptingChangeId(changeId);
+      try {
+        await handleAcceptChange(messageId, changeId);
+      } finally {
+        setAcceptingChangeId((current) =>
+          current === changeId ? null : current,
+        );
+      }
+    },
+    [handleAcceptChange],
+  );
 
   const handleSend = () => {
     const text = stripHtml(inputValue).trim();
-    setIsAiLoading(true);
     if (!text || sendMessageMutation.isPending || !session) return;
     setIsAiLoading(true);
     sendMessageMutation.mutate(text);
@@ -409,10 +408,11 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                 >
                   <MessageBubble
                     message={msg}
-                    onAcceptChange={handleAcceptChange}
+                    onAcceptChange={handleAcceptChangeWithLoading}
                     onRejectChange={handleRejectChange}
                     onAcceptAll={handleAcceptAll}
                     onRejectAll={handleRejectAll}
+                    acceptingChangeId={acceptingChangeId}
                   />
                 </motion.div>
               ))}

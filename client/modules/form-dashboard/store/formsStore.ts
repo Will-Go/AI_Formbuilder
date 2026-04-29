@@ -8,7 +8,7 @@ type FormsState = {
   selectedQuestionIdByForm: Record<string, string | null>;
   viewMode: "grid" | "list";
   isPaletteOpen: boolean;
-  togglePalette: () => void;
+  togglePaletteOpen: () => void;
   setViewMode: (mode: "grid" | "list") => void;
   form: Form | undefined;
   setForm: (form: Form) => void;
@@ -25,7 +25,8 @@ export const useFormsStore = create<FormsState>()(
       isPaletteOpen: true,
       isSaving: false,
       setViewMode: (mode) => set({ viewMode: mode }),
-      togglePalette: () => set((s) => ({ isPaletteOpen: !s.isPaletteOpen })),
+      togglePaletteOpen: () =>
+        set((s) => ({ isPaletteOpen: !s.isPaletteOpen })),
       form: undefined,
       setForm: (form) => {
         set(() => ({
