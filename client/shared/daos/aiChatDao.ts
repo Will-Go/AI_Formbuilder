@@ -12,6 +12,12 @@ function mapDbSession(row: Record<string, unknown>): ChatSession {
     id: row.id as string,
     formId: row.form_id as string,
     userId: row.user_id as string,
+    name: (row.name as string | null) ?? 'New chat',
+    isDeleted: Boolean(row.is_deleted),
+    lastUsedAt:
+      (row.last_used_at as string | null) ??
+      (row.updated_at as string | null) ??
+      (row.created_at as string),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -36,42 +42,193 @@ function mapDbMessage(row: Record<string, unknown>): ChatMessage {
 // ── public API ───────────────────────────────────────────────────────────────
 
 /**
- * Fetch existing session for a form+user pair, or create one if absent.
+ * Fetch active sessions for a form+user pair.
+ */
+export async function listChatSessions(options: {
+  formId: string;
+  userId: string;
+  search?: string;
+  orderBy?: string;
+  order?: 'asc' | 'desc';
+}): Promise<ChatSession[]> {
+  const { formId, userId, search, orderBy, order } = options;
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc('list_ai_chat_sessions', {
+    p_form_id: formId,
+    p_user_id: userId,
+    p_search: search,
+    p_order_by: orderBy,
+    p_order: order,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch chat sessions: ${error.message}`);
+  }
+
+  return ((data ?? []) as Record<string, unknown>[]).map(mapDbSession);
+}
+
+/**
+ * Fetch latest active session for a form+user pair, or create one if absent.
  */
 export async function getOrCreateChatSession(
   formId: string,
   userId: string,
 ): Promise<ChatSession> {
+  const sessions = await listChatSessions({ formId, userId });
+
+  if (sessions.length > 0) {
+    return sessions[0];
+  }
+
+  return createChatSession(formId, userId);
+}
+
+export async function getOrCreateChatSessionWithList(options: {
+  formId: string;
+  userId: string;
+  search?: string;
+  orderBy?: string;
+  order?: 'asc' | 'desc';
+}): Promise<{ session: ChatSession; sessions: ChatSession[] }> {
+  const { formId, userId } = options;
+  const sessions = await listChatSessions(options);
+
+  if (sessions.length > 0) {
+    return { session: sessions[0], sessions };
+  }
+
+  const session = await createChatSession(formId, userId);
+  return { session, sessions: [session] };
+}
+
+export async function createChatSession(
+  formId: string,
+  userId: string,
+): Promise<ChatSession> {
   const supabase = await createClient();
 
-  // Try to find existing session
-  const { data: existing, error: fetchErr } = await supabase
+  const { data, error } = await supabase.rpc('create_ai_chat_session', {
+    p_form_id: formId,
+    p_user_id: userId,
+  });
+
+  if (error || !data) {
+    throw new Error(`Failed to create chat session: ${error?.message}`);
+  }
+
+  return mapDbSession(data as Record<string, unknown>);
+}
+
+export async function selectChatSession(
+  sessionId: string,
+  userId: string,
+): Promise<ChatSession> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc('select_ai_chat_session', {
+    p_session_id: sessionId,
+    p_user_id: userId,
+  });
+
+  if (error || !data) {
+    throw new Error(`Failed to select chat session: ${error?.message}`);
+  }
+
+  return mapDbSession(data as Record<string, unknown>);
+}
+
+export async function softDeleteChatSession(
+  sessionId: string,
+  userId: string,
+): Promise<{ session: ChatSession; sessions: ChatSession[] }> {
+  const supabase = await createClient();
+
+  const { data: formId, error } = await supabase.rpc(
+    'soft_delete_ai_chat_session',
+    {
+      p_session_id: sessionId,
+      p_user_id: userId,
+    },
+  );
+
+  if (error || !formId) {
+    throw new Error(`Failed to delete chat session: ${error?.message}`);
+  }
+
+  const sessions = await listChatSessions({ formId: formId as string, userId });
+
+  if (sessions.length > 0) {
+    const session = await selectChatSession(sessions[0].id, userId);
+    return {
+      session,
+      sessions: sessions.map((item, index) =>
+        index === 0 ? session : item,
+      ),
+    };
+  }
+
+  const session = await createChatSession(formId as string, userId);
+  return { session, sessions: [session] };
+}
+
+export async function renameChatSession(
+  sessionId: string,
+  userId: string,
+  name: string,
+): Promise<ChatSession> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc('rename_ai_chat_session', {
+    p_session_id: sessionId,
+    p_user_id: userId,
+    p_name: name,
+  });
+
+  if (error || !data) {
+    throw new Error(`Failed to rename chat session: ${error?.message}`);
+  }
+
+  return mapDbSession(data as Record<string, unknown>);
+}
+
+export async function getActiveChatSession(
+  sessionId: string,
+  userId: string,
+): Promise<ChatSession> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
     .from('ai_chat_sessions')
     .select('*')
-    .eq('form_id', formId)
+    .eq('id', sessionId)
     .eq('user_id', userId)
-    .maybeSingle();
-
-  if (fetchErr) {
-    throw new Error(`Failed to fetch chat session: ${fetchErr.message}`);
-  }
-
-  if (existing) {
-    return mapDbSession(existing as Record<string, unknown>);
-  }
-
-  // Create new session
-  const { data: created, error: createErr } = await supabase
-    .from('ai_chat_sessions')
-    .insert({ form_id: formId, user_id: userId })
-    .select('*')
+    .eq('is_deleted', false)
     .single();
 
-  if (createErr || !created) {
-    throw new Error(`Failed to create chat session: ${createErr?.message}`);
+  if (error || !data) {
+    throw new Error(`Failed to fetch chat session: ${error?.message}`);
   }
 
-  return mapDbSession(created as Record<string, unknown>);
+  return mapDbSession(data as Record<string, unknown>);
+}
+
+export async function getSessionMessageCount(
+  sessionId: string,
+): Promise<number> {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from('ai_chat_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('session_id', sessionId);
+
+  if (error) {
+    throw new Error(`Failed to count messages: ${error.message}`);
+  }
+
+  return count ?? 0;
 }
 
 /**
@@ -79,8 +236,11 @@ export async function getOrCreateChatSession(
  */
 export async function getSessionMessages(
   sessionId: string,
+  userId: string,
   limit = 100,
 ): Promise<ChatMessage[]> {
+  await getActiveChatSession(sessionId, userId);
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -130,15 +290,20 @@ export async function saveMessage(
  * Called when user accepts / rejects individual changes.
  */
 export async function updateMessageStages(
+  sessionId: string,
   messageId: string,
+  userId: string,
   stagedChanges: StagedChange[],
 ): Promise<void> {
+  await getActiveChatSession(sessionId, userId);
+
   const supabase = await createClient();
 
   const { error } = await supabase
     .from('ai_chat_messages')
     .update({ metadata: { stagedChanges } })
-    .eq('id', messageId);
+    .eq('id', messageId)
+    .eq('session_id', sessionId);
 
   if (error) {
     throw new Error(`Failed to update staged changes: ${error.message}`);

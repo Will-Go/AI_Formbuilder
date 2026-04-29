@@ -36,6 +36,9 @@ export type ChatSession = {
   id: string;
   formId: string;
   userId: string;
+  name: string;
+  isDeleted: boolean;
+  lastUsedAt: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -44,6 +47,28 @@ export type ChatSession = {
 
 export type GetOrCreateSessionResponse = {
   session: ChatSession;
+  sessions: ChatSession[];
+};
+
+export type CreateSessionRequest = {
+  formId: string;
+};
+
+export type CreateSessionResponse = {
+  session: ChatSession;
+};
+
+export type SelectSessionRequest = {
+  action: 'select';
+};
+
+export type SelectSessionResponse = {
+  session: ChatSession;
+};
+
+export type DeleteSessionResponse = {
+  session: ChatSession;
+  sessions: ChatSession[];
 };
 
 export type GetMessagesResponse = {
@@ -52,6 +77,7 @@ export type GetMessagesResponse = {
 
 export type SendMessageRequest = {
   formId: string;
+  sessionId?: string;
   message: string;
   /** Full current form JSON so AI has latest context */
   formContext: string;
@@ -59,6 +85,7 @@ export type SendMessageRequest = {
 
 export type SendMessageResponse = {
   userMessage: ChatMessage;
+  session: ChatSession;
 };
 
 export type UpdateStagesRequest = {

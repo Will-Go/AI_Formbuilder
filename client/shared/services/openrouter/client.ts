@@ -2,6 +2,7 @@ import { OpenRouter } from "@openrouter/sdk";
 import { v4 as uuidv4 } from "uuid";
 import type { Form } from "@/shared/types/forms";
 import type { AiDiffResponse, StagedChange } from "@/shared/types/aiChat";
+import { serializeFormForAi } from "@/shared/utils/serializeFormForAi";
 
 /** Server-side only. Key must NOT be NEXT_PUBLIC_ prefixed. */
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -86,6 +87,37 @@ The form context provides the CURRENT state of the form with ALL questions and s
 7. Output ONLY the JSON object. No extra text.
 `.trim();
 
+const SESSION_NAME_PROMPT = `
+You name FormIA AI chat sessions.
+Return only a concise title, no quotes, no markdown, no punctuation at the end.
+Use 3 to 6 words when possible.
+The title should describe the user's first request in the context of the form.
+`.trim();
+
+function normalizeSessionName(value: string, fallback: string): string {
+  const cleaned = value
+    .replace(/["'`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.!?;:]+$/g, "");
+
+  if (cleaned) {
+    return cleaned.slice(0, 80);
+  }
+
+  return fallback.slice(0, 80);
+}
+
+function buildFallbackSessionName(message: string): string {
+  const cleaned = message.replace(/\s+/g, " ").trim();
+
+  if (!cleaned) {
+    return "New chat";
+  }
+
+  return cleaned.slice(0, 80);
+}
+
 /**
  * Calls OpenRouter with the user message + current form context.
  * Returns the parsed AI diff response.
@@ -94,20 +126,7 @@ export async function sendWithContext(
   message: string,
   form: Form,
 ): Promise<{ reply: string; stagedChanges: StagedChange[] }> {
-  const formContext = JSON.stringify({
-    id: form.id,
-    title: form.title,
-    description: form.description,
-    questions: form.questions
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((q) => ({
-        id: q.id,
-        type: q.type,
-        label: q.label,
-        order: q.order,
-      })),
-  });
+  const formContext = serializeFormForAi(form);
 
   const response = await openRouter.chat.send({
     chatRequest: {
@@ -154,6 +173,41 @@ export async function sendWithContext(
   }));
 
   return { reply: parsed.reply ?? "", stagedChanges };
+}
+
+export async function generateSessionName(
+  firstMessage: string,
+  form: Form,
+): Promise<string> {
+  const fallback = buildFallbackSessionName(firstMessage);
+  const formContext = serializeFormForAi(form);
+
+  try {
+    const response = await openRouter.chat.send({
+      chatRequest: {
+        model: AI_MODEL,
+        messages: [
+          { role: "system", content: SESSION_NAME_PROMPT },
+          {
+            role: "system",
+            name: "form_context",
+            content: `Current form state:\n${formContext}`,
+          },
+          { role: "user", content: firstMessage },
+        ],
+      },
+    });
+
+    const rawContent =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (response as any)?.choices?.[0]?.message?.content ??
+      (typeof response === "string" ? response : "");
+
+    return normalizeSessionName(rawContent, fallback);
+  } catch (error) {
+    console.error("[openrouter/session-name] error:", error);
+    return fallback;
+  }
 }
 
 /**

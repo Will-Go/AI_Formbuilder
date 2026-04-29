@@ -9,6 +9,7 @@ import Skeleton from "@mui/material/Skeleton";
 import Divider from "@mui/material/Divider";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import HistoryIcon from "@mui/icons-material/History";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SendIcon from "@mui/icons-material/Send";
 import {
@@ -37,6 +38,7 @@ import type {
 
 import AiLoadingBubble from "./AiLoadingBubble";
 import MessageBubble from "./MessageBubble";
+import SessionHistoryDialog from "./SessionHistoryDialog";
 import { useAiChatContext } from "../context/AiChatContext";
 
 const DEFAULT_SIDEBAR_WIDTH = 340;
@@ -68,12 +70,11 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const [acceptingChangeId, setAcceptingChangeId] = useState<string | null>(
     null,
   );
-  const [sidebarWidth, setSidebarWidth] = React.useState(
-    DEFAULT_SIDEBAR_WIDTH,
-  );
+  const [sidebarWidth, setSidebarWidth] = React.useState(DEFAULT_SIDEBAR_WIDTH);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isResizeHandleHovered, setIsResizeHandleHovered] =
     React.useState(false);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
 
   const [inputValue, setInputValue] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -96,8 +97,8 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     setMessages,
   } = useAiChatContext();
 
-  // ── fetch session ──────────────────────────────────────────────────────────
-  const _sessionQuery = useAppQuery<GetOrCreateSessionResponse>({
+  // ── fetch active session ───────────────────────────────────────────────────
+  const _activeSessionQuery = useAppQuery<GetOrCreateSessionResponse>({
     queryKey: ["ai-chat-session", formId],
     queryFn: () =>
       apiRequest({
@@ -127,6 +128,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     () => _messagesQuery.data?.messages ?? [],
     [_messagesQuery.data?.messages],
   );
+
 
   // ── realtime subscription ──────────────────────────────────────────────────
   React.useEffect(() => {
@@ -169,6 +171,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
         url: "/ai-chat/send",
         data: {
           formId,
+          sessionId: session?.id,
           message: text,
           formContext: JSON.stringify(form),
         },
@@ -188,6 +191,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       return { optimisticId: optimisticUser.id };
     },
     onSuccess: (res, _variables, context) => {
+      setSession(res.session);
       const optimisticId = (context as { optimisticId: string }).optimisticId;
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== optimisticId),
@@ -209,6 +213,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       }
     },
   });
+
 
   const handleAcceptChangeWithLoading = React.useCallback(
     async (messageId: string, changeId: string) => {
@@ -319,7 +324,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     }
   };
 
-  const isLoading = _sessionQuery.isLoading || _messagesQuery.isLoading;
+  const isLoading = _activeSessionQuery.isLoading || _messagesQuery.isLoading;
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -447,8 +452,19 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                 letterSpacing: 0.3,
               }}
             >
-              Form AI
+              Form AI - {session?.name || "New conversation"}
             </Typography>
+            <Tooltip title="Session history">
+              <IconButton
+                size="small"
+                onClick={() => setHistoryOpen(true)}
+                id="ai-chat-history-btn"
+                aria-label="Open AI chat session history"
+                sx={{ mr: 0.5 }}
+              >
+                <HistoryIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Collapse sidebar">
               <IconButton
                 size="small"
@@ -540,7 +556,9 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                   variant="body2"
                   sx={{ textAlign: "center", maxWidth: 220 }}
                 >
-                  Ask me to add, modify, or reorganize your form questions.
+                  {session
+                    ? "Ask me to add, modify, or reorganize your form questions."
+                    : "Write and send a message to start a new chat."}
                 </Typography>
               </Box>
             )}
@@ -649,6 +667,12 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
           </Box>
         </Box>
       </Box>
+      <SessionHistoryDialog
+        open={historyOpen}
+        setOpen={setHistoryOpen}
+        formId={formId}
+        activeSessionId={session?.id}
+      />
     </>
   );
 }

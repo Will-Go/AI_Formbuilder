@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { createClient } from "@/shared/services/supabase/server";
-import { getOrCreateChatSession, saveMessage } from "@/shared/daos/aiChatDao";
-import { sendWithContext } from "@/shared/services/openrouter/client";
+import {
+  getActiveChatSession,
+  getOrCreateChatSession,
+  getSessionMessageCount,
+  renameChatSession,
+  saveMessage,
+  selectChatSession,
+} from "@/shared/daos/aiChatDao";
+import {
+  generateSessionName,
+  sendWithContext,
+} from "@/shared/services/openrouter/client";
+import { SendAiChatMessageSchema } from "@/shared/schemas/aiChat";
 import { withAuth } from "@/shared/utils/with-is-auth";
 import type {
-  SendMessageRequest,
   SendMessageResponse,
 } from "@/shared/types/aiChat";
 import type { Form } from "@/shared/types/forms";
 
 /**
  * POST /api/ai-chat/send
- * Body: { formId, message, formContext }
+ * Body: { formId, sessionId?, message, formContext }
  *
  * 1. Gets or creates the chat session
  * 2. Persists the user message
@@ -30,21 +40,13 @@ export const POST = withAuth(async (req: NextRequest) => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: SendMessageRequest = await req.json();
-    const { formId, message, formContext } = body;
+    const parsed = SendAiChatMessageSchema.safeParse(await req.json());
 
-    if (!formId || !message) {
-      return NextResponse.json(
-        { error: "formId and message are required" },
-        { status: 400 },
-      );
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    // Ensure a session exists
-    const session = await getOrCreateChatSession(formId, user.id);
-
-    // Persist the user message
-    const userMessage = await saveMessage(session.id, "user", message);
+    const { formId, sessionId, message, formContext } = parsed.data;
 
     // Parse form context instantly to catch JSON errors before returning 200
     let form: Form;
@@ -55,6 +57,28 @@ export const POST = withAuth(async (req: NextRequest) => {
         { error: "Invalid formContext JSON" },
         { status: 400 },
       );
+    }
+
+    const baseSession = sessionId
+      ? await getActiveChatSession(sessionId, user.id)
+      : await getOrCreateChatSession(formId, user.id);
+
+    if (baseSession.formId !== formId) {
+      return NextResponse.json(
+        { error: "Session does not belong to this form" },
+        { status: 400 },
+      );
+    }
+
+    let session = await selectChatSession(baseSession.id, user.id);
+    const isFirstMessage = (await getSessionMessageCount(session.id)) === 0;
+
+    // Persist the user message
+    const userMessage = await saveMessage(session.id, "user", message);
+
+    if (isFirstMessage) {
+      const sessionName = await generateSessionName(message, form);
+      session = await renameChatSession(session.id, user.id, sessionName);
     }
 
     // Process AI generation in the background so the HTTP request never times out
@@ -86,7 +110,8 @@ export const POST = withAuth(async (req: NextRequest) => {
     });
 
     // Return immediately to the client to avoid timeouts
-    return NextResponse.json({ userMessage });
+    const payload: SendMessageResponse = { userMessage, session };
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("[ai-chat/send] error:", error);
     const message = error instanceof Error ? error.message : "Unexpected error";

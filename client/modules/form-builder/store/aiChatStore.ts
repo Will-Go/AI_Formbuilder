@@ -25,6 +25,10 @@ export const ChatMessageSchema = z.object({
 export const ChatSessionSchema = z.object({
   id: z.string(),
   formId: z.string(),
+  userId: z.string(),
+  name: z.string(),
+  isDeleted: z.boolean(),
+  lastUsedAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
