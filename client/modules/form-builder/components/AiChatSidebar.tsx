@@ -11,7 +11,12 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SendIcon from "@mui/icons-material/Send";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 
@@ -34,6 +39,19 @@ import AiLoadingBubble from "./AiLoadingBubble";
 import MessageBubble from "./MessageBubble";
 import { useAiChatContext } from "../context/AiChatContext";
 
+const DEFAULT_SIDEBAR_WIDTH = 340;
+const MIN_SIDEBAR_WIDTH = 280;
+
+const getMaxSidebarWidth = (): number => {
+  if (typeof window === "undefined") return DEFAULT_SIDEBAR_WIDTH;
+  return Math.floor(window.innerWidth / 2);
+};
+
+const clampSidebarWidth = (width: number): number => {
+  const maxWidth = getMaxSidebarWidth();
+  return Math.min(Math.max(width, MIN_SIDEBAR_WIDTH), maxWidth);
+};
+
 // ── main component ────────────────────────────────────────────────────────────
 
 interface AiChatSidebarProps {
@@ -50,9 +68,25 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const [acceptingChangeId, setAcceptingChangeId] = useState<string | null>(
     null,
   );
+  const [sidebarWidth, setSidebarWidth] = React.useState(
+    DEFAULT_SIDEBAR_WIDTH,
+  );
+  const [isResizing, setIsResizing] = React.useState(false);
+  const [isResizeHandleHovered, setIsResizeHandleHovered] =
+    React.useState(false);
 
   const [inputValue, setInputValue] = React.useState("");
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const sidebarWidthMotion = useMotionValue(DEFAULT_SIDEBAR_WIDTH);
+  const animatedSidebarWidth = useSpring(sidebarWidthMotion, {
+    stiffness: 420,
+    damping: 42,
+    mass: 0.8,
+  });
+  const resizeStartRef = React.useRef({
+    pointerX: 0,
+    width: DEFAULT_SIDEBAR_WIDTH,
+  });
 
   const {
     handleAcceptChange,
@@ -197,6 +231,80 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     sendMessageMutation.mutate(text);
   };
 
+  const handleResizePointerDown = React.useCallback(
+    (event: React.PointerEvent<HTMLDivElement>): void => {
+      if (!isOpen) return;
+
+      event.preventDefault();
+      resizeStartRef.current = {
+        pointerX: event.clientX,
+        width: sidebarWidth,
+      };
+      setIsResizeHandleHovered(false);
+      setIsResizing(true);
+    },
+    [isOpen, sidebarWidth],
+  );
+
+  const handleResizeHandlePointerEnter = React.useCallback((): void => {
+    if (isResizing) return;
+    setIsResizeHandleHovered(true);
+  }, [isResizing]);
+
+  const handleResizeHandlePointerLeave = React.useCallback((): void => {
+    setIsResizeHandleHovered(false);
+  }, []);
+
+  React.useEffect(() => {
+    sidebarWidthMotion.set(isOpen ? sidebarWidth : 0);
+  }, [isOpen, sidebarWidth, sidebarWidthMotion]);
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handlePointerMove = (event: PointerEvent): void => {
+      const dragDistance = resizeStartRef.current.pointerX - event.clientX;
+      setSidebarWidth(
+        clampSidebarWidth(resizeStartRef.current.width + dragDistance),
+      );
+    };
+
+    const handlePointerEnd = (): void => {
+      setIsResizing(false);
+      setIsResizeHandleHovered(false);
+    };
+
+    const originalCursor = document.body.style.cursor;
+    const originalUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+    window.addEventListener("blur", handlePointerEnd);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+      window.removeEventListener("blur", handlePointerEnd);
+      document.body.style.cursor = originalCursor;
+      document.body.style.userSelect = originalUserSelect;
+    };
+  }, [isResizing]);
+
+  React.useEffect(() => {
+    const handleWindowResize = (): void => {
+      setSidebarWidth((currentWidth) => clampSidebarWidth(currentWidth));
+    };
+
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => {
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, []);
+
   // ── auto-scroll on new messages ────────────────────────────────────────────
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -252,11 +360,13 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       <Box
         component={motion.div}
         initial={false}
-        animate={{ width: isOpen ? 340 : 0, opacity: isOpen ? 1 : 0 }}
-        transition={{ duration: 0.28, ease: "easeInOut" }}
+        animate={{ opacity: isOpen ? 1 : 0 }}
+        style={{ width: animatedSidebarWidth }}
+        transition={{ duration: 0.18, ease: "easeInOut" }}
         sx={{
           flexShrink: 0,
           overflow: "hidden",
+          position: "relative",
           borderRadius: 2,
           display: "flex",
           flexDirection: "column",
@@ -267,10 +377,49 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
           height: "100%",
         }}
       >
+        <Box
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize AI Assistant"
+          aria-valuemin={MIN_SIDEBAR_WIDTH}
+          aria-valuemax={getMaxSidebarWidth()}
+          aria-valuenow={sidebarWidth}
+          tabIndex={-1}
+          onPointerDown={handleResizePointerDown}
+          onPointerEnter={handleResizeHandlePointerEnter}
+          onPointerLeave={handleResizeHandlePointerLeave}
+          sx={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: 10,
+            zIndex: 2,
+            cursor: "ew-resize",
+            touchAction: "none",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: 2,
+              bgcolor:
+                isResizing || isResizeHandleHovered
+                  ? "primary.main"
+                  : "transparent",
+              boxShadow:
+                isResizing || isResizeHandleHovered
+                  ? "0 0 0 1px rgba(99,102,241,0.18)"
+                  : "none",
+              transition: "background-color 0.15s ease, box-shadow 0.15s ease",
+            },
+          }}
+        />
         {/* Inner wrapper prevents content paint during collapse */}
         <Box
           sx={{
-            width: 340,
+            width: sidebarWidth,
             height: "100%",
             display: "flex",
             flexDirection: "column",
