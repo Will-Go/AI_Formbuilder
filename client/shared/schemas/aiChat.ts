@@ -32,6 +32,14 @@ export const UpdateAiChatStagesSchema = z.object({
   stagedChanges: z.array(z.unknown()),
 });
 
+export const ApplyAllStagedChangesSchema = z.object({
+  action: z.enum(["accept", "reject"]),
+});
+
+export type ApplyAllStagedChangesInput = z.infer<
+  typeof ApplyAllStagedChangesSchema
+>;
+
 export type GetAiChatSessionsInput = z.infer<typeof GetAiChatSessionsSchema>;
 export type CreateAiChatSessionInput = z.infer<
   typeof CreateAiChatSessionSchema

@@ -47,10 +47,12 @@ payload: { "title": "<string>", "description": "<string>" } (include only change
 Valid QuestionTypes: short_text, long_text, multiple_choice, checkbox, dropdown, email, phone, number, date, rating, linear_scale, yes_no, section_divider, paragraph
 
 ## Special Question Type: section_divider
-Questions with type "section_divider" are a special type that defines separations between questions. They act as visual dividers or section headers to organize form content. They do not collect user input but provide structure to the form. They use the same "order" system as regular questions.
+Questions with type "section_divider" are a special type that defines separations between questions. They act as visual dividers or section headers to organize form content. They do not collect user input but provide structure to the form. They use the same "order" system as regular questions. This is not required.
+
+IMPORTANT: A section_divider wraps and groups all questions that come AFTER it (with higher order values), continuing until the next section_divider or the end of the form. When a user refers to adding content to a section, they mean adding questions after that section_divider's position.
 
 ## Special Question Type: paragraph
-Questions with type "paragraph" are a special type that displays instructional text or explanatory content to guide the user. They do not collect any user input — they serve as helper text or instructions within the form. Use them to provide context, examples, or guidance for the following questions. They use the same "order" system as regular questions.
+Questions with type "paragraph" are a special type that displays instructional text or explanatory content to guide the user. They do not collect any user input. They serve as helper text or instructions within the form. Use them to provide context, examples, or guidance for the following questions. They use the same "order" system as regular questions. This is not required.
 
 ## Understanding Order and Question/Section Placement
 
@@ -97,6 +99,31 @@ DO NOT return JSON. DO NOT echo the form context.
 Use 3 to 6 words when possible.
 The title should describe the user's first request in the context of the form.
 `.trim();
+
+/**
+ * The AI is instructed to emit "PLACEHOLDER" wherever a UUID is expected
+ * (question id, option id). Replace those with real UUIDs before persisting
+ * so downstream consumers (DB, RPCs) never see invalid uuid strings.
+ */
+function sanitizePlaceholderIds<T>(payload: T): T {
+  if (Array.isArray(payload)) {
+    return payload.map((item) => sanitizePlaceholderIds(item)) as unknown as T;
+  }
+
+  if (payload && typeof payload === "object") {
+    const next: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(payload)) {
+      if (key === "id" && value === "PLACEHOLDER") {
+        next[key] = uuidv4();
+      } else {
+        next[key] = sanitizePlaceholderIds(value);
+      }
+    }
+    return next as T;
+  }
+
+  return payload;
+}
 
 function normalizeSessionName(value: string, fallback: string): string {
   const cleaned = value
@@ -170,15 +197,21 @@ export async function sendWithContext(
     parsed = { reply: rawContent || "Done.", changes: [] };
   }
 
-  const stagedChanges: StagedChange[] = (parsed.changes ?? []).map((c) => ({
-    id: uuidv4(),
-    type: c.type,
-    questionId: c.questionId,
-    questionType: (c.payload as { type?: string })
-      ?.type as StagedChange["questionType"],
-    payload: c.payload,
-    accepted: null,
-  }));
+  const stagedChanges: StagedChange[] = (parsed.changes ?? []).map((c) => {
+    const sanitizedPayload = sanitizePlaceholderIds(c.payload);
+    const questionId =
+      c.questionId && c.questionId !== "PLACEHOLDER" ? c.questionId : undefined;
+
+    return {
+      id: uuidv4(),
+      type: c.type,
+      questionId,
+      questionType: (sanitizedPayload as { type?: string })
+        ?.type as StagedChange["questionType"],
+      payload: sanitizedPayload,
+      accepted: null,
+    };
+  });
 
   return { reply: parsed.reply ?? "", stagedChanges };
 }

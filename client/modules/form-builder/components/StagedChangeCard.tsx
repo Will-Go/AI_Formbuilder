@@ -306,23 +306,56 @@ export default function StagedChangeCard({
       change.past || payload.label || originalQuestion?.label || "–",
     );
     const isDelete = change.type === "delete";
+    const addOptions =
+      change.type === "add" && Array.isArray(payload.options)
+        ? (payload.options as Option[])
+        : [];
 
     return (
-      <Typography
-        variant="body2"
-        sx={{
-          fontSize: 12,
-          fontWeight: isDelete ? 500 : 600,
-          color: isDelete ? "text.secondary" : "text.primary",
-          textDecoration: isDelete ? "line-through" : "none",
-          overflow: isExpanded ? "visible" : "hidden",
-          textOverflow: isExpanded ? "clip" : "ellipsis",
-          whiteSpace: isExpanded ? "pre-wrap" : "nowrap",
-        }}
-        title={labelToDisplay}
-      >
-        {stripHtml(labelToDisplay)}
-      </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            fontSize: 12,
+            fontWeight: isDelete ? 500 : 600,
+            color: isDelete ? "text.secondary" : "text.primary",
+            textDecoration: isDelete ? "line-through" : "none",
+            overflow: isExpanded ? "visible" : "hidden",
+            textOverflow: isExpanded ? "clip" : "ellipsis",
+            whiteSpace: isExpanded ? "pre-wrap" : "nowrap",
+          }}
+          title={labelToDisplay}
+        >
+          {stripHtml(labelToDisplay)}
+        </Typography>
+        {isExpanded && addOptions.length > 0 && (
+          <Box sx={{ mt: 0.5 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                color: "primary.main",
+                display: "block",
+                mb: 0.5,
+              }}
+            >
+              OPTIONS
+            </Typography>
+            <Box component="ul" sx={{ m: 0, p: 0, listStyle: "none" }}>
+              {addOptions.map((opt: Option, i: number) => (
+                <Typography
+                  key={(opt.id ?? "opt") + i}
+                  component="li"
+                  variant="body2"
+                  sx={{ fontSize: 11, fontWeight: 600 }}
+                >
+                  • {opt.label || opt.value}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Box>
     );
   };
 
@@ -349,7 +382,7 @@ export default function StagedChangeCard({
         px: 2,
         py: 1.5,
         display: "flex",
-        alignItems: "center",
+        alignItems: "start",
         gap: 1,
         transition: "all 0.2s ease",
         cursor: "pointer",

@@ -1,4 +1,4 @@
-import type { Question, QuestionType } from './forms';
+import type { Form, Question, QuestionType } from './forms';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -95,6 +95,15 @@ export type UpdateStagesRequest = {
 
 export type UpdateStagesResponse = {
   ok: boolean;
+};
+
+export type ApplyAllStagedChangesRequest = {
+  action: 'accept' | 'reject';
+};
+
+export type ApplyAllStagedChangesResponse = {
+  stagedChanges: StagedChange[];
+  form: Form;
 };
 
 /** Shape the AI must return (parsed from JSON in the assistant message) */

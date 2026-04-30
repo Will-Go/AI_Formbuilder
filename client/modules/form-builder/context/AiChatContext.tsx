@@ -8,6 +8,7 @@ import { apiRequest } from "@/shared/utils/apiRequest";
 import { v4 as uuidv4 } from "uuid";
 import type { QuestionType, Question, Form } from "@/shared/types/forms";
 import type {
+  ApplyAllStagedChangesResponse,
   ChatMessage,
   GetMessagesResponse,
   StagedChange,
@@ -112,7 +113,23 @@ export const AiChatProvider = ({
   );
 
   const getQuestions = useFormsStore((s) => s.getQuestions);
+  const setFormStore = useFormsStore((s) => s.setForm);
   const getForm = () => useFormsStore.getState().form;
+
+  const applyAllMutation = useAppMutation<
+    ApplyAllStagedChangesResponse,
+    Error,
+    { messageId: string; action: "accept" | "reject" }
+  >({
+    mutationFn: async ({ messageId, action }) => {
+      if (!session?.id) throw new Error("Session is missing");
+      return apiRequest({
+        method: "post",
+        url: `/ai-chat/sessions/${session.id}/messages/${messageId}/apply-all`,
+        data: { action },
+      });
+    },
+  });
 
   const persistStagesMutation = useAppMutation<
     unknown,
@@ -290,85 +307,52 @@ export const AiChatProvider = ({
     async (messageId: string) => {
       setAcceptingAllMessageId(messageId);
       try {
-        const cache = queryClient.getQueryData<GetMessagesResponse>([
-        "ai-chat-messages",
-        session?.id,
-      ]);
-      const currentMessages = cache?.messages ?? [];
-      const msg = currentMessages.find((m) => m.id === messageId);
-      if (!msg?.stagedChanges) return;
-
-      const updatedChanges = [...msg.stagedChanges];
-      for (let i = 0; i < updatedChanges.length; i++) {
-        const change = updatedChanges[i];
-        if (change.accepted === null) {
-          setAcceptingChangeIds((prev) => [...prev, change.id]);
-          const past = getPastValue(change);
-          try {
-            await applyChange(change);
-            updatedChanges[i] = { ...change, accepted: true as const, past };
-          } catch (error) {
-            console.error("Failed to apply staged change:", error);
-          } finally {
-            setAcceptingChangeIds((prev) =>
-              prev.filter((id) => id !== change.id),
-            );
-          }
-        }
+        const res = await applyAllMutation.mutateAsync({
+          messageId,
+          action: "accept",
+        });
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, stagedChanges: res.stagedChanges } : m,
+          ),
+        );
+        setFormStore(res.form);
+        queryClient.setQueryData(
+          ["form-builder", "form-details", res.form.id],
+          res.form,
+        );
+        queryClient.invalidateQueries({
+          queryKey: ["form-builder", "form-details", res.form.id],
+        });
+      } catch (error) {
+        console.error("Failed to apply all staged changes:", error);
+      } finally {
+        setAcceptingAllMessageId(null);
       }
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId ? { ...m, stagedChanges: updatedChanges } : m,
-        ),
-      );
-
-      persistStagesMutation.mutate({ messageId, updatedChanges });
-    } finally {
-      setAcceptingAllMessageId(null);
-    }
-  },
-    [
-      getPastValue,
-      applyChange,
-      setMessages,
-      persistStagesMutation,
-      queryClient,
-      session,
-    ],
+    },
+    [applyAllMutation, setMessages, setFormStore, queryClient],
   );
 
   const handleRejectAll = useCallback(
     async (messageId: string) => {
       setRejectingAllMessageId(messageId);
       try {
-        const cache = queryClient.getQueryData<GetMessagesResponse>([
-        "ai-chat-messages",
-        session?.id,
-      ]);
-      const currentMessages = cache?.messages ?? [];
-      const msg = currentMessages.find((m) => m.id === messageId);
-      if (!msg?.stagedChanges) return;
-
-      const updated = msg.stagedChanges.map((c) => {
-        if (c.accepted === null) {
-          const past = getPastValue(c);
-          return { ...c, accepted: false as const, past };
-        }
-        return c;
-      });
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId ? { ...m, stagedChanges: updated } : m,
-        ),
-      );
-      persistStagesMutation.mutate({ messageId, updatedChanges: updated });
-    } finally {
-      setRejectingAllMessageId(null);
-    }
-  },
-    [getPastValue, setMessages, persistStagesMutation, queryClient, session],
+        const res = await applyAllMutation.mutateAsync({
+          messageId,
+          action: "reject",
+        });
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, stagedChanges: res.stagedChanges } : m,
+          ),
+        );
+      } catch (error) {
+        console.error("Failed to reject all staged changes:", error);
+      } finally {
+        setRejectingAllMessageId(null);
+      }
+    },
+    [applyAllMutation, setMessages],
   );
 
   const contextValue = useMemo(

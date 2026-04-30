@@ -4,6 +4,7 @@ import type {
   ChatMessage,
   StagedChange,
 } from '@/shared/types/aiChat';
+import type { Form } from '@/shared/types/forms';
 
 export interface GetSessionMessagesOptions {
   sessionId: string;
@@ -334,4 +335,34 @@ export async function updateMessageStages(
   if (error) {
     throw new Error(`Failed to update staged changes: ${error.message}`);
   }
+}
+
+/**
+ * Atomically accept or reject every pending staged change on a message.
+ * Delegates to the apply_all_staged_changes Postgres function so all
+ * mutations land in a single transaction.
+ */
+export async function applyAllStagedChanges(
+  sessionId: string,
+  messageId: string,
+  userId: string,
+  action: 'accept' | 'reject',
+): Promise<{ stagedChanges: StagedChange[]; form: Form }> {
+  await getActiveChatSession(sessionId, userId);
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc('apply_all_staged_changes', {
+    p_session_id: sessionId,
+    p_message_id: messageId,
+    p_action: action,
+  });
+
+  if (error || !data) {
+    throw new Error(
+      `Failed to apply all staged changes: ${error?.message ?? 'no data'}`,
+    );
+  }
+
+  return data as { stagedChanges: StagedChange[]; form: Form };
 }
