@@ -176,8 +176,9 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
           table: "ai_chat_messages",
           filter: `session_id=eq.${session.id}`,
         },
-        () => {
-          setIsAiLoading(false);
+        (newMsg) => {
+          const msg = newMsg.new as ChatMessage;
+          if (msg.role === "assistant") setIsAiLoading(false);
           // Whenever a new message arrives for this session, refetch messages perfectly
           _messagesQuery.invalidate();
         },
@@ -370,7 +371,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     }
   };
 
-  const isLoading = _activeSessionQuery.isLoading || _messagesQuery.isLoading || _messagesQuery?.isFetching;
+  const isLoading = _activeSessionQuery.isLoading || _messagesQuery.isLoading;
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (

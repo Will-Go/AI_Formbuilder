@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { z } from "zod";
 import type {
   ChatSession,
@@ -40,9 +41,18 @@ interface AiChatState {
   setSession: (session: ChatSession | null) => void;
 }
 
-export const useAiChatStore = create<AiChatState>((set) => ({
-  isOpen: false,
-  session: null,
-  setIsOpen: (isOpen) => set({ isOpen }),
-  setSession: (session) => set({ session }),
-}));
+export const useAiChatStore = create<AiChatState>()(
+  persist(
+    (set) => ({
+      isOpen: false,
+      session: null,
+      setIsOpen: (isOpen) => set({ isOpen }),
+      setSession: (session) => set({ session }),
+    }),
+    {
+      name: "ai-chat-storage",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ isOpen: state.isOpen }),
+    },
+  ),
+);
