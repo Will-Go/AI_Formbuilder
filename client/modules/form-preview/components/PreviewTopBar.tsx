@@ -51,7 +51,7 @@ export function PreviewTopBar({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Tooltip title="Back to builder">
             <IconButton
-              onClick={() => router.push(`/forms/${formId}/edit`)}
+              onClick={() => router.push(`/forms/${formId}`)}
               edge="start"
             >
               <VisibilityOffIcon style={{ transform: "rotate(180deg)" }} />
