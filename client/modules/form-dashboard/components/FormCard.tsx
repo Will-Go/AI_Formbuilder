@@ -6,6 +6,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
+import Chip from "@mui/material/Chip";
 import { CardContent } from "@mui/material/";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
@@ -13,8 +14,11 @@ import MenuItem from "@mui/material/MenuItem";
 import Typography from "@mui/material/Typography";
 import React from "react";
 import type { Form } from "@/shared/types/forms";
+
 import { formatShortDate } from "@/shared/utils/dateFormatter";
 import { stripHtml } from "@/shared/utils/html";
+
+import { STATUS_CONFIG } from "@/shared/constants/statusConfig";
 
 import CircularProgress from "@mui/material/CircularProgress";
 
@@ -66,7 +70,15 @@ export default function FormCard({
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
                 {stripHtml(form.title) || "Untitled form"}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                <Chip
+                  label={STATUS_CONFIG[form.status]?.label ?? form.status}
+                  color={STATUS_CONFIG[form.status]?.color ?? 'default'}
+                  size="small"
+                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}
+                />
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
                 Updated {formatShortDate(form.updated_at)} • {responseCount}{" "}
                 responses
               </Typography>

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -9,6 +10,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import type { Form } from "@/shared/types/forms";
+import { STATUS_CONFIG } from "@/shared/constants/statusConfig";
 import { stripHtml } from "@/shared/utils/html";
 import { useAuth } from "@/shared/context/AuthContext";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -82,11 +84,19 @@ export default function FormListItem({
           {form.response_count ?? 0} responses
         </Typography>
       </Box>
-      <Box sx={{ flex: 1, textAlign: "left" }}>
+      <Box sx={{ flex: 1, textAlign: 'left' }}>
+        <Chip
+          label={STATUS_CONFIG[form.status]?.label ?? form.status}
+          color={STATUS_CONFIG[form.status]?.color ?? 'default'}
+          size="small"
+          sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}
+        />
+      </Box>
+      <Box sx={{ flex: 1, textAlign: 'left' }}>
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ fontSize: "0.8125rem" }}
+          sx={{ fontSize: '0.8125rem' }}
         >
           {dateStr}
         </Typography>
