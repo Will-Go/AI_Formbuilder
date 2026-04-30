@@ -91,8 +91,9 @@ The form context provides the CURRENT state of the form with ALL questions and s
 `.trim();
 
 const SESSION_NAME_PROMPT = `
-You name FormIA AI.
-Return only a concise title, no quotes, no markdown, no punctuation at the end.
+You are an AI that generates a short chat session title.
+Return ONLY a concise title, no quotes, no markdown, no punctuation at the end.
+DO NOT return JSON. DO NOT echo the form context.
 Use 3 to 6 words when possible.
 The title should describe the user's first request in the context of the form.
 `.trim();
@@ -103,6 +104,10 @@ function normalizeSessionName(value: string, fallback: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/[.!?;:]+$/g, "");
+
+  if (cleaned.startsWith("{") || cleaned.startsWith("[")) {
+    return fallback.slice(0, 80);
+  }
 
   if (cleaned) {
     return cleaned.slice(0, 80);
@@ -193,7 +198,6 @@ export async function generateSessionName(
           { role: "system", content: SESSION_NAME_PROMPT },
           {
             role: "system",
-            name: "form_context",
             content: `Current form state:\n${formContext}`,
           },
           { role: "user", content: firstMessage },
