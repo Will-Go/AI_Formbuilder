@@ -82,7 +82,7 @@ export default function Canvas({
         queryClient.getQueryData<GetMessagesResponse>([
           "ai-chat-messages",
           session?.id,
-        ]) ?? { messages: [] },
+        ]) ?? { messages: [], hasMore: false },
       ),
     enabled: !!session?.id,
   });
@@ -232,7 +232,9 @@ export default function Canvas({
                       aiChangeId={aiChangeId}
                       aiPendingPayload={aiPendingPayload}
                       isAiApplying={
-                        aiChangeId ? acceptingChangeIds.includes(aiChangeId) : false
+                        aiChangeId
+                          ? acceptingChangeIds.includes(aiChangeId)
+                          : false
                       }
                     />
                     <CanvasDropSlot
