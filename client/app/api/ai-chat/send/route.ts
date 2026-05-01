@@ -4,14 +4,19 @@ import {
   getActiveChatSession,
   getOrCreateChatSession,
   getSessionMessageCount,
+  getSessionMessages,
   renameChatSession,
   saveMessage,
   selectChatSession,
+  updateSessionBrief,
 } from "@/shared/daos/aiChatDao";
 import {
+  generateSessionBrief,
   generateSessionName,
   sendWithContext,
 } from "@/shared/services/openrouter/client";
+
+const BRIEF_INTERVAL = 50;
 import { SendAiChatMessageSchema } from "@/shared/schemas/aiChat";
 import { withAuth } from "@/shared/utils/with-is-auth";
 import type {
@@ -71,7 +76,16 @@ export const POST = withAuth(async (req: NextRequest) => {
     }
 
     let session = await selectChatSession(baseSession.id, user.id);
-    const isFirstMessage = (await getSessionMessageCount(session.id)) === 0;
+    const msgCountBefore = await getSessionMessageCount(session.id);
+    const isFirstMessage = msgCountBefore === 0;
+
+    // Snapshot prior messages BEFORE saving the new user message so the
+    // current turn isn't duplicated when passed as history to the AI.
+    const priorHistory = isFirstMessage
+      ? { messages: [] as Awaited<ReturnType<typeof getSessionMessages>>["messages"] }
+      : await getSessionMessages(session.id, user.id, 25);
+
+    const previousBrief = session.sessionBrief ?? null;
 
     // Persist the user message
     const userMessage = await saveMessage(session.id, "user", message);
@@ -87,7 +101,12 @@ export const POST = withAuth(async (req: NextRequest) => {
         console.log(
           `[ai-chat] Background task started for session ${session.id}`,
         );
-        const { reply, stagedChanges } = await sendWithContext(message, form);
+        const { reply, stagedChanges } = await sendWithContext(
+          message,
+          form,
+          priorHistory.messages,
+          previousBrief,
+        );
 
         await saveMessage(
           session.id,
@@ -95,6 +114,29 @@ export const POST = withAuth(async (req: NextRequest) => {
           reply,
           stagedChanges.length > 0 ? stagedChanges : undefined,
         );
+
+        // Regenerate session brief whenever total message count crosses a
+        // BRIEF_INTERVAL boundary (user + assistant messages combined).
+        const newCount = msgCountBefore + 2;
+        const crossedBoundary =
+          Math.floor(newCount / BRIEF_INTERVAL) >
+          Math.floor(msgCountBefore / BRIEF_INTERVAL);
+
+        if (crossedBoundary) {
+          const recent = await getSessionMessages(
+            session.id,
+            user.id,
+            BRIEF_INTERVAL,
+          );
+          const brief = await generateSessionBrief(
+            recent.messages,
+            previousBrief,
+          );
+          if (brief) {
+            await updateSessionBrief(session.id, user.id, brief);
+          }
+        }
+
         console.log(
           `[ai-chat] Background task finished for session ${session.id}`,
         );

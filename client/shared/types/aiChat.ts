@@ -41,6 +41,7 @@ export type ChatSession = {
   lastUsedAt: string;
   createdAt: string;
   updatedAt: string;
+  sessionBrief?: string | null;
 };
 
 // ── API shapes ──────────────────────────────────────────────────────────────

@@ -33,6 +33,7 @@ function mapDbSession(row: Record<string, unknown>): ChatSession {
       (row.created_at as string),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
+    sessionBrief: (row.session_brief as string | null) ?? null,
   };
 }
 
@@ -225,6 +226,24 @@ export async function getActiveChatSession(
   }
 
   return mapDbSession(data as Record<string, unknown>);
+}
+
+export async function updateSessionBrief(
+  sessionId: string,
+  userId: string,
+  brief: string,
+): Promise<void> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('ai_chat_sessions')
+    .update({ session_brief: brief })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(`Failed to update session brief: ${error.message}`);
+  }
 }
 
 export async function getSessionMessageCount(

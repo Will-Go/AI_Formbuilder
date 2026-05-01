@@ -1,8 +1,14 @@
 import { OpenRouter } from "@openrouter/sdk";
 import { v4 as uuidv4 } from "uuid";
 import type { Form } from "@/shared/types/forms";
-import type { AiDiffResponse, StagedChange } from "@/shared/types/aiChat";
+import type {
+  AiDiffResponse,
+  ChatMessage,
+  StagedChange,
+} from "@/shared/types/aiChat";
 import { serializeFormForAi } from "@/shared/utils/serializeFormForAi";
+
+const MAX_HISTORY_MESSAGES = 25;
 
 /** Server-side only. Key must NOT be NEXT_PUBLIC_ prefixed. */
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -92,6 +98,17 @@ The form context provides the CURRENT state of the form with ALL questions and s
 7. Output ONLY the JSON object. No extra text.
 `.trim();
 
+const SESSION_BRIEF_PROMPT = `
+You are an AI that maintains a rolling summary of an ongoing chat between a user
+and a form-builder assistant. Capture user goals, decisions made, key
+preferences, recurring themes, and unresolved threads. Omit pleasantries and
+repeated boilerplate.
+Return ONLY the summary text. No JSON, no markdown, no headers.
+Keep it under 1500 characters. Use compact bullet-style prose if helpful.
+If a previous summary is provided, integrate it with the new messages into a
+single updated summary — do not append, rewrite.
+`.trim();
+
 const SESSION_NAME_PROMPT = `
 You are an AI that generates a short chat session title.
 Return ONLY a concise title, no quotes, no markdown, no punctuation at the end.
@@ -160,19 +177,41 @@ function buildFallbackSessionName(message: string): string {
 export async function sendWithContext(
   message: string,
   form: Form,
+  history: ChatMessage[] = [],
+  sessionBrief?: string | null,
 ): Promise<{ reply: string; stagedChanges: StagedChange[] }> {
   const formContext = serializeFormForAi(form);
+
+  const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  const systemMessages: Array<
+    { role: "system"; content: string } | { role: "system"; name: string; content: string }
+  > = [
+    { role: "system", content: SYSTEM_PROMPT },
+    {
+      role: "system",
+      name: "form_context",
+      content: `Current form state:\n${formContext}`,
+    },
+  ];
+
+  if (sessionBrief && sessionBrief.trim()) {
+    systemMessages.push({
+      role: "system",
+      name: "session_brief",
+      content: `Long-term conversation summary:\n${sessionBrief.trim()}`,
+    });
+  }
 
   const response = await openRouter.chat.send({
     chatRequest: {
       model: AI_MODEL,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "system",
-          name: "form_context",
-          content: `Current form state:\n${formContext}`,
-        },
+        ...systemMessages,
+        ...trimmedHistory,
         { role: "user", content: message },
       ],
     },
@@ -214,6 +253,43 @@ export async function sendWithContext(
   });
 
   return { reply: parsed.reply ?? "", stagedChanges };
+}
+
+export async function generateSessionBrief(
+  recentMessages: ChatMessage[],
+  previousBrief?: string | null,
+): Promise<string> {
+  if (recentMessages.length === 0) return previousBrief?.trim() ?? "";
+
+  const transcript = recentMessages
+    .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+    .join("\n\n");
+
+  const userPayload = previousBrief?.trim()
+    ? `Previous summary:\n${previousBrief.trim()}\n\nNew messages:\n${transcript}`
+    : `Conversation transcript:\n${transcript}`;
+
+  try {
+    const response = await openRouter.chat.send({
+      chatRequest: {
+        model: AI_MODEL,
+        messages: [
+          { role: "system", content: SESSION_BRIEF_PROMPT },
+          { role: "user", content: userPayload },
+        ],
+      },
+    });
+
+    const rawContent =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (response as any)?.choices?.[0]?.message?.content ??
+      (typeof response === "string" ? response : "");
+
+    return String(rawContent).trim().slice(0, 4000);
+  } catch (error) {
+    console.error("[openrouter/session-brief] error:", error);
+    return previousBrief?.trim() ?? "";
+  }
 }
 
 export async function generateSessionName(
