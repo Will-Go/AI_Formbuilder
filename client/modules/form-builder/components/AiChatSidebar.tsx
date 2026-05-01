@@ -78,6 +78,9 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
   const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+  const [typingCompletedIds, setTypingCompletedIds] = React.useState<
+    Set<string>
+  >(new Set());
 
   const [animatingMessageId, setAnimatingMessageId] = useState<string>("");
 
@@ -260,6 +263,10 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
     [handleAcceptChange],
   );
 
+  const handleTypingComplete = React.useCallback((messageId: string) => {
+    setTypingCompletedIds((prev) => new Set([...prev, messageId]));
+  }, []);
+
   const handleSend = () => {
     const text = stripHtml(inputValue).trim();
     if (!text || sendMessageMutation.isPending || !session) return;
@@ -372,6 +379,13 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleReset = () => {
+    _messagesQuery.reset();
+    setMessages([]);
+    setAnimatingMessageId("");
+    setIsAiLoading(false);
   };
 
   const isLoading = _activeSessionQuery.isLoading || _messagesQuery.isLoading;
@@ -528,10 +542,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
             <Tooltip title="Reset conversation">
               <IconButton
                 size="small"
-                onClick={() => {
-                  _messagesQuery.reset();
-                  setMessages([]);
-                }}
+                onClick={handleReset}
                 id="ai-chat-reset-btn"
                 aria-label="Reset conversation"
                 sx={{ ml: 0.5 }}
