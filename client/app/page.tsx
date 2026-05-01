@@ -18,6 +18,7 @@ import {
 } from "@mui/icons-material";
 import Image from "next/image";
 import Link from "next/link";
+import MotionSection from "@/shared/components/MotionSection";
 
 const features = [
   {
@@ -145,106 +146,117 @@ export default function LandingPage() {
             }}
           >
             <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="h1"
-                sx={{
-                  fontSize: { xs: "2.5rem", md: "4rem" },
-                  fontWeight: 800,
-                  lineHeight: 1.1,
-                  mb: 3,
-                  background:
-                    "linear-gradient(45deg, #050505 30%, #0141ff 90%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Build Smarter Forms <br /> With AI
-              </Typography>
-              <Typography
-                variant="h5"
-                color="text.secondary"
-                sx={{
-                  mb: 5,
-                  fontWeight: 400,
-                  maxWidth: "600px",
-                  lineHeight: 1.6,
-                }}
-              >
-                Describe your form in plain English and let our AI handle the
-                rest. No complex builders, no frustration—just professional
-                forms in seconds.
-              </Typography>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Link href="/register" className="no-underline">
-                  <Button
-                    variant="contained"
-                    size="large"
-                    endIcon={<ArrowForwardIcon />}
-                    sx={{
-                      px: 4,
-                      py: 1.5,
-                      borderRadius: "12px",
-                      fontSize: "1.1rem",
-                      width: "100%",
-                    }}
-                  >
-                    Start Building for Free
-                  </Button>
-                </Link>
-                <Link href="#features" className="no-underline">
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    sx={{
-                      px: 4,
-                      py: 1.5,
-                      borderRadius: "12px",
-                      fontSize: "1.1rem",
-                      width: "100%",
-                    }}
-                  >
-                    See Features
-                  </Button>
-                </Link>
-              </Stack>
-            </Box>
-            <Box sx={{ flex: 1, width: "100%" }}>
-              <Box
-                sx={{
-                  position: "relative",
-                  p: 2,
-                  bgcolor: "white",
-                  borderRadius: 4,
-                  boxShadow: "0 20px 50px rgba(0,0,0,0.1)",
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Image
-                  src="/form_ai_icon.svg"
-                  alt="Hero Illustration"
-                  width={400}
-                  height={400}
-                  priority
-                  style={{ width: "100%", height: "auto" }}
-                />
-                {/* Floating element for visual interest */}
-                <Box
-                  className="animate-bounce"
+              <MotionSection direction="right" delay={0.1}>
+                <Typography
+                  variant="h1"
                   sx={{
-                    position: "absolute",
-                    top: -20,
-                    right: -20,
-                    p: 2,
-                    bgcolor: "primary.main",
-                    borderRadius: 2,
-                    color: "white",
-                    boxShadow: "0 10px 20px rgba(1, 65, 255, 0.2)",
+                    fontSize: { xs: "2.5rem", md: "4rem" },
+                    fontWeight: 800,
+                    lineHeight: 1.1,
+                    mb: 3,
+                    background:
+                      "linear-gradient(45deg, #050505 30%, #0141ff 90%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
                   }}
                 >
-                  <AiIcon />
+                  Build Smarter Forms <br /> With AI
+                </Typography>
+              </MotionSection>
+
+              <MotionSection direction="right" delay={0.2}>
+                <Typography
+                  variant="h5"
+                  color="text.secondary"
+                  sx={{
+                    mb: 5,
+                    fontWeight: 400,
+                    maxWidth: "600px",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Describe your form in plain English and let our AI handle the
+                  rest. No complex builders, no frustration—just professional
+                  forms in seconds.
+                </Typography>
+              </MotionSection>
+
+              <MotionSection direction="right" delay={0.3}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <Link href="/register" className="no-underline">
+                    <Button
+                      variant="contained"
+                      size="large"
+                      endIcon={<ArrowForwardIcon />}
+                      sx={{
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: "12px",
+                        fontSize: "1.1rem",
+                        width: "100%",
+                      }}
+                    >
+                      Start Building for Free
+                    </Button>
+                  </Link>
+                  <Link href="#features" className="no-underline">
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      sx={{
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: "12px",
+                        fontSize: "1.1rem",
+                        width: "100%",
+                      }}
+                    >
+                      See Features
+                    </Button>
+                  </Link>
+                </Stack>
+              </MotionSection>
+            </Box>
+
+            <Box sx={{ flex: 1, width: "100%" }}>
+              <MotionSection direction="left" delay={0.4}>
+                <Box
+                  sx={{
+                    position: "relative",
+                    p: 2,
+                    bgcolor: "white",
+                    borderRadius: 4,
+                    boxShadow: "0 20px 50px rgba(0,0,0,0.1)",
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Image
+                    src="/form_ai_icon.svg"
+                    alt="Hero Illustration"
+                    width={400}
+                    height={400}
+                    priority
+                    style={{ width: "100%", height: "auto" }}
+                  />
+                  {/* Floating element for visual interest */}
+                  <Box
+                    className="animate-bounce"
+                    sx={{
+                      position: "absolute",
+                      top: -20,
+                      right: -20,
+                      p: 2,
+                      bgcolor: "primary.main",
+                      borderRadius: 2,
+                      color: "white",
+                      boxShadow: "0 10px 20px rgba(1, 65, 255, 0.2)",
+                    }}
+                  >
+                    <AiIcon />
+                  </Box>
                 </Box>
-              </Box>
+              </MotionSection>
             </Box>
           </Box>
         </Container>
@@ -253,25 +265,27 @@ export default function LandingPage() {
       {/* Features Section */}
       <Box id="features" sx={{ py: 12, bgcolor: "#fcfcfc" }}>
         <Container maxWidth="lg">
-          <Box sx={{ textAlign: "center", mb: 8 }}>
-            <Typography
-              variant="overline"
-              color="primary"
-              sx={{ fontWeight: 700, letterSpacing: 2 }}
-            >
-              FEATURES
-            </Typography>
-            <Typography
-              variant="h2"
-              sx={{
-                fontSize: { xs: "2rem", md: "3rem" },
-                fontWeight: 800,
-                mt: 1,
-              }}
-            >
-              Everything you need to <br /> collect data efficiently
-            </Typography>
-          </Box>
+          <MotionSection direction="up">
+            <Box sx={{ textAlign: "center", mb: 8 }}>
+              <Typography
+                variant="overline"
+                color="primary"
+                sx={{ fontWeight: 700, letterSpacing: 2 }}
+              >
+                FEATURES
+              </Typography>
+              <Typography
+                variant="h2"
+                sx={{
+                  fontSize: { xs: "2rem", md: "3rem" },
+                  fontWeight: 800,
+                  mt: 1,
+                }}
+              >
+                Everything you need to <br /> collect data efficiently
+              </Typography>
+            </Box>
+          </MotionSection>
 
           <Box
             sx={{
@@ -285,37 +299,38 @@ export default function LandingPage() {
             }}
           >
             {features.map((feature, index) => (
-              <Card
-                key={index}
-                elevation={0}
-                sx={{
-                  height: "100%",
-                  p: 2,
-                  borderRadius: 4,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  transition: "all 0.3s",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    transform: "translateY(-8px)",
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-                  },
-                }}
-              >
-                <CardContent>
-                  <Box sx={{ mb: 2 }}>{feature.icon}</Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ lineHeight: 1.6 }}
-                  >
-                    {feature.description}
-                  </Typography>
-                </CardContent>
-              </Card>
+              <MotionSection key={index} direction="up" delay={index * 0.1}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    height: "100%",
+                    p: 2,
+                    borderRadius: 4,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    transition: "all 0.3s",
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      transform: "translateY(-8px)",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                    },
+                  }}
+                >
+                  <CardContent>
+                    <Box sx={{ mb: 2 }}>{feature.icon}</Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                      {feature.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6 }}
+                    >
+                      {feature.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </MotionSection>
             ))}
           </Box>
         </Container>
@@ -324,174 +339,186 @@ export default function LandingPage() {
       {/* CTA Section */}
       <Box sx={{ py: 15 }}>
         <Container maxWidth="md">
-          <Box
-            sx={{
-              p: { xs: 6, md: 10 },
-              bgcolor: "primary.main",
-              borderRadius: 8,
-              textAlign: "center",
-              color: "white",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Background pattern */}
+          <MotionSection direction="none" delay={0.2}>
             <Box
               sx={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                opacity: 0.1,
-                backgroundImage:
-                  "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
-                backgroundSize: "24px 24px",
-              }}
-            />
-
-            <Typography
-              variant="h3"
-              sx={{ fontWeight: 800, mb: 3, position: "relative" }}
-            >
-              Ready to build your first AI form?
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 5,
-                opacity: 0.9,
-                fontWeight: 400,
+                p: { xs: 6, md: 10 },
+                bgcolor: "primary.main",
+                borderRadius: 8,
+                textAlign: "center",
+                color: "white",
                 position: "relative",
+                overflow: "hidden",
               }}
             >
-              Join thousands of teams using FormIA to streamline their data
-              collection.
-            </Typography>
-            <Link href="/register" className="no-underline">
-              <Button
-                variant="contained"
-                size="large"
+              {/* Background pattern */}
+              <Box
                 sx={{
-                  px: 6,
-                  py: 2,
-                  bgcolor: "white",
-                  color: "primary.main",
-                  borderRadius: "50px",
-                  fontSize: "1.2rem",
-                  fontWeight: 700,
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  opacity: 0.1,
+                  backgroundImage:
+                    "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+                  backgroundSize: "24px 24px",
+                }}
+              />
+
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 800, mb: 3, position: "relative" }}
+              >
+                Ready to build your first AI form?
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  mb: 5,
+                  opacity: 0.9,
+                  fontWeight: 400,
                   position: "relative",
-                  "&:hover": { bgcolor: "#f5f5f5" },
                 }}
               >
-                Get Started for Free
-              </Button>
-            </Link>
-          </Box>
+                Join thousands of teams using FormIA to streamline their data
+                collection.
+              </Typography>
+              <Link href="/register" className="no-underline">
+                <Button
+                  variant="contained"
+                  size="large"
+                  sx={{
+                    px: 6,
+                    py: 2,
+                    bgcolor: "white",
+                    color: "primary.main",
+                    borderRadius: "50px",
+                    fontSize: "1.2rem",
+                    fontWeight: 700,
+                    position: "relative",
+                    "&:hover": { bgcolor: "#f5f5f5" },
+                  }}
+                >
+                  Get Started for Free
+                </Button>
+              </Link>
+            </Box>
+          </MotionSection>
         </Container>
       </Box>
 
       {/* Footer */}
       <Box sx={{ py: 8, borderTop: "1px solid", borderColor: "divider" }}>
         <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              justifyContent: "space-between",
-              gap: 4,
-            }}
-          >
-            <Box sx={{ maxWidth: "300px" }}>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-              >
-                <Image
-                  src="/form_ai_icon.svg"
-                  alt="FormIA Logo"
-                  width={24}
-                  height={24}
-                />
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, letterSpacing: "-0.5px" }}
+          <MotionSection direction="up">
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                justifyContent: "space-between",
+                gap: 4,
+              }}
+            >
+              <Box sx={{ maxWidth: "300px" }}>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
                 >
-                  FormIA
+                  <Image
+                    src="/form_ai_icon.svg"
+                    alt="FormIA Logo"
+                    width={24}
+                    height={24}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 700, letterSpacing: "-0.5px" }}
+                  >
+                    FormIA
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  The next generation of form builders, powered by artificial
+                  intelligence.
                 </Typography>
               </Box>
+
+              <Box sx={{ display: "flex", gap: { xs: 8, md: 12 } }}>
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, mb: 2 }}
+                  >
+                    Product
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Link
+                      href="#features"
+                      className="text-sm text-gray-600 hover:text-blue-600 no-underline"
+                    >
+                      Features
+                    </Link>
+                    <Link
+                      href="#"
+                      className="text-sm text-gray-600 hover:text-blue-600 no-underline"
+                    >
+                      Templates
+                    </Link>
+                    <Link
+                      href="#"
+                      className="text-sm text-gray-600 hover:text-blue-600 no-underline"
+                    >
+                      Pricing
+                    </Link>
+                  </Stack>
+                </Box>
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, mb: 2 }}
+                  >
+                    Company
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Link
+                      href="#"
+                      className="text-sm text-gray-600 hover:text-blue-600 no-underline"
+                    >
+                      About
+                    </Link>
+                    <Link
+                      href="#"
+                      className="text-sm text-gray-600 hover:text-blue-600 no-underline"
+                    >
+                      Blog
+                    </Link>
+                    <Link
+                      href="#"
+                      className="text-sm text-gray-600 hover:text-blue-600 no-underline"
+                    >
+                      Careers
+                    </Link>
+                  </Stack>
+                </Box>
+              </Box>
+            </Box>
+          </MotionSection>
+
+          <MotionSection direction="none" delay={0.5}>
+            <Box
+              sx={{
+                mt: 8,
+                pt: 4,
+                borderTop: "1px solid",
+                borderColor: "divider",
+                textAlign: "center",
+              }}
+            >
               <Typography variant="body2" color="text.secondary">
-                The next generation of form builders, powered by artificial
-                intelligence.
+                © {new Date().getFullYear()} FormIA. All rights reserved.
               </Typography>
             </Box>
-
-            <Box sx={{ display: "flex", gap: { xs: 8, md: 12 } }}>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Product
-                </Typography>
-                <Stack spacing={1}>
-                  <Link
-                    href="#features"
-                    className="text-sm text-gray-600 hover:text-blue-600 no-underline"
-                  >
-                    Features
-                  </Link>
-                  <Link
-                    href="#"
-                    className="text-sm text-gray-600 hover:text-blue-600 no-underline"
-                  >
-                    Templates
-                  </Link>
-                  <Link
-                    href="#"
-                    className="text-sm text-gray-600 hover:text-blue-600 no-underline"
-                  >
-                    Pricing
-                  </Link>
-                </Stack>
-              </Box>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>
-                  Company
-                </Typography>
-                <Stack spacing={1}>
-                  <Link
-                    href="#"
-                    className="text-sm text-gray-600 hover:text-blue-600 no-underline"
-                  >
-                    About
-                  </Link>
-                  <Link
-                    href="#"
-                    className="text-sm text-gray-600 hover:text-blue-600 no-underline"
-                  >
-                    Blog
-                  </Link>
-                  <Link
-                    href="#"
-                    className="text-sm text-gray-600 hover:text-blue-600 no-underline"
-                  >
-                    Careers
-                  </Link>
-                </Stack>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              mt: 8,
-              pt: 4,
-              borderTop: "1px solid",
-              borderColor: "divider",
-              textAlign: "center",
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              © {new Date().getFullYear()} FormIA. All rights reserved.
-            </Typography>
-          </Box>
+          </MotionSection>
         </Container>
       </Box>
     </Box>
