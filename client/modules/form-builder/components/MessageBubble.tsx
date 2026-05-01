@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -12,6 +12,7 @@ import { cn } from "@/shared/utils/cn";
 
 import type { ChatMessage, StagedChange } from "@/shared/types/aiChat";
 import StagedChangeCard from "./StagedChangeCard";
+import TypingText from "./TypingText";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -34,10 +35,12 @@ interface MessageBubbleProps {
   acceptingChangeIds?: string[];
   isAcceptingAll?: boolean;
   isRejectingAll?: boolean;
+  shouldTypingAnimate?: boolean;
 }
 
 const MessageBubble = memo(
   ({
+    shouldTypingAnimate = false,
     message,
     onAcceptChange,
     onRejectChange,
@@ -49,6 +52,7 @@ const MessageBubble = memo(
   }: MessageBubbleProps) => {
     const isUser = message.role === "user";
     const hasPending = hasPendingChanges(message.stagedChanges);
+    const [isTypingComplete, setIsTypingComplete] = useState(false);
 
     return (
       <Box
@@ -72,12 +76,25 @@ const MessageBubble = memo(
             boxShadow: "none",
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{ whiteSpace: "pre-wrap", lineHeight: 1.55 }}
-          >
-            {message.content}
-          </Typography>
+          {!isUser && !isTypingComplete && shouldTypingAnimate ? (
+            <TypingText
+              text={message.content}
+              speed={8}
+              onComplete={() => setIsTypingComplete(true)}
+            />
+          ) : (
+            <Typography
+              variant={"body2"}
+              sx={{
+                whiteSpace: "pre-wrap",
+                lineHeight: 1.55,
+                fontFamily: isUser ? "inherit" : "monospace",
+                fontSize: isUser ? 14 : 12,
+              }}
+            >
+              {message.content}
+            </Typography>
+          )}
         </Box>
 
         {/* Timestamp */}

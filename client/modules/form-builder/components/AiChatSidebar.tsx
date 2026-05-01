@@ -79,6 +79,8 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
   const [hasMoreMessages, setHasMoreMessages] = React.useState(true);
   const [isLoadingMore, setIsLoadingMore] = React.useState(false);
 
+  const [animatingMessageId, setAnimatingMessageId] = useState<string>("");
+
   // Reset hasMoreMessages when session changes
   React.useEffect(() => {
     setHasMoreMessages(true);
@@ -179,6 +181,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
         (newMsg) => {
           const msg = newMsg.new as ChatMessage;
           if (msg.role === "assistant") setIsAiLoading(false);
+          setAnimatingMessageId(msg.id);
           // Whenever a new message arrives for this session, refetch messages perfectly
           _messagesQuery.invalidate();
         },
@@ -628,6 +631,7 @@ export default function AiChatSidebar({ form, formId }: AiChatSidebarProps) {
                   transition={{ duration: 0.2 }}
                 >
                   <MessageBubble
+                    shouldTypingAnimate={animatingMessageId === msg.id}
                     message={msg}
                     onAcceptChange={handleAcceptChangeWithLoading}
                     onRejectChange={handleRejectChange}
