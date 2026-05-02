@@ -91,7 +91,7 @@ The form context provides the CURRENT state of the form with ALL questions and s
 ## Rules
 1. Only include fields relevant to the question type.
 2. For "update" operations provide only the changed fields in payload.
-3. For "delete" operations the payload can be empty ({}).
+3. For "delete" operations, include the "label" (or "title" for sections) of the question being deleted in the payload so the user knows what is being removed.
 4. If no form changes are needed (e.g. user is asking a question), return "changes": [].
 5. Use "order" for precise placement of new questions — check the form context to determine the correct order value.
 6. Use "PLACEHOLDER" for all IDs (question id, option id, etc.). The system will generate valid UUIDs.
@@ -188,7 +188,8 @@ export async function sendWithContext(
   }));
 
   const systemMessages: Array<
-    { role: "system"; content: string } | { role: "system"; name: string; content: string }
+    | { role: "system"; content: string }
+    | { role: "system"; name: string; content: string }
   > = [
     { role: "system", content: SYSTEM_PROMPT },
     {

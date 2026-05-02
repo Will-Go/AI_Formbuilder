@@ -304,7 +304,15 @@ export default function StagedChangeCard({
 
     // For 'add' and 'delete', show the label
     const labelToDisplay = String(
-      change.past || payload.label || originalQuestion?.label || "–",
+      (payload.label as string) ||
+        (payload.title as string) ||
+        (past && typeof past === "object"
+          ? (past as Record<string, unknown>).label ||
+            (past as Record<string, unknown>).title
+          : null) ||
+        originalQuestion?.label ||
+        (change.past !== "{}" ? change.past : null) ||
+        "–",
     );
     const isDelete = change.type === "delete";
     const addOptions =
