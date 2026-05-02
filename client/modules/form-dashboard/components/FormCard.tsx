@@ -15,7 +15,7 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 import type { Form } from "@/shared/types/forms";
 
-import { formatShortDate } from "@/shared/utils/dateFormatter";
+import { formatDatetime } from "@/shared/utils/dateFormatter";
 import { stripHtml } from "@/shared/utils/html";
 
 import { STATUS_CONFIG } from "@/shared/constants/statusConfig";
@@ -70,16 +70,28 @@ export default function FormCard({
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
                 {stripHtml(form.title) || "Untitled form"}
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
+              >
                 <Chip
                   label={STATUS_CONFIG[form.status]?.label ?? form.status}
-                  color={STATUS_CONFIG[form.status]?.color ?? 'default'}
+                  color={STATUS_CONFIG[form.status]?.color ?? "default"}
                   size="small"
-                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.4 }}
+                  sx={{
+                    height: 18,
+                    fontSize: "0.65rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.4,
+                  }}
                 />
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-                Updated {formatShortDate(form.updated_at)} • {responseCount}{" "}
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.25, fontSize: "0.8rem", fontWeight: 200 }}
+              >
+                Updated {formatDatetime(form.updated_at)} • {responseCount}{" "}
                 responses
               </Typography>
             </Box>
