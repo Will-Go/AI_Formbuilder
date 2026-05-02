@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CircularProgress from "@mui/material/CircularProgress";
+import { CopyFormLink } from "@/shared/components/CopyFormLink";
 
 interface BaseDialogProps {
   open: boolean;
@@ -183,7 +184,11 @@ export function ShareDialog({
             onClick={handleAddEmail}
             sx={{ height: 40 }}
           >
-            {addShareMutation.isPending ? <CircularProgress size={24} /> : "Add"}
+            {addShareMutation.isPending ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Add"
+            )}
           </Button>
         </Box>
 
@@ -221,7 +226,9 @@ export function ShareDialog({
                     key={u.id}
                     sx={{ display: "flex", alignItems: "center", gap: 2 }}
                   >
-                    <Avatar sx={{ bgcolor: "secondary.main", width: 40, height: 40 }}>
+                    <Avatar
+                      sx={{ bgcolor: "secondary.main", width: 40, height: 40 }}
+                    >
                       {uName?.[0]?.toUpperCase() || "?"}
                     </Avatar>
                     <Box sx={{ flex: 1 }}>
@@ -363,7 +370,20 @@ export function ShareDialog({
           </Typography>
         </Alert>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            mt: 1,
+          }}
+        >
+          <CopyFormLink
+            formId={formId}
+            formStatus={formStatus}
+            formTitle={formTitle}
+          />
           <Button
             variant="contained"
             onClick={handleDone}
