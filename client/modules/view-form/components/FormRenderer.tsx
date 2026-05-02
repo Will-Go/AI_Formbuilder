@@ -19,6 +19,7 @@ import {
   QuestionRenderer,
   FormHeader,
 } from "@/shared/components/QuestionRenderer";
+import { SuccessResponseView } from "@/shared/components/SuccessResponseView";
 import TextHTMLDisplayer from "@/shared/components/TextHTMLDisplayer";
 import { useAppMutation } from "@/shared/hooks/useAppMutation";
 import { apiRequest } from "@/shared/utils/apiRequest";
@@ -178,34 +179,14 @@ export function FormRenderer({ form }: { form: Form }) {
         sx={{ minHeight: "100vh", py: { xs: 4, sm: 8 } }}
       >
         <Container maxWidth="md">
-          <Paper
-            variant="outlined"
-            sx={{
-              p: { xs: 3, sm: 4 },
-              borderTop: 6,
-              borderTopColor: "primary.main",
-              borderRadius: 2,
+          <SuccessResponseView
+            formTitle={form.title || "Untitled form"}
+            onSubmitAnother={() => {
+              methods.reset(built.defaultValues);
+              setCurrentSectionIndex(0);
+              setSubmitted(false);
             }}
-          >
-            <TextHTMLDisplayer
-              html={form.title || "Untitled form"}
-              textClassName="text-3xl"
-            />
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              Your response has been recorded.
-            </Typography>
-            <Button
-              variant="text"
-              onClick={() => {
-                methods.reset(built.defaultValues);
-                setCurrentSectionIndex(0);
-                setSubmitted(false);
-              }}
-              sx={{ px: 0, textDecoration: "underline" }}
-            >
-              Submit another response
-            </Button>
-          </Paper>
+          />
         </Container>
       </Box>
     );

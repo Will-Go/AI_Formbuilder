@@ -8,10 +8,11 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 interface SuccessResponseViewProps {
   formTitle: string;
-  onViewResponses: () => void;
+  onViewResponses?: () => void;
   onSubmitAnother: () => void;
 }
 
@@ -59,16 +60,18 @@ export function SuccessResponseView({
           spacing={2}
           sx={{ mt: 2, width: { xs: "100%", sm: "auto" } }}
         >
+          {onViewResponses && (
+            <Button
+              variant="contained"
+              size="large"
+              onClick={onViewResponses}
+              sx={{ px: 4 }}
+            >
+              View responses
+            </Button>
+          )}
           <Button
-            variant="contained"
-            size="large"
-            onClick={onViewResponses}
-            sx={{ px: 4 }}
-          >
-            View responses
-          </Button>
-          <Button
-            variant="outlined"
+            variant={onViewResponses ? "outlined" : "contained"}
             size="large"
             onClick={onSubmitAnother}
             sx={{ px: 4 }}
@@ -76,6 +79,41 @@ export function SuccessResponseView({
             Submit another
           </Button>
         </Stack>
+
+        <Box
+          sx={{
+            mt: 4,
+            pt: 2,
+            borderTop: 1,
+            borderColor: "divider",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Thank you!
+          </Typography>
+          <Typography
+            component={Link}
+            href="/login"
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              textDecoration: "none",
+              "&:hover": {
+                textDecoration: "underline",
+              },
+            }}
+          >
+            Try formIA
+          </Typography>
+        </Box>
       </Paper>
     </Box>
   );
