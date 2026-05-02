@@ -18,6 +18,7 @@ import type { StagedChange } from "@/shared/types/aiChat";
 import type { Option } from "@/shared/types/forms";
 import { useFormsStore } from "../../form-dashboard/store/formsStore";
 import { stripHtml } from "@/shared/utils/html";
+import { cn } from "@/shared/utils/cn";
 
 interface StagedChangeCardProps {
   change: StagedChange;
@@ -373,11 +374,14 @@ export default function StagedChangeCard({
   return (
     <Box
       onClick={handleScrollToQuestion}
-      className={className}
+      className={cn("transition-colors", className)}
       sx={{
         borderRadius: 0,
-        borderLeft: isAccepted || isRejected ? "4px solid" : "none",
-        borderColor: getBorderColor(change.accepted),
+        borderLeft: "4px solid",
+        borderColor:
+          isAccepted || isRejected
+            ? getBorderColor(change.accepted)
+            : "transparent",
         bgcolor: getBgColor(change.accepted),
         px: 2,
         py: 1.5,
