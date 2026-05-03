@@ -148,13 +148,9 @@ BEGIN
           v_new_options := '[]'::jsonb;
           FOR v_option IN SELECT * FROM jsonb_array_elements(v_payload->'options')
           LOOP
-            IF v_option->>'id' IS NULL OR (v_option->>'id') LIKE 'PLACEHOLDER%' THEN
-              v_new_options := v_new_options || jsonb_build_array(
-                v_option || jsonb_build_object('id', gen_random_uuid()::text)
-              );
-            ELSE
-              v_new_options := v_new_options || jsonb_build_array(v_option);
-            END IF;
+            v_new_options := v_new_options || jsonb_build_array(
+              v_option || jsonb_build_object('id', gen_random_uuid()::text)
+            );
           END LOOP;
           v_payload := jsonb_set(v_payload, '{options}', v_new_options);
         END IF;

@@ -184,10 +184,7 @@ export const AiChatProvider = ({
             payload.options = payload.options.map(
               (opt: { id?: string; [key: string]: unknown }) => ({
                 ...opt,
-                id:
-                  opt.id?.startsWith("PLACEHOLDER") || !opt.id
-                    ? uuidv4()
-                    : opt.id,
+                id: uuidv4(),
               }),
             );
           }
