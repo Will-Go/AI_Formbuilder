@@ -1,0 +1,1948 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0a12;
+        font-family: 'DM Sans', sans-serif;
+      }
+
+      .scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+      }
+
+      #scene1 { z-index: 1; background: #0a0a12; }
+      #scene2 { z-index: 2; background: #0a0a12; opacity: 0; }
+      #scene3 { z-index: 3; background: #0a0a12; opacity: 0; }
+      #scene4 { z-index: 4; background: #0a0a12; opacity: 0; }
+      #scene5 { z-index: 5; background: #0a0a12; opacity: 0; }
+      #scene6 { z-index: 6; background: #0a0a12; opacity: 0; }
+      #scene7 { z-index: 7; background: #0a0a12; opacity: 0; }
+      #scene8 { z-index: 8; background: #0a0a12; opacity: 0; }
+
+      /* ===== SCENE 1: Logo Reveal ===== */
+      .s1-glow {
+        position: absolute;
+        width: 800px;
+        height: 800px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(124,58,237,0.35) 0%, rgba(124,58,237,0) 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .s1-ring {
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        border: 2px solid rgba(124,58,237,0.4);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 30px rgba(124,58,237,0.3), 0 0 60px rgba(124,58,237,0.15);
+      }
+
+      .s1-logo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 120px;
+        color: #f0f0ff;
+        letter-spacing: -0.03em;
+        text-shadow: 0 0 40px rgba(124,58,237,0.4), 0 0 80px rgba(124,58,237,0.2);
+      }
+
+      .s1-logo span {
+        background: linear-gradient(135deg, #f0f0ff 0%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .s1-subtitle {
+        position: absolute;
+        top: 62%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 300;
+        font-size: 36px;
+        color: #6b7280;
+        letter-spacing: 0.02em;
+      }
+
+      .s1-grain {
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      /* ===== SCENE 2: Dashboard ===== */
+      .s2-grid-bg {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+
+      .s2-glow {
+        position: absolute;
+        width: 900px;
+        height: 900px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0) 70%);
+        top: 30%;
+        left: 15%;
+      }
+
+      .s2-dashboard {
+        position: absolute;
+        top: 80px;
+        left: 120px;
+        width: 1680px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.9);
+        border: 1px solid rgba(124,58,237,0.12);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5), 0 0 80px rgba(124,58,237,0.08);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .s2-toolbar {
+        height: 56px;
+        background: rgba(26,26,46,0.8);
+        border-bottom: 1px solid rgba(124,58,237,0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        gap: 16px;
+      }
+
+      .s2-toolbar-logo {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        color: #f0f0ff;
+      }
+
+      .s2-toolbar-logo span { color: #7c3aed; }
+
+      .s2-toolbar-btn {
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #6b7280;
+        background: rgba(124,58,237,0.08);
+        border: 1px solid rgba(124,58,237,0.1);
+      }
+
+      .s2-toolbar-btn.active {
+        color: #f0f0ff;
+        background: rgba(124,58,237,0.2);
+        border-color: rgba(124,58,237,0.3);
+      }
+
+      .s2-sidebar {
+        position: absolute;
+        top: 56px;
+        left: 0;
+        width: 280px;
+        height: 744px;
+        background: rgba(18,18,30,0.6);
+        border-right: 1px solid rgba(124,58,237,0.08);
+        padding: 20px 16px;
+      }
+
+      .s2-sidebar-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 16px;
+      }
+
+      .s2-sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 6px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.06);
+      }
+
+      .s2-sidebar-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(124,58,237,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #7c3aed;
+        font-size: 16px;
+      }
+
+      .s2-sidebar-label {
+        font-size: 15px;
+        color: #f0f0ff;
+        font-weight: 400;
+      }
+
+      .s2-canvas {
+        position: absolute;
+        top: 56px;
+        left: 280px;
+        right: 0;
+        bottom: 0;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .s2-form-card {
+        padding: 24px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s2-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 8px;
+      }
+
+      .s2-form-desc {
+        font-size: 15px;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+
+      .s2-form-input {
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(10,10,18,0.6);
+        border: 1px solid rgba(124,58,237,0.1);
+        margin-top: 12px;
+      }
+
+      .s2-form-label {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+
+      .s2-overlay-text {
+        position: absolute;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 42px;
+        font-weight: 700;
+        color: #f0f0ff;
+        text-align: center;
+        letter-spacing: -0.02em;
+      }
+
+      .s2-overlay-text span {
+        color: #7c3aed;
+      }
+
+      .s2-accent-line {
+        position: absolute;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #7c3aed, transparent);
+      }
+
+      /* ===== SCENE 3: Drag & Drop ===== */
+      .s3-dashboard {
+        position: absolute;
+        top: 80px;
+        left: 120px;
+        width: 1680px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.9);
+        border: 1px solid rgba(124,58,237,0.12);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5);
+        overflow: hidden;
+      }
+
+      .s3-sidebar {
+        position: absolute;
+        top: 56px;
+        left: 0;
+        width: 280px;
+        height: 744px;
+        background: rgba(18,18,30,0.6);
+        border-right: 1px solid rgba(124,58,237,0.08);
+        padding: 20px 16px;
+      }
+
+      .s3-sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 6px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.06);
+      }
+
+      .s3-sidebar-item.highlight {
+        background: rgba(124,58,237,0.2);
+        border-color: rgba(124,58,237,0.4);
+        box-shadow: 0 0 20px rgba(124,58,237,0.2);
+      }
+
+      .s3-sidebar-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(124,58,237,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #7c3aed;
+        font-size: 16px;
+      }
+
+      .s3-sidebar-label {
+        font-size: 15px;
+        color: #f0f0ff;
+      }
+
+      .s3-canvas {
+        position: absolute;
+        top: 56px;
+        left: 280px;
+        right: 0;
+        bottom: 0;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .s3-form-card {
+        padding: 24px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s3-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 20px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 8px;
+      }
+
+      .s3-form-desc {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .s3-drop-zone {
+        height: 60px;
+        border-radius: 14px;
+        border: 2px dashed rgba(6,182,212,0.4);
+        background: rgba(6,182,212,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #06b6d4;
+        font-size: 14px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .s3-dragging {
+        position: absolute;
+        padding: 16px 24px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.95);
+        border: 1px solid rgba(124,58,237,0.3);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 30px rgba(124,58,237,0.2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 10;
+      }
+
+      .s3-dragging .s3-sidebar-icon {
+        background: rgba(124,58,237,0.3);
+      }
+
+      .s3-dragging .s3-sidebar-label {
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      .s3-cursor {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(240,240,255,0.9);
+        box-shadow: 0 0 12px rgba(240,240,255,0.5), 0 0 30px rgba(124,58,237,0.3);
+        z-index: 20;
+      }
+
+      .s3-trail {
+        position: absolute;
+        height: 3px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, transparent, rgba(124,58,237,0.6));
+        z-index: 9;
+      }
+
+      /* ===== SCENE 4: AI Panel ===== */
+      .s4-glow {
+        position: absolute;
+        width: 700px;
+        height: 700px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(6,182,212,0.3) 0%, rgba(6,182,212,0) 70%);
+        top: 20%;
+        right: 5%;
+      }
+
+      .s4-form-preview {
+        position: absolute;
+        top: 80px;
+        left: 80px;
+        width: 900px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.7);
+        border: 1px solid rgba(124,58,237,0.1);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.4);
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .s4-form-card {
+        padding: 20px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s4-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 6px;
+      }
+
+      .s4-form-desc {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .s4-ai-panel {
+        position: absolute;
+        top: 80px;
+        right: 80px;
+        width: 700px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.85);
+        border: 1px solid rgba(6,182,212,0.2);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5), 0 0 60px rgba(6,182,212,0.1);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .s4-ai-header {
+        height: 56px;
+        background: rgba(6,182,212,0.1);
+        border-bottom: 1px solid rgba(6,182,212,0.15);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 12px;
+      }
+
+      .s4-ai-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      .s4-ai-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+      }
+
+      .s4-ai-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .s4-chat-bubble {
+        padding: 16px 20px;
+        border-radius: 16px;
+        font-size: 16px;
+        line-height: 1.5;
+        max-width: 90%;
+      }
+
+      .s4-chat-bubble.user {
+        background: rgba(124,58,237,0.15);
+        border: 1px solid rgba(124,58,237,0.2);
+        color: #f0f0ff;
+        align-self: flex-end;
+      }
+
+      .s4-chat-bubble.ai {
+        background: rgba(6,182,212,0.1);
+        border: 1px solid rgba(6,182,212,0.15);
+        color: #f0f0ff;
+        align-self: flex-start;
+      }
+
+      .s4-chat-input {
+        margin: 0 24px 24px;
+        padding: 14px 20px;
+        border-radius: 14px;
+        background: rgba(10,10,18,0.6);
+        border: 1px solid rgba(6,182,212,0.15);
+        color: #6b7280;
+        font-size: 15px;
+      }
+
+      .s4-scan-line {
+        position: absolute;
+        left: 0;
+        width: 700px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(6,182,212,0.5), transparent);
+        box-shadow: 0 0 20px rgba(6,182,212,0.3);
+      }
+
+      .s4-overlay-text {
+        position: absolute;
+        top: 50%;
+        left: 15%;
+        transform: translateY(-50%);
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 48px;
+        font-weight: 700;
+        color: #f0f0ff;
+        letter-spacing: -0.02em;
+      }
+
+      .s4-overlay-text span {
+        color: #06b6d4;
+      }
+
+      .s4-particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #06b6d4;
+        box-shadow: 0 0 8px rgba(6,182,212,0.5);
+      }
+
+      /* ===== SCENE 5: AI Conversation ===== */
+      .s5-glow-l {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, rgba(124,58,237,0) 70%);
+        top: 20%;
+        left: 5%;
+      }
+
+      .s5-glow-r {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(6,182,212,0.25) 0%, rgba(6,182,212,0) 70%);
+        top: 20%;
+        right: 5%;
+      }
+
+      .s5-form-preview {
+        position: absolute;
+        top: 80px;
+        left: 80px;
+        width: 850px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.7);
+        border: 1px solid rgba(124,58,237,0.1);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.4);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .s5-form-card {
+        padding: 18px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s5-form-card.updated {
+        border-color: rgba(16,185,129,0.3);
+        box-shadow: 0 0 20px rgba(16,185,129,0.1);
+      }
+
+      .s5-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 6px;
+      }
+
+      .s5-form-desc {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .s5-form-input {
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(10,10,18,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+        margin-top: 10px;
+      }
+
+      .s5-ai-panel {
+        position: absolute;
+        top: 80px;
+        right: 80px;
+        width: 750px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.85);
+        border: 1px solid rgba(6,182,212,0.2);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .s5-ai-header {
+        height: 56px;
+        background: rgba(6,182,212,0.1);
+        border-bottom: 1px solid rgba(6,182,212,0.15);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 12px;
+      }
+
+      .s5-ai-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      .s5-ai-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+      }
+
+      .s5-ai-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .s5-chat-bubble {
+        padding: 14px 18px;
+        border-radius: 16px;
+        font-size: 15px;
+        line-height: 1.5;
+        max-width: 90%;
+      }
+
+      .s5-chat-bubble.user {
+        background: rgba(124,58,237,0.15);
+        border: 1px solid rgba(124,58,237,0.2);
+        color: #f0f0ff;
+        align-self: flex-end;
+      }
+
+      .s5-chat-bubble.ai {
+        background: rgba(6,182,212,0.1);
+        border: 1px solid rgba(6,182,212,0.15);
+        color: #f0f0ff;
+        align-self: flex-start;
+      }
+
+      .s5-typing {
+        display: flex;
+        gap: 6px;
+        padding: 14px 18px;
+        align-self: flex-start;
+      }
+
+      .s5-typing-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #06b6d4;
+      }
+
+      .s5-neural-line {
+        position: absolute;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(124,58,237,0.4), rgba(6,182,212,0.4));
+        box-shadow: 0 0 10px rgba(124,58,237,0.2);
+      }
+
+      .s5-particle {
+        position: absolute;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+      }
+
+      /* ===== SCENE 6: Accept Edits ===== */
+      .s6-glow {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0) 70%);
+        top: 30%;
+        right: 15%;
+      }
+
+      .s6-form-preview {
+        position: absolute;
+        top: 80px;
+        left: 80px;
+        width: 850px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.7);
+        border: 1px solid rgba(124,58,237,0.1);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.4);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .s6-form-card {
+        padding: 18px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s6-form-card.accepted {
+        border-color: rgba(16,185,129,0.4);
+        box-shadow: 0 0 24px rgba(16,185,129,0.15);
+      }
+
+      .s6-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 6px;
+      }
+
+      .s6-form-desc {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .s6-ai-panel {
+        position: absolute;
+        top: 80px;
+        right: 80px;
+        width: 750px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.85);
+        border: 1px solid rgba(6,182,212,0.2);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .s6-ai-header {
+        height: 56px;
+        background: rgba(6,182,212,0.1);
+        border-bottom: 1px solid rgba(6,182,212,0.15);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 12px;
+      }
+
+      .s6-ai-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      .s6-ai-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+      }
+
+      .s6-ai-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .s6-chat-bubble {
+        padding: 14px 18px;
+        border-radius: 16px;
+        font-size: 15px;
+        line-height: 1.5;
+        max-width: 90%;
+      }
+
+      .s6-chat-bubble.user {
+        background: rgba(124,58,237,0.15);
+        border: 1px solid rgba(124,58,237,0.2);
+        color: #f0f0ff;
+        align-self: flex-end;
+      }
+
+      .s6-chat-bubble.ai {
+        background: rgba(6,182,212,0.1);
+        border: 1px solid rgba(6,182,212,0.15);
+        color: #f0f0ff;
+        align-self: flex-start;
+      }
+
+      .s6-accept-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 10px;
+        background: rgba(16,185,129,0.15);
+        border: 1px solid rgba(16,185,129,0.3);
+        color: #10b981;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .s6-accept-btn.all {
+        background: rgba(16,185,129,0.25);
+        border-color: rgba(16,185,129,0.5);
+      }
+
+      .s6-check {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #10b981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .s6-success-particle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 10px rgba(16,185,129,0.5);
+      }
+
+      /* ===== SCENE 7: Edit & Reject ===== */
+      .s7-glow-r {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0) 70%);
+        top: 25%;
+        right: 10%;
+      }
+
+      .s7-glow-l {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0) 70%);
+        top: 25%;
+        left: 10%;
+      }
+
+      .s7-form-preview {
+        position: absolute;
+        top: 80px;
+        left: 80px;
+        width: 850px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.7);
+        border: 1px solid rgba(124,58,237,0.1);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.4);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .s7-form-card {
+        padding: 18px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s7-form-card.rejected {
+        border-color: rgba(239,68,68,0.4);
+        opacity: 0.5;
+      }
+
+      .s7-form-card.accepted {
+        border-color: rgba(16,185,129,0.4);
+        box-shadow: 0 0 24px rgba(16,185,129,0.15);
+      }
+
+      .s7-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 6px;
+      }
+
+      .s7-form-desc {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .s7-strikethrough {
+        position: absolute;
+        height: 2px;
+        background: #ef4444;
+        box-shadow: 0 0 8px rgba(239,68,68,0.4);
+      }
+
+      .s7-ai-panel {
+        position: absolute;
+        top: 80px;
+        right: 80px;
+        width: 750px;
+        height: 800px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.85);
+        border: 1px solid rgba(6,182,212,0.2);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .s7-ai-header {
+        height: 56px;
+        background: rgba(6,182,212,0.1);
+        border-bottom: 1px solid rgba(6,182,212,0.15);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 12px;
+      }
+
+      .s7-ai-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      .s7-ai-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f0f0ff;
+      }
+
+      .s7-ai-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .s7-chat-bubble {
+        padding: 14px 18px;
+        border-radius: 16px;
+        font-size: 15px;
+        line-height: 1.5;
+        max-width: 90%;
+      }
+
+      .s7-chat-bubble.user {
+        background: rgba(124,58,237,0.15);
+        border: 1px solid rgba(124,58,237,0.2);
+        color: #f0f0ff;
+        align-self: flex-end;
+      }
+
+      .s7-chat-bubble.ai {
+        background: rgba(6,182,212,0.1);
+        border: 1px solid rgba(6,182,212,0.15);
+        color: #f0f0ff;
+        align-self: flex-start;
+      }
+
+      .s7-proposal {
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.6);
+        border: 1px solid rgba(124,58,237,0.1);
+      }
+
+      .s7-proposal.reject {
+        border-color: rgba(239,68,68,0.3);
+      }
+
+      .s7-proposal.accept {
+        border-color: rgba(16,185,129,0.3);
+      }
+
+      .s7-proposal-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #f0f0ff;
+        margin-bottom: 8px;
+      }
+
+      .s7-proposal-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .s7-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid;
+      }
+
+      .s7-btn.reject {
+        background: rgba(239,68,68,0.15);
+        border-color: rgba(239,68,68,0.3);
+        color: #ef4444;
+      }
+
+      .s7-btn.accept {
+        background: rgba(16,185,129,0.15);
+        border-color: rgba(16,185,129,0.3);
+        color: #10b981;
+      }
+
+      /* ===== SCENE 8: Goodbye + CTA ===== */
+      .s8-glow {
+        position: absolute;
+        width: 1200px;
+        height: 1200px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(124,58,237,0.3) 0%, rgba(6,182,212,0.15) 40%, rgba(124,58,237,0) 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .s8-form-preview {
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1200px;
+        height: 500px;
+        border-radius: 24px;
+        background: rgba(18,18,30,0.8);
+        border: 1px solid rgba(124,58,237,0.15);
+        box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 100px rgba(124,58,237,0.1);
+        backdrop-filter: blur(20px);
+        padding: 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .s8-form-card {
+        padding: 20px;
+        border-radius: 14px;
+        background: rgba(26,26,46,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+      }
+
+      .s8-form-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 20px;
+        font-weight: 600;
+        color: #f0f0ff;
+        margin-bottom: 6px;
+      }
+
+      .s8-form-desc {
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .s8-form-input {
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(10,10,18,0.5);
+        border: 1px solid rgba(124,58,237,0.08);
+        margin-top: 10px;
+      }
+
+      .s8-ai-panel {
+        position: absolute;
+        top: 100px;
+        right: 100px;
+        width: 500px;
+        height: 500px;
+        border-radius: 20px;
+        background: rgba(18,18,30,0.85);
+        border: 1px solid rgba(6,182,212,0.2);
+        box-shadow: 0 16px 64px rgba(0,0,0,0.5);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+
+      .s8-ai-header {
+        height: 50px;
+        background: rgba(6,182,212,0.1);
+        border-bottom: 1px solid rgba(6,182,212,0.15);
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        gap: 10px;
+      }
+
+      .s8-ai-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+      }
+
+      .s8-ai-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        color: #f0f0ff;
+      }
+
+      .s8-ai-body {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .s8-chat-bubble {
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 90%;
+      }
+
+      .s8-chat-bubble.user {
+        background: rgba(124,58,237,0.15);
+        border: 1px solid rgba(124,58,237,0.2);
+        color: #f0f0ff;
+        align-self: flex-end;
+      }
+
+      .s8-chat-bubble.ai {
+        background: rgba(6,182,212,0.1);
+        border: 1px solid rgba(6,182,212,0.15);
+        color: #f0f0ff;
+        align-self: flex-start;
+      }
+
+      .s8-logo {
+        position: absolute;
+        top: 62%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 80px;
+        color: #f0f0ff;
+        text-align: center;
+        letter-spacing: -0.03em;
+        text-shadow: 0 0 40px rgba(124,58,237,0.4), 0 0 80px rgba(124,58,237,0.2);
+      }
+
+      .s8-tagline {
+        position: absolute;
+        top: 73%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 300;
+        font-size: 32px;
+        color: #6b7280;
+        text-align: center;
+        letter-spacing: 0.02em;
+      }
+
+      .s8-cta {
+        position: absolute;
+        top: 82%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 28px;
+        color: #f0f0ff;
+        text-align: center;
+        letter-spacing: -0.01em;
+      }
+
+      .s8-cta span {
+        color: #7c3aed;
+      }
+
+      .s8-letterbox-top,
+      .s8-letterbox-bottom {
+        position: absolute;
+        left: 0;
+        width: 1920px;
+        height: 50px;
+        background: #0a0a12;
+      }
+
+      .s8-letterbox-top { top: 0; }
+      .s8-letterbox-bottom { bottom: 0; }
+
+      .s8-star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        border-radius: 50%;
+        background: rgba(240,240,255,0.4);
+      }
+
+      /* Transition containers */
+      .transition-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 100;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- ===== SCENE 1: Logo Reveal [0-3s] ===== -->
+      <div id="scene1" class="scene">
+        <div class="s1-glow" id="s1-glow"></div>
+        <div class="s1-ring" id="s1-ring"></div>
+        <div class="s1-logo" id="s1-logo"><span>FormIA</span></div>
+        <div class="s1-subtitle" id="s1-subtitle">Build forms with AI.</div>
+        <div class="s1-grain"></div>
+      </div>
+
+      <!-- ===== SCENE 2: Dashboard [3-6s] ===== -->
+      <div id="scene2" class="scene">
+        <div class="s2-grid-bg"></div>
+        <div class="s2-glow" id="s2-glow" data-layout-allow-overflow></div>
+        <div class="s2-dashboard" id="s2-dashboard">
+          <div class="s2-toolbar" id="s2-toolbar">
+            <div class="s2-toolbar-logo">Form<span>IA</span></div>
+            <div class="s2-toolbar-btn active">Forms</div>
+            <div class="s2-toolbar-btn">Templates</div>
+            <div class="s2-toolbar-btn">Analytics</div>
+            <div class="s2-toolbar-btn">Settings</div>
+          </div>
+          <div class="s2-sidebar" id="s2-sidebar">
+            <div class="s2-sidebar-title">Components</div>
+            <div class="s2-sidebar-item" id="s2-si-1">
+              <div class="s2-sidebar-icon">T</div>
+              <div class="s2-sidebar-label">Text Input</div>
+            </div>
+            <div class="s2-sidebar-item" id="s2-si-2">
+              <div class="s2-sidebar-icon">☑</div>
+              <div class="s2-sidebar-label">Multiple Choice</div>
+            </div>
+            <div class="s2-sidebar-item" id="s2-si-3">
+              <div class="s2-sidebar-icon">★</div>
+              <div class="s2-sidebar-label">Rating</div>
+            </div>
+            <div class="s2-sidebar-item" id="s2-si-4">
+              <div class="s2-sidebar-icon">§</div>
+              <div class="s2-sidebar-label">Section Divider</div>
+            </div>
+            <div class="s2-sidebar-item" id="s2-si-5">
+              <div class="s2-sidebar-icon">↑</div>
+              <div class="s2-sidebar-label">File Upload</div>
+            </div>
+          </div>
+          <div class="s2-canvas" id="s2-canvas">
+            <div class="s2-form-card" id="s2-fc-1">
+              <div class="s2-form-title">Customer Feedback Survey</div>
+              <div class="s2-form-desc">Help us improve your experience</div>
+            </div>
+            <div class="s2-form-card" id="s2-fc-2">
+              <div class="s2-form-label">Your Name</div>
+              <div class="s2-form-input"></div>
+            </div>
+            <div class="s2-form-card" id="s2-fc-3">
+              <div class="s2-form-label">How satisfied are you?</div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">1</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">2</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">3</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">4</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="s2-overlay-text" id="s2-overlay">Create <span>smarter forms</span> in seconds.</div>
+        <div class="s2-accent-line" id="s2-accent"></div>
+      </div>
+
+      <!-- ===== SCENE 3: Drag & Drop [6-9s] ===== -->
+      <div id="scene3" class="scene">
+        <div class="s3-dashboard" id="s3-dashboard">
+          <div class="s2-toolbar" id="s3-toolbar">
+            <div class="s2-toolbar-logo">Form<span>IA</span></div>
+            <div class="s2-toolbar-btn active">Forms</div>
+            <div class="s2-toolbar-btn">Templates</div>
+            <div class="s2-toolbar-btn">Analytics</div>
+          </div>
+          <div class="s3-sidebar" id="s3-sidebar">
+            <div class="s2-sidebar-title">Components</div>
+            <div class="s3-sidebar-item" id="s3-si-1">
+              <div class="s3-sidebar-icon">T</div>
+              <div class="s3-sidebar-label">Text Input</div>
+            </div>
+            <div class="s3-sidebar-item" id="s3-si-2">
+              <div class="s3-sidebar-icon">☑</div>
+              <div class="s3-sidebar-label">Multiple Choice</div>
+            </div>
+            <div class="s3-sidebar-item highlight" id="s3-si-3">
+              <div class="s3-sidebar-icon">★</div>
+              <div class="s3-sidebar-label">Rating</div>
+            </div>
+            <div class="s3-sidebar-item" id="s3-si-4">
+              <div class="s3-sidebar-icon">§</div>
+              <div class="s3-sidebar-label">Section Divider</div>
+            </div>
+          </div>
+          <div class="s3-canvas" id="s3-canvas">
+            <div class="s3-form-card" id="s3-fc-1">
+              <div class="s3-form-title">Customer Feedback Survey</div>
+              <div class="s3-form-desc">Help us improve your experience</div>
+            </div>
+            <div class="s3-form-card" id="s3-fc-2">
+              <div class="s3-form-label">Your Name</div>
+              <div class="s2-form-input"></div>
+            </div>
+            <div class="s3-drop-zone" id="s3-drop">Drop rating component here</div>
+            <div class="s3-form-card" id="s3-fc-3">
+              <div class="s3-form-label">How satisfied are you?</div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">1</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">2</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">3</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">4</div>
+                <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:16px;">5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="s3-dragging" id="s3-drag" data-layout-allow-overflow>
+          <div class="s3-sidebar-icon">★</div>
+          <div class="s3-sidebar-label">Rating Question</div>
+        </div>
+        <div class="s3-cursor" id="s3-cursor" data-layout-allow-overflow></div>
+        <div class="s3-trail" id="s3-trail"></div>
+      </div>
+
+      <!-- ===== SCENE 4: AI Panel [9-11s] ===== -->
+      <div id="scene4" class="scene">
+        <div class="s4-glow" id="s4-glow"></div>
+        <div class="s4-form-preview" id="s4-form">
+          <div class="s4-form-card">
+            <div class="s4-form-title">Customer Feedback Survey</div>
+            <div class="s4-form-desc">Help us improve your experience</div>
+          </div>
+          <div class="s4-form-card">
+            <div class="s4-form-title">Your Name</div>
+            <div class="s2-form-input"></div>
+          </div>
+          <div class="s4-form-card">
+            <div class="s4-form-title">Rate our app</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">1</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">2</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">3</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">4</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">5</div>
+            </div>
+          </div>
+        </div>
+        <div class="s4-ai-panel" id="s4-panel">
+          <div class="s4-ai-header">
+            <div class="s4-ai-icon">✦</div>
+            <div class="s4-ai-title">FormIA AI</div>
+          </div>
+          <div class="s4-ai-body" id="s4-body">
+            <div class="s4-chat-bubble user">Can you add a clear title and description for the section divider?</div>
+            <div class="s4-chat-bubble ai">I've analyzed your form. Let me update the section titles and descriptions for clarity.</div>
+          </div>
+          <div class="s4-chat-input">Type a message...</div>
+        </div>
+        <div class="s4-scan-line" id="s4-scan"></div>
+        <div class="s4-overlay-text" id="s4-text">Powered by <span>conversational AI.</span></div>
+        <div class="s4-particle" id="s4-p1" style="top:20%;left:30%;"></div>
+        <div class="s4-particle" id="s4-p2" style="top:40%;left:25%;"></div>
+        <div class="s4-particle" id="s4-p3" style="top:60%;left:35%;"></div>
+        <div class="s4-particle" id="s4-p4" style="top:30%;left:45%;"></div>
+        <div class="s4-particle" id="s4-p5" style="top:70%;left:20%;"></div>
+        <div class="s4-particle" id="s4-p6" style="top:50%;left:40%;"></div>
+        <div class="s4-particle" id="s4-p7" style="top:15%;left:50%;"></div>
+        <div class="s4-particle" id="s4-p8" style="top:80%;left:30%;"></div>
+      </div>
+
+      <!-- ===== SCENE 5: AI Conversation [11-18s] ===== -->
+      <div id="scene5" class="scene">
+        <div class="s5-glow-l" id="s5-gl"></div>
+        <div class="s5-glow-r" id="s5-gr"></div>
+        <div class="s5-form-preview" id="s5-form">
+          <div class="s5-form-card updated" id="s5-fc-1">
+            <div class="s5-form-title">Customer Feedback Survey</div>
+            <div class="s5-form-desc">Help us improve your experience with our product</div>
+          </div>
+          <div class="s5-form-card" id="s5-fc-2">
+            <div class="s5-form-title">Your Name</div>
+            <div class="s5-form-input"></div>
+          </div>
+          <div class="s5-form-card updated" id="s5-fc-3">
+            <div class="s5-form-title">Rate our app</div>
+            <div class="s5-form-desc">Please rate your overall experience</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">1</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">2</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">3</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">4</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">5</div>
+            </div>
+          </div>
+          <div class="s5-form-card updated" id="s5-fc-4">
+            <div class="s5-form-title">How satisfied are you with the overall user experience?</div>
+            <div class="s5-form-desc">Select the option that best describes your experience</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+              <div style="padding:10px 16px;border-radius:10px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.15);color:#f0f0ff;font-size:14px;">Very satisfied</div>
+              <div style="padding:10px 16px;border-radius:10px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.15);color:#f0f0ff;font-size:14px;">Somewhat satisfied</div>
+              <div style="padding:10px 16px;border-radius:10px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.15);color:#f0f0ff;font-size:14px;">Neutral</div>
+              <div style="padding:10px 16px;border-radius:10px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.15);color:#f0f0ff;font-size:14px;">Not satisfied</div>
+            </div>
+          </div>
+        </div>
+        <div class="s5-ai-panel" id="s5-panel">
+          <div class="s5-ai-header">
+            <div class="s5-ai-icon">✦</div>
+            <div class="s5-ai-title">FormIA AI</div>
+          </div>
+          <div class="s5-ai-body" id="s5-body">
+            <div class="s5-chat-bubble user" id="s5-msg1">Can you add a clear title and description for the section divider? Update the rating section with a title that asks users to rate the app.</div>
+            <div class="s5-chat-bubble ai" id="s5-ai1">Done! I've updated the section titles and descriptions. The form is now more organized and professional.</div>
+            <div class="s5-typing" id="s5-typing">
+              <div class="s5-typing-dot"></div>
+              <div class="s5-typing-dot"></div>
+              <div class="s5-typing-dot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="s5-neural-line" id="s5-nl1" style="top:300px;left:930px;width:120px;"></div>
+        <div class="s5-neural-line" id="s5-nl2" style="top:450px;left:930px;width:120px;"></div>
+        <div class="s5-particle" id="s5-p1" style="top:25%;left:40%;background:#7c3aed;box-shadow:0 0 8px rgba(124,58,237,0.5);"></div>
+        <div class="s5-particle" id="s5-p2" style="top:35%;left:55%;background:#06b6d4;box-shadow:0 0 8px rgba(6,182,212,0.5);"></div>
+        <div class="s5-particle" id="s5-p3" style="top:50%;left:45%;background:#7c3aed;box-shadow:0 0 8px rgba(124,58,237,0.5);"></div>
+        <div class="s5-particle" id="s5-p4" style="top:65%;left:50%;background:#06b6d4;box-shadow:0 0 8px rgba(6,182,212,0.5);"></div>
+        <div class="s5-particle" id="s5-p5" style="top:40%;left:60%;background:#7c3aed;box-shadow:0 0 8px rgba(124,58,237,0.5);"></div>
+      </div>
+
+      <!-- ===== SCENE 6: Accept Edits [18-20s] ===== -->
+      <div id="scene6" class="scene">
+        <div class="s6-glow" id="s6-glow"></div>
+        <div class="s6-form-preview" id="s6-form">
+          <div class="s6-form-card accepted" id="s6-fc-1">
+            <div class="s6-form-title">Customer Feedback Survey</div>
+            <div class="s6-form-desc">Help us improve your experience with our product</div>
+          </div>
+          <div class="s6-form-card" id="s6-fc-2">
+            <div class="s6-form-title">Your Name</div>
+            <div class="s5-form-input"></div>
+          </div>
+          <div class="s6-form-card accepted" id="s6-fc-3">
+            <div class="s6-form-title">Rate our app</div>
+            <div class="s6-form-desc">Please rate your overall experience</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">1</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">2</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">3</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">4</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">5</div>
+            </div>
+          </div>
+          <div class="s6-form-card accepted" id="s6-fc-4">
+            <div class="s6-form-title">How satisfied are you with the overall user experience?</div>
+            <div class="s6-form-desc">Select the option that best describes your experience</div>
+          </div>
+        </div>
+        <div class="s6-ai-panel" id="s6-panel">
+          <div class="s6-ai-header">
+            <div class="s6-ai-icon">✦</div>
+            <div class="s6-ai-title">FormIA AI</div>
+          </div>
+          <div class="s6-ai-body" id="s6-body">
+            <div class="s6-chat-bubble user">Can you add a clear title and description for the section divider?</div>
+            <div class="s6-chat-bubble ai">I've updated the section titles and descriptions. The form is now more organized.</div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+              <div class="s6-accept-btn" id="s6-accept1">
+                <div class="s6-check" id="s6-chk1" style="opacity:0;">✓</div>
+                Accept First Edit
+              </div>
+              <div class="s6-accept-btn all" id="s6-accept2">
+                <div class="s6-check" id="s6-chk2" style="opacity:0;">✓</div>
+                Accept All
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="s6-success-particle" id="s6-sp1" style="top:40%;left:50%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp2" style="top:45%;left:48%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp3" style="top:38%;left:52%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp4" style="top:42%;left:46%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp5" style="top:44%;left:54%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp6" style="top:36%;left:50%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp7" style="top:48%;left:51%;opacity:0;"></div>
+        <div class="s6-success-particle" id="s6-sp8" style="top:40%;left:47%;opacity:0;"></div>
+      </div>
+
+      <!-- ===== SCENE 7: Edit & Reject [20-25s] ===== -->
+      <div id="scene7" class="scene">
+        <div class="s7-glow-l" id="s7-gl"></div>
+        <div class="s7-glow-r" id="s7-gr"></div>
+        <div class="s7-form-preview" id="s7-form">
+          <div class="s7-form-card" id="s7-fc-1">
+            <div class="s7-form-title">Customer Feedback Survey</div>
+            <div class="s7-form-desc">Help us improve your experience with our product</div>
+          </div>
+          <div class="s7-form-card" id="s7-fc-2">
+            <div class="s7-form-title">Your Name</div>
+            <div class="s5-form-input"></div>
+          </div>
+          <div class="s7-form-card accepted" id="s7-fc-3">
+            <div class="s7-form-title">Rate our app</div>
+            <div class="s7-form-desc">Please rate your overall experience with the app</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">1</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">2</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">3</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">4</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">5</div>
+            </div>
+          </div>
+          <div class="s7-form-card rejected" id="s7-fc-4">
+            <div class="s7-form-title">How satisfied are you with the overall user experience?</div>
+            <div class="s7-form-desc">Select the option that best describes your experience</div>
+          </div>
+          <div class="s7-strikethrough" id="s7-strike" style="top:480px;left:120px;width:700px;opacity:0;"></div>
+        </div>
+        <div class="s7-ai-panel" id="s7-panel">
+          <div class="s7-ai-header">
+            <div class="s7-ai-icon">✦</div>
+            <div class="s7-ai-title">FormIA AI</div>
+          </div>
+          <div class="s7-ai-body" id="s7-body">
+            <div class="s7-chat-bubble user">Can you delete the last question and edit the description of the rating question?</div>
+            <div class="s7-chat-bubble ai">I've made the changes. Review the proposals below.</div>
+            <div class="s7-proposal reject" id="s7-prop1">
+              <div class="s7-proposal-title">Delete "How satisfied are you..." question</div>
+              <div class="s7-proposal-actions">
+                <div class="s7-btn reject" id="s7-rej">✕ Reject</div>
+                <div class="s7-btn accept">✓ Accept</div>
+              </div>
+            </div>
+            <div class="s7-proposal accept" id="s7-prop2">
+              <div class="s7-proposal-title">Update rating description</div>
+              <div class="s7-proposal-actions">
+                <div class="s7-btn reject">✕ Reject</div>
+                <div class="s7-btn accept" id="s7-acc">✓ Accept</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCENE 8: Goodbye + CTA [25-30s] ===== -->
+      <div id="scene8" class="scene" data-layout-allow-overflow>
+        <div class="s8-glow" id="s8-glow" data-layout-allow-overflow></div>
+        <!-- Stars -->
+        <div class="s8-star" style="top:10%;left:15%;"></div>
+        <div class="s8-star" style="top:20%;left:80%;"></div>
+        <div class="s8-star" style="top:35%;left:5%;"></div>
+        <div class="s8-star" style="top:50%;left:90%;"></div>
+        <div class="s8-star" style="top:70%;left:25%;"></div>
+        <div class="s8-star" style="top:85%;left:70%;"></div>
+        <div class="s8-star" style="top:15%;left:45%;"></div>
+        <div class="s8-star" style="top:60%;left:85%;"></div>
+        <div class="s8-star" style="top:40%;left:95%;"></div>
+        <div class="s8-star" style="top:75%;left:10%;"></div>
+        <div class="s8-star" style="top:25%;left:65%;"></div>
+        <div class="s8-star" style="top:90%;left:40%;"></div>
+
+        <div class="s8-form-preview" id="s8-form">
+          <div class="s8-form-card">
+            <div class="s8-form-title">Customer Feedback Survey</div>
+            <div class="s8-form-desc">Help us improve your experience with our product</div>
+          </div>
+          <div class="s8-form-card">
+            <div class="s8-form-title">Your Name</div>
+            <div class="s8-form-input"></div>
+          </div>
+          <div class="s8-form-card">
+            <div class="s8-form-title">Rate our app</div>
+            <div class="s8-form-desc">Please rate your overall experience with the app</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">1</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">2</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">3</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">4</div>
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;color:#7c3aed;font-size:14px;">5</div>
+            </div>
+          </div>
+          <div class="s8-form-card">
+            <div class="s8-form-title">How satisfied are you with the overall user experience?</div>
+            <div class="s8-form-desc">Select the option that best describes your experience</div>
+          </div>
+        </div>
+
+        <div class="s8-ai-panel" id="s8-panel">
+          <div class="s8-ai-header">
+            <div class="s8-ai-icon">✦</div>
+            <div class="s8-ai-title">FormIA AI</div>
+          </div>
+          <div class="s8-ai-body" id="s8-body">
+            <div class="s8-chat-bubble user">Thanks FormIA, goodbye.</div>
+            <div class="s8-chat-bubble ai">Happy to help.</div>
+          </div>
+        </div>
+
+        <div class="s8-logo" id="s8-logo">FormIA</div>
+        <div class="s8-tagline" id="s8-tagline">Your AI-powered form builder.</div>
+        <div class="s8-cta" id="s8-cta">Build faster. Think less. <span>Create better.</span></div>
+
+        <div class="s8-letterbox-top" id="s8-lb-top" data-layout-allow-overflow></div>
+        <div class="s8-letterbox-bottom" id="s8-lb-bottom" data-layout-allow-overflow></div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // ===== SCENE 1: Logo Reveal [0-3s] =====
+      tl.fromTo("#s1-glow", { scale: 0.8, opacity: 0 }, { scale: 1.05, opacity: 1, duration: 2.5, ease: "sine.inOut", repeat: 1, yoyo: true }, 0);
+      tl.fromTo("#s1-ring", { scale: 0, opacity: 0 }, { scale: 1, opacity: 0.8, duration: 0.6, ease: "expo.out" }, 0.2);
+      tl.to("#s1-ring", { scale: 2.5, opacity: 0, duration: 1.5, ease: "power3.out" }, 1.0);
+      tl.fromTo("#s1-logo", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: "expo.out" }, 0.3);
+      tl.fromTo("#s1-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 1.2);
+
+      // Transition 1→2: Blur crossfade at 2.5s
+      tl.to("#scene1", { filter: "blur(15px)", opacity: 0, duration: 0.5, ease: "sine.inOut" }, 2.5);
+      tl.set("#scene2", { opacity: 1 }, 2.5);
+      tl.fromTo("#scene2", { filter: "blur(15px)" }, { filter: "blur(0px)", duration: 0.5, ease: "sine.inOut" }, 2.5);
+
+      // ===== SCENE 2: Dashboard [3-6s] =====
+      tl.fromTo("#s2-dashboard", { x: 200, filter: "blur(20px)", opacity: 0 }, { x: 0, filter: "blur(0px)", opacity: 1, duration: 0.7, ease: "expo.out" }, 3.1);
+      tl.fromTo("#s2-si-1", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.3);
+      tl.fromTo("#s2-si-2", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.4);
+      tl.fromTo("#s2-si-3", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.5);
+      tl.fromTo("#s2-si-4", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.6);
+      tl.fromTo("#s2-si-5", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.7);
+      tl.fromTo("#s2-fc-1", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, 3.5);
+      tl.fromTo("#s2-fc-2", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, 3.7);
+      tl.fromTo("#s2-fc-3", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, 3.9);
+      tl.fromTo("#s2-toolbar", { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.2);
+      tl.fromTo("#s2-overlay", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "expo.out" }, 3.6);
+      tl.fromTo("#s2-accent", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, 3.8);
+      tl.to("#s2-glow", { scale: 1.05, duration: 2, ease: "sine.inOut", yoyo: true, repeat: 0 }, 3);
+
+      // Transition 2→3: Zoom-through at 5.5s
+      tl.to("#scene2", { scale: 1.15, filter: "blur(15px)", opacity: 0, duration: 0.4, ease: "power3.in" }, 5.5);
+      tl.set("#scene3", { opacity: 1 }, 5.5);
+      tl.fromTo("#scene3", { scale: 0.85, filter: "blur(15px)" }, { scale: 1, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 5.5);
+
+      // ===== SCENE 3: Drag & Drop [6-9s] =====
+      tl.fromTo("#s3-dashboard", { x: 200, filter: "blur(15px)", opacity: 0 }, { x: 0, filter: "blur(0px)", opacity: 1, duration: 0.5, ease: "expo.out" }, 6);
+      tl.fromTo("#s3-si-1", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 6.2);
+      tl.fromTo("#s3-si-2", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 6.3);
+      tl.fromTo("#s3-si-3", { x: -30, opacity: 0, boxShadow: "0 0 0px rgba(124,58,237,0)" }, { x: 0, opacity: 1, boxShadow: "0 0 20px rgba(124,58,237,0.2)", duration: 0.3, ease: "power3.out" }, 6.4);
+      tl.fromTo("#s3-si-4", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 6.5);
+      tl.fromTo("#s3-fc-1", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 6.3);
+      tl.fromTo("#s3-fc-2", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 6.5);
+      tl.fromTo("#s3-fc-3", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 6.7);
+      tl.fromTo("#s3-drop", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" }, 7);
+      // Dragging component
+      tl.fromTo("#s3-drag", { x: 0, y: 0, scale: 1, opacity: 0 }, { x: 600, y: -20, scale: 1.05, opacity: 1, duration: 0.8, ease: "power2.inOut" }, 7.2);
+      tl.to("#s3-drag", { y: 0, scale: 1, duration: 0.2, ease: "power3.out" }, 8);
+      // Cursor follows drag
+      tl.fromTo("#s3-cursor", { x: 0, y: 0, opacity: 0 }, { x: 620, y: -10, opacity: 1, duration: 0.8, ease: "power2.inOut" }, 7.2);
+      // Trail
+      tl.fromTo("#s3-trail", { width: 0, opacity: 0 }, { width: 200, opacity: 0.6, duration: 0.6, ease: "power2.out" }, 7.4);
+      tl.to("#s3-trail", { opacity: 0, duration: 0.3 }, 8);
+
+      // Transition 3→4: Zoom-through at 8.5s
+      tl.to("#scene3", { scale: 1.2, filter: "blur(20px)", opacity: 0, duration: 0.35, ease: "power3.in" }, 8.5);
+      tl.set("#scene4", { opacity: 1 }, 8.5);
+      tl.fromTo("#scene4", { scale: 0.8, filter: "blur(20px)" }, { scale: 1, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 8.5);
+
+      // ===== SCENE 4: AI Panel [9-11s] =====
+      tl.fromTo("#s4-form", { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 9.1);
+      tl.fromTo("#s4-panel", { x: 400, filter: "blur(30px)", opacity: 0 }, { x: 0, filter: "blur(0px)", opacity: 1, duration: 0.6, ease: "expo.out" }, 9.1);
+      tl.fromTo("#s4-glow", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: "power2.out" }, 9.2);
+      tl.fromTo("#s4-scan", { y: -100, opacity: 0 }, { y: 900, opacity: 1, duration: 0.8, ease: "none" }, 9.3);
+      tl.to("#s4-scan", { opacity: 0, duration: 0.2 }, 10);
+      tl.fromTo("#s4-text", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" }, 9.5);
+      // Particles drift
+      tl.to("#s4-p1", { y: -30, x: 20, duration: 8, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p2", { y: 40, x: -15, duration: 10, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p3", { y: -20, x: 25, duration: 9, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p4", { y: 35, x: -10, duration: 11, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p5", { y: -40, x: 15, duration: 8, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p6", { y: 25, x: -20, duration: 10, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p7", { y: -35, x: 10, duration: 9, ease: "sine.inOut", repeat: 0 }, 9);
+      tl.to("#s4-p8", { y: 30, x: -25, duration: 11, ease: "sine.inOut", repeat: 0 }, 9);
+
+      // Transition 4→5: Blur crossfade at 10.5s
+      tl.to("#scene4", { filter: "blur(12px)", opacity: 0, duration: 0.4, ease: "power2.inOut" }, 10.5);
+      tl.set("#scene5", { opacity: 1 }, 10.5);
+      tl.fromTo("#scene5", { filter: "blur(12px)" }, { filter: "blur(0px)", duration: 0.5, ease: "power2.inOut" }, 10.5);
+
+      // ===== SCENE 5: AI Conversation [11-18s] =====
+      tl.fromTo("#s5-form", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 11.1);
+      tl.fromTo("#s5-panel", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 11.1);
+      tl.fromTo("#s5-gl", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: "power2.out" }, 11.2);
+      tl.fromTo("#s5-gr", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: "power2.out" }, 11.2);
+      // Form updates cascade
+      tl.fromTo("#s5-fc-1", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out" }, 12);
+      tl.fromTo("#s5-fc-2", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out" }, 12.3);
+      tl.fromTo("#s5-fc-3", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "expo.out" }, 12.6);
+      tl.fromTo("#s5-fc-4", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "expo.out" }, 13);
+      // Green flash on updated cards
+      tl.fromTo("#s5-fc-1", { boxShadow: "0 0 0px rgba(16,185,129,0)" }, { boxShadow: "0 0 20px rgba(16,185,129,0.3)", duration: 0.3, ease: "power2.out" }, 12);
+      tl.to("#s5-fc-1", { boxShadow: "0 0 0px rgba(16,185,129,0)", duration: 0.5 }, 12.3);
+      tl.fromTo("#s5-fc-3", { boxShadow: "0 0 0px rgba(16,185,129,0)" }, { boxShadow: "0 0 20px rgba(16,185,129,0.3)", duration: 0.3, ease: "power2.out" }, 12.6);
+      tl.to("#s5-fc-3", { boxShadow: "0 0 0px rgba(16,185,129,0)", duration: 0.5 }, 12.9);
+      tl.fromTo("#s5-fc-4", { boxShadow: "0 0 0px rgba(16,185,129,0)" }, { boxShadow: "0 0 20px rgba(16,185,129,0.3)", duration: 0.3, ease: "power2.out" }, 13);
+      tl.to("#s5-fc-4", { boxShadow: "0 0 0px rgba(16,185,129,0)", duration: 0.5 }, 13.3);
+      // Neural lines draw
+      tl.fromTo("#s5-nl1", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, 12.5);
+      tl.fromTo("#s5-nl2", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, 13);
+      tl.to("#s5-nl1", { opacity: 0, duration: 0.3 }, 14);
+      tl.to("#s5-nl2", { opacity: 0, duration: 0.3 }, 14.3);
+      // Particles
+      tl.to("#s5-p1", { y: -25, x: 15, duration: 7, ease: "sine.inOut", repeat: 0 }, 11);
+      tl.to("#s5-p2", { y: 30, x: -20, duration: 9, ease: "sine.inOut", repeat: 0 }, 11);
+      tl.to("#s5-p3", { y: -20, x: 25, duration: 8, ease: "sine.inOut", repeat: 0 }, 11);
+      tl.to("#s5-p4", { y: 35, x: -10, duration: 10, ease: "sine.inOut", repeat: 0 }, 11);
+      tl.to("#s5-p5", { y: -30, x: 20, duration: 7, ease: "sine.inOut", repeat: 0 }, 11);
+
+      // Transition 5→6: Zoom-through at 17.5s
+      tl.to("#scene5", { scale: 1.1, filter: "blur(12px)", opacity: 0, duration: 0.3, ease: "power3.in" }, 17.5);
+      tl.set("#scene6", { opacity: 1 }, 17.5);
+      tl.fromTo("#scene6", { scale: 0.9, filter: "blur(12px)" }, { scale: 1, filter: "blur(0px)", duration: 0.4, ease: "expo.out" }, 17.5);
+
+      // ===== SCENE 6: Accept Edits [18-20s] =====
+      tl.fromTo("#s6-form", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 18.1);
+      tl.fromTo("#s6-panel", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 18.1);
+      tl.fromTo("#s6-glow", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, 18.2);
+      // Accept first edit
+      tl.fromTo("#s6-accept1", { scale: 1, boxShadow: "0 0 0px rgba(16,185,129,0)" }, { scale: 1.02, boxShadow: "0 0 20px rgba(16,185,129,0.3)", duration: 0.2, ease: "power2.out" }, 18.5);
+      tl.to("#s6-chk1", { opacity: 1, duration: 0.2, ease: "power2.out" }, 18.6);
+      tl.fromTo("#s6-chk1", { scale: 1 }, { scale: 1.3, duration: 0.15, ease: "back.out(2)", yoyo: true, repeat: 1 }, 18.6);
+      // Accept all
+      tl.fromTo("#s6-accept2", { boxShadow: "0 0 0px rgba(16,185,129,0)" }, { boxShadow: "0 0 30px rgba(16,185,129,0.4)", duration: 0.4, ease: "sine.inOut", yoyo: true, repeat: 1 }, 18.8);
+      tl.to("#s6-chk2", { opacity: 1, duration: 0.2, ease: "power2.out" }, 19);
+      // Success particles burst
+      tl.fromTo("#s6-sp1", { x: 0, y: 0, opacity: 0 }, { x: -40, y: -30, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp2", { x: 0, y: 0, opacity: 0 }, { x: -20, y: -45, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp3", { x: 0, y: 0, opacity: 0 }, { x: 30, y: -35, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp4", { x: 0, y: 0, opacity: 0 }, { x: -50, y: -10, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp5", { x: 0, y: 0, opacity: 0 }, { x: 40, y: -20, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp6", { x: 0, y: 0, opacity: 0 }, { x: -30, y: -50, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp7", { x: 0, y: 0, opacity: 0 }, { x: 20, y: -40, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.fromTo("#s6-sp8", { x: 0, y: 0, opacity: 0 }, { x: -45, y: -25, opacity: 1, duration: 0.4, ease: "expo.out" }, 19);
+      tl.to("#s6-sp1, #s6-sp2, #s6-sp3, #s6-sp4, #s6-sp5, #s6-sp6, #s6-sp7, #s6-sp8", { opacity: 0, duration: 0.3 }, 19.3);
+
+      // Transition 6→7: Zoom-through at 19.5s
+      tl.to("#scene6", { scale: 1.1, filter: "blur(12px)", opacity: 0, duration: 0.3, ease: "power3.in" }, 19.5);
+      tl.set("#scene7", { opacity: 1 }, 19.5);
+      tl.fromTo("#scene7", { scale: 0.9, filter: "blur(12px)" }, { scale: 1, filter: "blur(0px)", duration: 0.4, ease: "expo.out" }, 19.5);
+
+      // ===== SCENE 7: Edit & Reject [20-25s] =====
+      tl.fromTo("#s7-form", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 20.1);
+      tl.fromTo("#s7-panel", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 20.1);
+      tl.fromTo("#s7-gl", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, 20.2);
+      tl.fromTo("#s7-gr", { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, 20.2);
+      // Proposals slide in
+      tl.fromTo("#s7-prop1", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out" }, 21);
+      tl.fromTo("#s7-prop2", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "expo.out" }, 21.3);
+      // Reject delete
+      tl.fromTo("#s7-rej", { scale: 1 }, { scale: 1.05, duration: 0.15, ease: "power2.out", yoyo: true, repeat: 1 }, 21.8);
+      tl.to("#s7-fc-4", { opacity: 0.5, duration: 0.3, ease: "power2.out" }, 22);
+      tl.fromTo("#s7-strike", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.2, ease: "power2.out" }, 22.1);
+      // Accept rating edit
+      tl.fromTo("#s7-acc", { scale: 1 }, { scale: 1.05, duration: 0.15, ease: "power2.out", yoyo: true, repeat: 1 }, 22.5);
+      tl.fromTo("#s7-fc-3", { boxShadow: "0 0 0px rgba(16,185,129,0)" }, { boxShadow: "0 0 24px rgba(16,185,129,0.2)", duration: 0.4, ease: "power2.out" }, 22.6);
+
+      // Transition 7→8: Blur crossfade at 24.5s
+      tl.to("#scene7", { filter: "blur(15px)", opacity: 0, duration: 0.5, ease: "sine.inOut" }, 24.5);
+      tl.set("#scene8", { opacity: 1 }, 24.5);
+      tl.fromTo("#scene8", { filter: "blur(15px)" }, { filter: "blur(0px)", duration: 0.5, ease: "sine.inOut" }, 24.5);
+
+      // ===== SCENE 8: Goodbye + CTA [25-30s] =====
+      tl.fromTo("#s8-form", { scale: 0.95, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out" }, 25.1);
+      tl.fromTo("#s8-panel", { x: 400, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 25.1);
+      tl.fromTo("#s8-glow", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: "power2.out" }, 25.2);
+      // Chat goodbye
+      tl.fromTo("#s8-panel", { x: 0 }, { x: 400, opacity: 0, duration: 0.4, ease: "power3.in" }, 26);
+      // Form centers
+      tl.to("#s8-form", { x: 0, duration: 0.5, ease: "power2.out" }, 26.5);
+      // Slow camera pan
+      tl.to("#s8-form", { x: 30, duration: 3, ease: "sine.inOut" }, 27);
+      // Logo
+      tl.fromTo("#s8-logo", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "expo.out" }, 27);
+      // Tagline
+      tl.fromTo("#s8-tagline", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "expo.out" }, 27.4);
+      // CTA
+      tl.fromTo("#s8-cta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 27.8);
+      // Letterbox bars
+      tl.fromTo("#s8-lb-top", { y: -50 }, { y: 0, duration: 0.4, ease: "power2.out" }, 27.5);
+      tl.fromTo("#s8-lb-bottom", { y: 50 }, { y: 0, duration: 0.4, ease: "power2.out" }, 27.5);
+      // Final glow breathe
+      tl.to("#s8-glow", { scale: 1.08, opacity: 0.3, duration: 2, ease: "sine.inOut", yoyo: true, repeat: 1 }, 27);
+      // Fade to black
+      tl.to("#scene8", { opacity: 0, duration: 0.8, ease: "power2.in" }, 29.2);
+      tl.set("#scene8", { visibility: "hidden" }, 30);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
